@@ -1,0 +1,2 @@
+In this folder, we report some experimental data (Jason files .json) that have been digitized from the original publications. 
+Further data are also included in the Jupyter files for the model-experiment comparisons.

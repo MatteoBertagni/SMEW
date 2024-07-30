@@ -1,0 +1,21 @@
+This repository contains Python code implementing the EW model for the soil upper layers, as described by Bertagni et al. 
+The model simulates various biogeochemical processes within the soil, including the dynamics of different elements and species. 
+The code is organized into the following modules:
+
+    biogeochem: Contains equations related to biogeochemical processes, including ordinary differential equations (ODEs) for Ca, Mg, K, Na, Al, Si, An, Alk, IC, and MIC. Additionally, it includes an implicit system of equations for carbonate and aluminum speciation and cation adsorption.
+
+    complementary: has additional codes for graphic or mathematical purposes.
+
+    constants: Defines all constants used within the model.
+
+    hydroclimatic: Defines signals for hydroclimatic forcings such as temperature, ET0, and rain.
+
+    ic: Specifies initial conditions for alkaline cation aqueous and adsorbed phases.
+
+    moisture: Handles the water balance.
+
+    organic_carbon: Manages the organic carbon balance and defines heterotrophic respiration.
+
+    vegetation: Deals with vegetation dynamics and active uptake.
+
+    weathering: Includes carbonate weathering and defines the mineral saturation index. Note that the weathering of EW silicate minerals is in the 'biogeochem' module.
