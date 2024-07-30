@@ -31,4 +31,4 @@ The material includes the numerical codes for the model, the experimental data u
 5. For the Jupyter notebooks of the model-experiment comparison, define the selected base directory in the first cell of each notebook.
 
 # Contact
-You can contact me at @MatteoBertagni (matteobb@princeton.edu) for more information about the research.
+You can contact me at @MatteoBertagni (matteo.bertagni@polito.it) for more information about the research.
