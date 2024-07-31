@@ -1,4 +1,4 @@
-# EW model
+# Soil Model for Enhanced Weathering (SMEW)
 This folder contains all material related to the Soil Model for Enhanced Weathering (SMEW) published in Bertagni et al.
 The material includes the numerical codes for the model, the experimental data used for the analyses, and the Jupyter notebooks for the model-experiment comparison.
 
