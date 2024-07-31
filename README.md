@@ -1,10 +1,10 @@
 # EW model
-This folder contains all material related to the enhanced weathering (EW) model published in Bertagni et al.
+This folder contains all material related to the Soil Model for Enhanced Weathering (SMEW) published in Bertagni et al.
 The material includes the numerical codes for the model, the experimental data used for the analyses, and the Jupyter notebooks for the model-experiment comparison.
 
 # Folders
 
-- 'pyEW': contains the python codes for the EW numerical model
+- 'pyEW': contains the python codes for the SMEW numerical model
 
 - 'Exp_data': contains the experimental data obtained from the various publications through a web plot digitizer (https://apps.automeris.io/wpd/)
 
