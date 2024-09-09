@@ -343,8 +343,8 @@ def K_GT_CEC(soil, conv_mol):
         K_Ca_Mg = 10**(0.56); #[-]
         K_Ca_K = 10**(-1.16)*conv_mol #[conc]
         K_Ca_Na = 10**(0.75)*conv_mol #[conc]
-        K_Ca_H = 10**(-5)*conv_mol #[conc] works with: 0.5 1e-9 *conv_mol, tePas et al 
-        K_Ca_Al = 10**(-1.7)/conv_mol #[conc^-1] #heterovalent (make it higher to favor Ca adsorbed) 
+        K_Ca_H = 10**(-5)*conv_mol #[conc]
+        K_Ca_Al = 10**(-1.7)/conv_mol #[conc^-1] #heterovalent 
         #K_Ca_AlOH = 10**(-1.7)
         #K_Ca_AlOH2 = 10**(-1.7)*conv_mol
     
