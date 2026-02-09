@@ -1,0 +1,39 @@
+[build-system]
+requires      = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smew"
+version = "1.0.1"
+description = "Soil Model for Enhanced Weathering (SMEW): a dynamic, depth-averaged ecohydrological and biogeochemical model for enhanced weathering dynamics in the upper soil layers."
+readme = "README.md"
+authors = [{ name = "Matteo Bertagni", email = "matteo.bertagni@polito.it" }]
+license = " AGPL-3.0-only"
+license-files = [
+    "LICENSE.txt",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3"
+]
+keywords = ["Scientific research"]
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "dill",
+    "matplotlib",
+    "numba"
+]
+requires-python = ">=3.10"
+
+[tool.setuptools]
+packages = ["smew", "pyeto"]
+
+[project.urls]
+Homepage = "https://pypi.org/project/smew"
+Repository = "https://github.com/MatteoBertagni/SMEW"
+Documentation = "https://github.com/MatteoBertagni/SMEW"
