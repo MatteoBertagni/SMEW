@@ -1,11 +1,11 @@
 
-import pyEW
+import smew
 
-from pyEW.biogeochem import (
+from smew.biogeochem import (
     biogeochem_balance
 )
 
-from pyEW.constants import (
+from smew.constants import (
     D_0,
     Dw_0,
     CO2_atm,
@@ -19,14 +19,14 @@ from pyEW.constants import (
     MM
 )
 
-from pyEW.hydroclimatic import (
+from smew.hydroclimatic import (
     temp,
     ET0,
     rain_stoc,
     rain_stoc_season
 )
 
-from pyEW.ic import (
+from smew.ic import (
     conc_to_f_CEC,
     f_CEC_to_conc,
     total_to_f_CEC_and_conc,
@@ -35,25 +35,25 @@ from pyEW.ic import (
     Kelland
 )
 
-from pyEW.weathering import (
+from smew.weathering import (
     carb_W,
     Omega_sil
 )
 
-from pyEW.moisture import (
+from smew.moisture import (
     moisture_balance
 )
 
-from pyEW.organic_carbon import (
+from smew.organic_carbon import (
     respiration
 )
 
-from pyEW.vegetation import (
+from smew.vegetation import (
     veg,
     up_act
 )
 
-from pyEW.complementary import (
+from smew.complementary import (
     fig_CEC,
     fig_IC,
     mov_avg

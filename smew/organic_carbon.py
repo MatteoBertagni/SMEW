@@ -4,7 +4,7 @@
 Created on Mon Dec 16 12:19:42 2019
 """
 import numpy as np
-import pyEW
+import smew
 from statistics import mean
 
 def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, temp_soil,dt,conv_mol):
@@ -16,10 +16,10 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
     k_dec_T = np.zeros(len(s))
     
     #constants
-    [MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al]=pyEW.MM(conv_mol)
-    [s_h, s_w, s_i, b, K_s, n] = pyEW.soil_const(soil) 
+    [MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al]=smew.MM(conv_mol)
+    [s_h, s_w, s_i, b, K_s, n] = smew.soil_const(soil) 
     r = 0.7 # [-]: Fraction of carbon that goes into respiration
-    CO2_atm = pyEW.CO2_atm(conv_mol) # [mol-conv/l] 
+    CO2_atm = smew.CO2_atm(conv_mol) # [mol-conv/l] 
     
     # SOC initial condition 
     if SOC_in>0:
@@ -44,7 +44,7 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
     else:
         Z_CO2 = 0.15
         
-    D_0 = pyEW.D_0() #free-air diffusion [m2/d]
+    D_0 = smew.D_0() #free-air diffusion [m2/d]
     D = D_0*(1-s)**(10/3)*n**(4/3) #Mill-Quirk (1961)
     Fs_in = (D[0]*1000/(Z_CO2))*(CO2_air_in - CO2_atm) #mol-conv/m2
     

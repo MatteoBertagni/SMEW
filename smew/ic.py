@@ -5,7 +5,7 @@ Created on Mon Dec 16 14:34:44 2019
 """
 
 import numpy as np
-import pyEW
+import smew
 from scipy import optimize
 from scipy.optimize import least_squares, fsolve, minimize, newton_krylov, broyden1, root, broyden2
 
@@ -15,9 +15,9 @@ from scipy.optimize import least_squares, fsolve, minimize, newton_krylov, broyd
 def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al):
             
     #constants 
-    K_CEC = pyEW.K_GT_CEC(soil,conv_mol) #CEC Gaines-Thomas
+    K_CEC = smew.K_GT_CEC(soil,conv_mol) #CEC Gaines-Thomas
     [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H] = K_CEC
-    [K1, K2, K3, K4] = pyEW.K_Al(conv_mol) #Al speciation
+    [K1, K2, K3, K4] = smew.K_Al(conv_mol) #Al speciation
     
     # cations (mol-conv/l)
     [Ca, Mg, K, Na, Al_w] = conc_in
@@ -52,9 +52,9 @@ def f_CEC_to_conc(f_CEC_in, pH_in, soil, conv_mol,conv_Al):
     H = 10**(-pH_in)*conv_mol 
     
     #constants 
-    K_CEC = pyEW.K_GT_CEC(soil,conv_mol) #CEC Gaines-Thomas
+    K_CEC = smew.K_GT_CEC(soil,conv_mol) #CEC Gaines-Thomas
     [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H] = K_CEC
-    [K1, K2, K3, K4] = pyEW.K_Al(conv_mol) #Al speciation
+    [K1, K2, K3, K4] = smew.K_Al(conv_mol) #Al speciation
 
     #f_CEC [-]
     [f_Ca, f_Mg, f_K, f_Na, f_Al, f_H] = f_CEC_in
@@ -79,9 +79,9 @@ def f_CEC_to_conc(f_CEC_in, pH_in, soil, conv_mol,conv_Al):
 def total_to_f_CEC_and_conc(total_in, pH_in, f_acid, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
 
     #constants 
-    K_CEC = pyEW.K_GT_CEC(soil, conv_mol) #CEC Gaines-Thomas
+    K_CEC = smew.K_GT_CEC(soil, conv_mol) #CEC Gaines-Thomas
     [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H] = K_CEC
-    [K1, K2, K3, K4] = pyEW.K_Al(conv_mol) #Al speciation
+    [K1, K2, K3, K4] = smew.K_Al(conv_mol) #Al speciation
 
     # total (mol-conv/m2)
     [Ca_tot, Mg_tot, K_tot, Na_tot] = total_in
@@ -148,7 +148,7 @@ def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
     [Ca, Mg, K, Na, Al_w] = conc_in
     
     # Al spec
-    [K1, K2, K3, K4] = pyEW.K_Al(conv_mol)
+    [K1, K2, K3, K4] = smew.K_Al(conv_mol)
     Al=(H**4/(H**4+H**3*K1+H**2*K1*K2+H*K1*K2*K3+K1*K2*K3*K4))*Al_w
     
     #estimates of K constants
@@ -168,9 +168,9 @@ def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
 def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
 
     #constants 
-    K_CEC = pyEW.K_GT_CEC(soil, conv_mol) #CEC Gaines-Thomas
+    K_CEC = smew.K_GT_CEC(soil, conv_mol) #CEC Gaines-Thomas
     [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H] = K_CEC
-    [K1, K2, K3, K4] = pyEW.K_Al(conv_mol) #Al speciation
+    [K1, K2, K3, K4] = smew.K_Al(conv_mol) #Al speciation
 
     # known (mol-conv/m2)
     [Ca_tot, Mg_tot, K_tot, Na_tot] = total_in
@@ -225,9 +225,9 @@ def Amann(f_CEC_in, pH_in, Mg_in, soil, conv_mol,conv_Al):
     H = 10**(-pH_in)*conv_mol 
     
     #constants 
-    K_CEC = pyEW.K_GT_CEC(soil,conv_mol) #CEC Gaines-Thomas
+    K_CEC = smew.K_GT_CEC(soil,conv_mol) #CEC Gaines-Thomas
     [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H] = K_CEC
-    [K1, K2, K3, K4] = pyEW.K_Al(conv_mol) #Al speciation
+    [K1, K2, K3, K4] = smew.K_Al(conv_mol) #Al speciation
 
     #f_CEC [-]
     [f_Ca, f_Mg, f_K, f_Na, f_Al, f_H] = f_CEC_in

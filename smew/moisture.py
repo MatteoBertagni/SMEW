@@ -5,13 +5,13 @@ Created on Thu Dec 12 10:30:44 2019
 """
 import numpy as np
 import scipy.stats
-import pyEW
+import smew
 
 
 def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt):
     
     #constants
-    [s_h, s_w, s_i, b, K_s, n] = pyEW.soil_const(soil)       
+    [s_h, s_w, s_i, b, K_s, n] = smew.soil_const(soil)       
     
     # Initialization
     #--------------------------------------------------------------------------      

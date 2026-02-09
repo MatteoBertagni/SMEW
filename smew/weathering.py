@@ -5,7 +5,6 @@ Created on Mon Dec 16 14:34:44 2019
 """
 
 import numpy as np
-import pyEW
 
 #------------------------------------------------------------------------------
  # Carbonate weathering [mol-conv/d]
