@@ -2,6 +2,9 @@
 .ipynb_checkpoints/
 **/.ipynb_checkpoints/
 
+dist/
+smew.egg-info/
+
 # --- Python ---
 __pycache__/
 *.py[cod]
