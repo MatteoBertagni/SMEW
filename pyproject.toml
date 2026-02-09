@@ -16,8 +16,7 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU Affero General Public License v3"
+    "Intended Audience :: Science/Research"
 ]
 keywords = ["Scientific research"]
 dependencies = [
