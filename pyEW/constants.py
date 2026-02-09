@@ -60,11 +60,11 @@ def soil_const(soil):
     if soil == 'sand':
         s_h = 0.08 #hygroscopic point
         s_w = 0.11 #wilting
-        s_i = 0.33 #max transpiration 
+        s_i = 0.33 #max transpiration
         #s_fc = 0.35 #field capacity - not needed in the current formulation
-        b = 4.05 #power law exponent of the rentention curve
-        K_s = 14  # (m/d) 
-        n = 0.35  # porosity
+        b = 4.05 #power law exponent of the retention curve
+        K_s = 14 #(m/d)
+        n = 0.35 #porosity
     elif soil == 'loamy sand':
         s_h = 0.08
         s_w = 0.11
@@ -81,6 +81,20 @@ def soil_const(soil):
         b = 4.9
         K_s = 3
         n = 0.43
+    elif soil == 'silt loam': # Clapp & Hornberger (2008)
+        s_h = 0.22
+        s_w = 0.28
+        s_i = 0.71
+        b = 5.30
+        K_s = 0.62
+        n = 0.485
+    elif soil == 'silt': # Using values for silt loam because not in Clapp & Hornberger (2008)
+        s_h = 0.22
+        s_w = 0.28
+        s_i = 0.71
+        b = 5.30
+        K_s = 0.62
+        n = 0.485
     elif soil == 'loam':
         s_h = 0.19
         s_w = 0.24
@@ -89,19 +103,47 @@ def soil_const(soil):
         b = 5.4
         K_s = 0.6
         n = 0.45
+    elif soil == 'sandy clay loam': 
+        s_h = 0.27
+        s_w = 0.32
+        s_i = 0.61
+        b = 7.12
+        K_s = 0.54
+        n = 0.42
+    elif soil == 'silty clay loam': 
+        s_h = 0.32
+        s_w = 0.37
+        s_i = 0.68
+        b = 7.75
+        K_s = 0.15
+        n =  0.477
     elif soil == 'clay loam':
         s_h = 0.39
         s_w = 0.45
         s_i = 0.68
-        b = 8.5
-        K_s = 0.2 
+        b = 8.52
+        K_s = 0.2
         n = 0.47
+    elif soil == 'sandy clay': 
+        s_h = 0.39
+        s_w = 0.44
+        s_i = 0.69
+        b = 10.4
+        K_s = 0.19
+        n = 0.426
+    elif soil == 'silty clay': 
+        s_h = 0.43
+        s_w = 0.49
+        s_i = 0.76
+        b = 10.4
+        K_s = 0.09
+        n = 0.492
     elif soil == 'clay':
         s_h = 0.47
         s_w = 0.52
         s_i = 0.78
         b = 11.4
-        K_s = 0.11 
+        K_s = 0.11
         n = 0.5
     else:
         print("Invalid soil type!")
