@@ -1,10 +1,3 @@
-## License
-
-This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
-
-See the `license` file for details.
-
-
 # Soil Model for Enhanced Weathering (SMEW)
 
 This folder contains all material related to the Soil Model for Enhanced Weathering (SMEW) published in Bertagni et al., 2025, JAMES
@@ -33,6 +26,12 @@ The material includes the numerical codes for the model, the experimental data u
 2. Run the Juptyer notebook 'Example' to verify that the model components (pyEW) are correctly used within the notebooks.
 3. Change the parameters in the file 'Example' to run specific simulations for different scenarios.
 4. For the Jupyter notebooks of the model-experiment comparison, define the selected base directory in the first cell of each notebook.
+
+## License
+
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+See the `license` file for details.
 
 # Contact
 
