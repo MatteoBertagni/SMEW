@@ -83,19 +83,19 @@ def ET0(latitude,altitude,temp_air,temp_soil,temp_min,temp_max, wind,albedo,Zr,c
 def rain_stoc(lamda, alfa, t_end, dt):
     
     # simulated event number
-    nb_ev = np.int(2*lamda*t_end) 
+    nb_ev = int(2*lamda*t_end) 
     
     # interarrival time [d]
-    tau = scipy.stats.expon.rvs(scale = 1/lamda, loc = 0, size = np.int(nb_ev))
+    tau = scipy.stats.expon.rvs(scale = 1/lamda, loc = 0, size = int(nb_ev))
 
     # intensity [m]
-    h = scipy.stats.expon.rvs(scale = alfa, loc = 0, size = np.int(nb_ev))
+    h = scipy.stats.expon.rvs(scale = alfa, loc = 0, size = int(nb_ev))
 
     # rainfall [m]
     rain = np.zeros(int(t_end/dt))
     t_event = 1 #initialization
     for i in range(0, nb_ev):
-        t_event = np.int(t_event+tau[i]/dt)
+        t_event = int(t_event+tau[i]/dt)
         if t_event<=len(rain):
             rain[t_event] = h[i]
         else:
@@ -112,23 +112,23 @@ def rain_stoc_season(lamda, alfa, t_end, dt):
     days = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]) # month days
     rain = np.array
 
-    for j in range(0, np.int(t_end/365)):#year
+    for j in range(0, int(t_end/365)):#year
         for i in range(0, len(days)):#month
             
             # simulated rainfall events per month
-            nb_ev = np.int(2*lamda[i]*days[i]) 
+            nb_ev = int(2*lamda[i]*days[i]) 
     
             # interarrival time [d]
-            tau = scipy.stats.expon.rvs(scale = 1/lamda[i], loc = 0, size = np.int(nb_ev))
+            tau = scipy.stats.expon.rvs(scale = 1/lamda[i], loc = 0, size = int(nb_ev))
 
             # intensity [m]
-            h = scipy.stats.expon.rvs(scale = alfa[i], loc = 0, size = np.int(nb_ev))
+            h = scipy.stats.expon.rvs(scale = alfa[i], loc = 0, size = int(nb_ev))
 
             # rainfall array [m]
             rain_month = np.zeros(int(days[i]/dt))
             t_event = 1 #initialization
             for ii in range(0, nb_ev):
-                t_event = np.int(t_event+tau[ii]/dt)
+                t_event = int(t_event+tau[ii]/dt)
                 if t_event<(days[i]/dt):
                     rain_month[t_event] = h[ii]
             if i == 0 and j == 0:
