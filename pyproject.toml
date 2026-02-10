@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "smew"
-version = "1.0.1"
+version = "1.1.0"
 description = "Soil Model for Enhanced Weathering (SMEW): a dynamic, depth-averaged ecohydrological and biogeochemical model for enhanced weathering dynamics in the upper soil layers."
 readme = "README.md"
 authors = [{ name = "Matteo Bertagni", email = "matteo.bertagni@polito.it" }]
@@ -24,8 +24,7 @@ dependencies = [
     "pandas",
     "scipy",
     "dill",
-    "matplotlib",
-    "numba"
+    "matplotlib"
 ]
 requires-python = ">=3.10"
 
