@@ -3,6 +3,16 @@
 This folder contains all material related to the Soil Model for Enhanced Weathering (SMEW) published in Bertagni et al., 2025, JAMES
 The material includes the numerical codes for the model, the experimental data used for the analyses, and the Jupyter notebooks for the model-experiment comparison.
 
+Article: [https://doi.org/10.1029/2024MS004224](https://doi.org/10.1029/2024MS004224)  
+Zenodo repository: [https://doi.org/10.5281/zenodo.14356660](https://doi.org/10.5281/zenodo.14356660)  
+GitHub repository: [https://github.com/MatteoBertagni/SMEW](https://github.com/MatteoBertagni/SMEW)  
+PyPi package: [https://pypi.org/project/smew](https://pypi.org/project/smew)
+
+Install with:
+
+```bash
+pip install smew
+```
 
 # Folders
 
@@ -35,4 +45,4 @@ See the `license` file for details.
 
 # Contact
 
-You can contact me at @MatteoBertagni (matteo.bertagni@polito.it) for more information about the research.
+You can contact me at @MatteoBertagni ([matteo.bertagni@polito.it](mailto:matteo.bertagni@polito.it)) for more information about the research.
