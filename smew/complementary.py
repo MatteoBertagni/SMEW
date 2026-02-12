@@ -15,11 +15,11 @@ def fig_CEC(t, f_Ca_list, f_Mg_list, f_K_list, f_Na_list, f_Al_list, f_H_list, t
     
     plots = [
         (f_H_list, 'f$_\mathrm{H}$'),
-        ([f_H + f_Na for f_H, f_Na in zip(f_H_list, f_Na_list)], 'f$_\mathrm{Na}$'),
-        ([f_H + f_Na + f_K for f_H, f_Na, f_K in zip(f_H_list, f_Na_list, f_K_list)], 'f$_\mathrm{K}$'),
-        ([f_H + f_Na + f_K + f_Ca for f_H, f_Na, f_K, f_Ca in zip(f_H_list, f_Na_list, f_K_list, f_Ca_list)], 'f$_\mathrm{Ca}$'),
-        ([f_H + f_Na + f_K + f_Ca + f_Mg for f_H, f_Na, f_K, f_Ca, f_Mg in zip(f_H_list, f_Na_list, f_K_list, f_Ca_list, f_Mg_list)], 'f$_\mathrm{Mg}$'),
-        ([f_H + f_Na + f_K + f_Ca + f_Mg + f_Al for f_H, f_Na, f_K, f_Ca, f_Mg, f_Al in zip(f_H_list, f_Na_list, f_K_list, f_Ca_list, f_Mg_list, f_Al_list)], 'f$_\mathrm{Al}$')
+        ([f_H + f_Na for f_H, f_Na in zip(f_H_list, f_Na_list)], 'f$_\\mathrm{Na}$'),
+        ([f_H + f_Na + f_K for f_H, f_Na, f_K in zip(f_H_list, f_Na_list, f_K_list)], 'f$_\\mathrm{K}$'),
+        ([f_H + f_Na + f_K + f_Ca for f_H, f_Na, f_K, f_Ca in zip(f_H_list, f_Na_list, f_K_list, f_Ca_list)], 'f$_\\mathrm{Ca}$'),
+        ([f_H + f_Na + f_K + f_Ca + f_Mg for f_H, f_Na, f_K, f_Ca, f_Mg in zip(f_H_list, f_Na_list, f_K_list, f_Ca_list, f_Mg_list)], 'f$_\\mathrm{Mg}$'),
+        ([f_H + f_Na + f_K + f_Ca + f_Mg + f_Al for f_H, f_Na, f_K, f_Ca, f_Mg, f_Al in zip(f_H_list, f_Na_list, f_K_list, f_Ca_list, f_Mg_list, f_Al_list)], 'f$_\\mathrm{Al}$')
     ]    
     
     if isinstance(f_H_list, list):
