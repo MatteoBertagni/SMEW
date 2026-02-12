@@ -99,10 +99,13 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         n_OH = np.zeros(number_min)
         K_sp = np.zeros(number_min)
         min_st = np.zeros([number_min, 6])
+        k_diss_H = np.zeros(number_min)
+        k_diss_w = np.zeros(number_min)
+        k_diss_OH = np.zeros(number_min)
 
-        k_diss_H_t = np.zeros([number_min, len(s)])
-        k_diss_w_t = np.zeros([number_min, len(s)])
-        k_diss_OH_t = np.zeros([number_min, len(s)])
+        k_H_T = np.zeros([number_min, len(s)])
+        k_w_T = np.zeros([number_min, len(s)])
+        k_OH_T = np.zeros([number_min, len(s)])
         Omega =  np.zeros([number_min, len(s)])
         M_min = np.zeros([number_min, len(s)])
         rock_f = np.zeros([number_min, len(s)])
@@ -155,7 +158,11 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     #mineral constants
     if M_rock_in > 0: 
         for j in range(0,number_min):
-            MM_min[j], k_diss_H_t[j,:], k_diss_w_t[j,:], k_diss_OH_t[j,:], n_H[j], n_OH[j], min_st[j,:], K_sp[j] = smew.min_const(mineral[j], T_K, conv_mol)  
+            MM_min[j], k_diss_H[j], k_diss_w[j], k_diss_OH[j], n_H[j], n_OH[j], E_H[j], E_w[j], E_OH[j], min_st[j,:], K_sp[j] = smew.min_const(mineral[j], conv_mol)
+            #temperature scaling
+            k_H_T[j,:] = k_diss_H[j]*np.exp(-E_H[j]*1000/(8.314/conv_mol)*(1/T_K[:]-1/(25+273.15)))
+            k_w_T[j,:] = k_diss_w[j]*np.exp(-E_w[j]*1000/(8.314/conv_mol)*(1/T_K[:]-1/(25+273.15)))
+            k_OH_T[j,:] = k_diss_OH[j]*np.exp(-E_OH[j]*1000/(8.314/conv_mol)*(1/T_K[:]-1/(25+273.15)))
     
     #rock density
     rho_rock = 3*1e6 # [g/m3]
@@ -283,7 +290,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         #particle size distribution
         psd[:,tt_app] = psd_perc_in*M_rock[tt_app]/delta_d[:,tt_app] #[g/m]
         
-        #refinment of fractal constant based on measured SSA 
+        #refinement of fractal constant based on measured SSA 
         if SSA_in > 0:
             a = (SSA_in*rho_rock*M_rock[tt_app]/6)/np.sum(d[:,tt_app]**(b-1)*psd[:,tt_app]*delta_d[:,tt_app]) #[m**-b]
         
@@ -295,10 +302,12 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         #mineral weathering
         if t_app == 0:
             for j in range(0, number_min):
-                Omega[j,0] = smew.Omega_sil(mineral[j], Ca[0], Mg[0], K[0], Na[0], Si[0], H[0], K_sp[j], conv_mol) #[-]
-                Wr[j,0] = s[0]*diss_f*(k_diss_H_t[j,0]*(H[0]/conv_mol)**n_H[j]+k_diss_w_t[j,0]+k_diss_OH_t[j,0]*(H[0]/conv_mol)**n_OH[j])*(1-Omega[j,0]) # [mol-conv/ m2 d]
-                EW[j,0] = Wr[j,0]*SA[0]*rock_f[j,0] # [mol-conv/d]
-
+                Omega[j,0] = pyEW.sil_Omega(mineral[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp[j], conv_mol,conv_Al) #[-]
+                #weathering rate [mol-conv/ m2 d]                
+                Wr[j,0]= pyEW.sil_Wr(mineral[j], Omega[j,0], s[0], H[0], k_H_T[j,0], k_w_T[j,0],k_OH_T[j,0], n_H[j], n_OH[j], diss_f,  conv_mol) 
+                #weathering flux [mol-conv/d] 
+                EW[j,0] = Wr[j,0]*SA[0]*rock_f[j,0]
+                
 #------------------------------------------------------------------------------
     #SYSTEM RESOLUTION
         
@@ -412,44 +421,30 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             #Silicate weathering
             if M_rock_in > 0:
                 
-                #application time
-                if i == tt_app:
-                    for j in range(0, number_min):
-                        Omega[j,i] = smew.Omega_sil(mineral[j], Ca[i], Mg[i], K[i], Na[i], Si[i], H[i], K_sp[j], conv_mol) #[-]
-                        Wr[j,i] = s[i]*diss_f*(k_diss_H_t[j,i]*(H[i]/conv_mol)**n_H[j]+k_diss_w_t[j,i]+k_diss_OH_t[j,i]*(H[i]/conv_mol)**n_OH[j])*(1-Omega[j,i]) # [mol-conv/ m2 d]
-                        EW[j,i] = Wr[j,i]*SA[i]*rock_f[j,i] # [mol-conv/d]
-                
-                #post application
-                elif i > tt_app:
-                
-                    #diameter class variation
-                    d_shrink = np.sum(rock_f[:,i-1]*Wr[:,i-1]*MM_min[:]/rho_rock)*dt # [m]
-                    d[:,i] = d[:,i-1] - 2*d_shrink*lamb[:,i-1] # [m]
-                    d[:,i][d[:,i] < 0] = 0
-                    delta_d[:,i] = np.insert(np.diff(d[:,i]),0,d[0,i]) # [m]
+                #saturation and weathering rate
+                for j in range(0, number_min):
+                    Omega[j,i] = pyEW.sil_Omega(mineral[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp[j], conv_mol,conv_Al) #[-]           
+                    Wr[j,i]= pyEW.sil_Wr(mineral[j], Omega[j,i], s[i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol) 
 
-                    #d-derived quantities
-                    for k in range(0, n_d_cl):
-                        if d[k,i]>0:
-                            lamb[k,i] = a*d[k,i]**b #[-]
-                            SSA[k,i] = 6/(d[k,i]*rho_rock)*lamb[k,i] # [m2/g]
-                            psd[k,i] = psd[k,i-1]*(d[k,i]/d[k,i-1])**3*(delta_d[k,i-1]/delta_d[k,i]) # [g/m]
-
-                    #mineral weathering
-                    for j in range(0, number_min):
-                        if M_min[j,i-1] != 0: 
-                            Omega[j,i] = smew.Omega_sil(mineral[j], Ca[i], Mg[i], K[i], Na[i], Si[i], H[i], K_sp[j], conv_mol) #[-]
-                            Wr[j,i] = s[i]*diss_f*(k_diss_H_t[j,i]*(H[i]/conv_mol)**n_H[j]+k_diss_w_t[j,i]+k_diss_OH_t[j,i]*(H[i]/conv_mol)**n_OH[j])*(1-Omega[j,i]) # [mol/ m2 d]
-                            M_min[j,i] = M_min[j,i-1]-EW[j,i-1]*MM_min[j]*dt # [g]
-                            if M_min[j,i] < 0:
-                                M_min[j,i] = 0
-
-                    #global quantities
-                    SA[i] = np.sum(SSA[:,i]*psd[:,i]*delta_d[:,i]) # [m2]
+                #post application only
+                if i> tt_app:
+                    
+                    #mineral fractions in rock
+                    M_min[:,i] = M_min[:,i-1]-EW[:,i-1]*MM_min[:]*dt # [g]
+                    M_min[:, i] = np.maximum(M_min[:, i], 0)
                     M_rock[i] = np.sum(M_min[:,i]) + M_iner # [g]
                     if M_rock[i]>0:
                         rock_f[:,i] = M_min[:,i]/M_rock[i] # [-]
-                    EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i] # [mol/d]
+                        
+                    #diameter variation
+                    d_shrink = np.sum(rock_f[:,i-1]*Wr[:,i-1]*MM_min[:]/rho_rock)*dt # [m]
+                    d[:,i] = d[:,i-1] - 2*d_shrink*lamb[:,i-1] # [m]
+                    d[:,i][d[:,i] < 0] = 0
+                    delta_d[:,i] = np.insert(np.diff(d[:,i]),0,d[0,i]) # [m]                
+                    [lamb[:,i], SSA[:,i], psd[:,i], SA[i]] = pyEW.psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
+                 
+                #weathering fluxes         
+                EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i] # [mol/d]
                     
 
     data = {k: v for k, v in locals().items()}
