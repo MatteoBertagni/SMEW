@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-only
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec 12 10:30:44 2019
