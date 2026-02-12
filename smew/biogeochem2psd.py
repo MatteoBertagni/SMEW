@@ -167,41 +167,41 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
     
 #------------------------------------------------------------------------------
     # Constants
-    CO2_atm = pyEW.CO2_atm(conv_mol) # [mol_CO2/l_air] Atmospheric CO2 concentration
+    CO2_atm = smew.CO2_atm(conv_mol) # [mol_CO2/l_air] Atmospheric CO2 concentration
     T_K = temp_soil + 273.15
     
     # soil CO2 diffusivity 
-    D_0 = pyEW.D_0() #free-air diffusion [m2/d]
+    D_0 = smew.D_0() #free-air diffusion [m2/d]
     D = D_0*(1-s)**(10/3)*n**(4/3) #Mill-Quirk (1961)
     
     #solute diffusivity in soil water
-    Dw_0 = pyEW.Dw_0()
+    Dw_0 = smew.Dw_0()
     Dw = Dw_0*(n*s)**2 # Archie 1942, Grathwohl 1998 (book)
     
     # [g/mol-conv]: Molar masses    
-    [MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al]=pyEW.MM(conv_mol) 
+    [MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al]=smew.MM(conv_mol) 
     
     # Aluminium speciation
-    [K1, K2, K3, K4] = pyEW.K_Al(conv_mol) 
+    [K1, K2, K3, K4] = smew.K_Al(conv_mol) 
     
     # carbonate spec  
-    [k1, k2, k_w, k_H] = pyEW.K_C(T_K,conv_mol)  
+    [k1, k2, k_w, k_H] = smew.K_C(T_K,conv_mol)  
     
     #CEC Gaines-Thomas constants
     [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H]  = K_CEC
     
     #nutrient uptake by plants
-    [v_f_Ca, v_f_Mg, v_f_K, v_f_Si] = pyEW.plant_nutr_f()
+    [v_f_Ca, v_f_Mg, v_f_K, v_f_Si] = smew.plant_nutr_f()
     dry_perc = 0.1 #percent of dry mass
     xi = dry_perc*np.array([v_f_Ca/MM_Ca, v_f_Mg/MM_Mg, v_f_K/MM_K, v_f_Si/MM_Si]) # [mol-conv/g_biomass]
     
     #carb weathering constants
-    [K_CaCO3,K_MgCO3,r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3] = pyEW.carb_weath_const(conv_mol)
+    [K_CaCO3,K_MgCO3,r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3] = smew.carb_weath_const(conv_mol)
     
     #mineral constants 1
     if M_rock_in > 0: 
         for j in range(0,number_min):
-            MM_min[j], k_diss_H[j], k_diss_w[j], k_diss_OH[j], n_H[j], n_OH[j], E_H[j], E_w[j], E_OH[j], min_st[j,:], K_sp[j] = pyEW.min_const(mineral[j], conv_mol)
+            MM_min[j], k_diss_H[j], k_diss_w[j], k_diss_OH[j], n_H[j], n_OH[j], E_H[j], E_w[j], E_OH[j], min_st[j,:], K_sp[j] = smew.min_const(mineral[j], conv_mol)
             #temperature scaling
             k_H_T[j,:] = k_diss_H[j]*np.exp(-E_H[j]*1000/(8.314/conv_mol)*(1/T_K[:]-1/(25+273.15)))
             k_w_T[j,:] = k_diss_w[j]*np.exp(-E_w[j]*1000/(8.314/conv_mol)*(1/T_K[:]-1/(25+273.15)))
@@ -210,7 +210,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
     #mineral constants 2
     if M_rock_in2 > 0: 
         for j in range(0,number_min2):
-            MM_min2[j], k_diss_H2[j], k_diss_w2[j], k_diss_OH2[j], n_H2[j], n_OH2[j], E_H2[j], E_w2[j], E_OH2[j], min_st2[j,:], K_sp2[j] = pyEW.min_const(mineral2[j], conv_mol)
+            MM_min2[j], k_diss_H2[j], k_diss_w2[j], k_diss_OH2[j], n_H2[j], n_OH2[j], E_H2[j], E_w2[j], E_OH2[j], min_st2[j,:], K_sp2[j] = smew.min_const(mineral2[j], conv_mol)
             #temperature scaling
             k_H_T2[j,:] = k_diss_H2[j]*np.exp(-E_H2[j]*1000/(8.314/conv_mol)*(1/T_K[:]-1/(25+273.15)))
             k_w_T2[j,:] = k_diss_w2[j]*np.exp(-E_w2[j]*1000/(8.314/conv_mol)*(1/T_K[:]-1/(25+273.15)))
@@ -321,7 +321,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
     #Carbonate weathering
     Omega_CaCO3[0] = Ca[0]*CO3[0]/K_CaCO3 # [-]
     Omega_MgCO3[0] = Mg[0]*CO3[0]/K_MgCO3
-    [W_CaCO3[0], W_MgCO3[0]] = pyEW.carb_W(CaCO3[0], MgCO3[0], Omega_CaCO3[0], Omega_MgCO3[0], s[0], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3) # [mol-conv/ m2 d]
+    [W_CaCO3[0], W_MgCO3[0]] = smew.carb_W(CaCO3[0], MgCO3[0], Omega_CaCO3[0], Omega_MgCO3[0], s[0], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3) # [mol-conv/ m2 d]
         
     #Silicate weathering FIRST PSD
     if M_rock_in > 0:
@@ -354,9 +354,9 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
         #mineral weathering
         if t_app == 0:
             for j in range(0, number_min):
-                Omega[j,0] = pyEW.sil_Omega(mineral[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp[j], conv_mol,conv_Al) #[-]
+                Omega[j,0] = smew.sil_Omega(mineral[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp[j], conv_mol,conv_Al) #[-]
                 #weathering rate [mol-conv/ m2 d]                
-                Wr[j,0]= pyEW.sil_Wr(mineral[j], Omega[j,0], s[0], H[0], k_H_T[j,0], k_w_T[j,0],k_OH_T[j,0], n_H[j], n_OH[j], diss_f,  conv_mol) 
+                Wr[j,0]= smew.sil_Wr(mineral[j], Omega[j,0], s[0], H[0], k_H_T[j,0], k_w_T[j,0],k_OH_T[j,0], n_H[j], n_OH[j], diss_f,  conv_mol) 
                 #weathering flux [mol-conv/d] 
                 EW[j,0] = Wr[j,0]*SA[0]*rock_f[j,0]
 
@@ -393,9 +393,9 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
         #mineral weathering
         if t_app2 == 0:
             for j in range(0, number_min2):
-                Omega2[j,0] = pyEW.sil_Omega(mineral2[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp2[j], conv_mol,conv_Al) #[-]
+                Omega2[j,0] = smew.sil_Omega(mineral2[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp2[j], conv_mol,conv_Al) #[-]
                 #weathering rate [mol-conv/ m2 d]                
-                Wr2[j,0]= pyEW.sil_Wr(mineral2[j], Omega2[j,0], s[0], H[0], k_H_T2[j,0], k_w_T2[j,0],k_OH_T2[j,0], n_H2[j], n_OH2[j], diss_f,  conv_mol) 
+                Wr2[j,0]= smew.sil_Wr(mineral2[j], Omega2[j,0], s[0], H[0], k_H_T2[j,0], k_w_T2[j,0],k_OH_T2[j,0], n_H2[j], n_OH2[j], diss_f,  conv_mol) 
                 #weathering flux [mol-conv/d] 
                 EW2[j,0] = Wr2[j,0]*SA2[0]*rock_f2[j,0]
                 
@@ -414,7 +414,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
                 ADV[i] = n*Zr*1000*(s[i]-s[i-1])*CO2_air[i-1]
             
             #active uptake [Ca, Mg, K, Si] 
-            UP_act = pyEW.up_act(v[i], (v[i]-v[i-1]), xi, dt, T[i-1], Ca[i-1], Mg[i-1], K[i-1], Si[i-1], Dw[i-1], Zr, k_v, RAI, root_d)
+            UP_act = smew.up_act(v[i], (v[i]-v[i-1]), xi, dt, T[i-1], Ca[i-1], Mg[i-1], K[i-1], Si[i-1], Dw[i-1], Zr, k_v, RAI, root_d)
             UP_Ca[i-1], UP_Mg[i-1], UP_K[i-1], UP_Si[i-1] = UP_act # [mol-conv/d] 
                                   
             #explicit mass balances # [mol]
@@ -507,15 +507,15 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
             #Carbonate weathering
             Omega_CaCO3[i] = Ca[i]*CO3[i]/K_CaCO3 # [-]
             Omega_MgCO3[i] = Mg[i]*CO3[i]/K_MgCO3
-            [W_CaCO3[i], W_MgCO3[i]] = pyEW.carb_W(CaCO3[i], MgCO3[i], Omega_CaCO3[i], Omega_MgCO3[i], s[i], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3)
+            [W_CaCO3[i], W_MgCO3[i]] = smew.carb_W(CaCO3[i], MgCO3[i], Omega_CaCO3[i], Omega_MgCO3[i], s[i], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3)
                      
             #Silicate weathering PSD1
             if M_rock_in > 0:
                 
                 #saturation and weathering rate
                 for j in range(0, number_min):
-                    Omega[j,i] = pyEW.sil_Omega(mineral[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp[j], conv_mol,conv_Al) #[-]           
-                    Wr[j,i]= pyEW.sil_Wr(mineral[j], Omega[j,i], s[i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol) 
+                    Omega[j,i] = smew.sil_Omega(mineral[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp[j], conv_mol,conv_Al) #[-]           
+                    Wr[j,i]= smew.sil_Wr(mineral[j], Omega[j,i], s[i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol) 
 
                 #post application only
                 if i> tt_app:
@@ -532,7 +532,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
                     d[:,i] = d[:,i-1] - 2*d_shrink*lamb[:,i-1] # [m]
                     d[:, i] = np.maximum(d[:, i], 0)
                     delta_d[:,i] = np.insert(np.diff(d[:,i]),0,d[0,i]) # [m]                  
-                    [lamb[:,i], SSA[:,i], psd[:,i], SA[i]] = pyEW.psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
+                    [lamb[:,i], SSA[:,i], psd[:,i], SA[i]] = smew.psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
                  
                 #weathering fluxes         
                 EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i] # [mol/d]
@@ -542,8 +542,8 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
                 
                 #saturation and weathering rate
                 for j in range(0, number_min2):
-                    Omega2[j,i] = pyEW.sil_Omega(mineral2[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp2[j], conv_mol,conv_Al)          
-                    Wr2[j,i]= pyEW.sil_Wr(mineral2[j], Omega2[j,i], s[i], H[i], k_H_T2[j,i], k_w_T2[j,i],k_OH_T2[j,i], n_H2[j], n_OH2[j], diss_f,  conv_mol) 
+                    Omega2[j,i] = smew.sil_Omega(mineral2[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp2[j], conv_mol,conv_Al)          
+                    Wr2[j,i]= smew.sil_Wr(mineral2[j], Omega2[j,i], s[i], H[i], k_H_T2[j,i], k_w_T2[j,i],k_OH_T2[j,i], n_H2[j], n_OH2[j], diss_f,  conv_mol) 
 
                 #post application only
                 if i> tt_app2:
@@ -560,7 +560,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
                     d2[:,i] = d2[:,i-1] - 2*d_shrink*lamb2[:,i-1] # [m]
                     d2[:, i] = np.maximum(d2[:, i], 0)
                     delta_d2[:,i] = np.insert(np.diff(d2[:,i]),0,d2[0,i]) # [m]                  
-                    [lamb2[:,i], SSA2[:,i], psd2[:,i], SA2[i]] = pyEW.psd_evol(d2[:,i], delta_d2[:,i], d2[:,i-1], delta_d2[:,i-1], psd2[:,i-1], n_d_cl2, a2, b, rho_rock)
+                    [lamb2[:,i], SSA2[:,i], psd2[:,i], SA2[i]] = smew.psd_evol(d2[:,i], delta_d2[:,i], d2[:,i-1], delta_d2[:,i-1], psd2[:,i-1], n_d_cl2, a2, b, rho_rock)
                  
                 #weathering fluxes         
                 EW2[:,i] = Wr2[:,i]*SA2[i]*rock_f2[:,i] # [mol/d]
