@@ -302,9 +302,9 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         #mineral weathering
         if t_app == 0:
             for j in range(0, number_min):
-                Omega[j,0] = pyEW.sil_Omega(mineral[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp[j], conv_mol,conv_Al) #[-]
+                Omega[j,0] = smew.sil_Omega(mineral[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp[j], conv_mol,conv_Al) #[-]
                 #weathering rate [mol-conv/ m2 d]                
-                Wr[j,0]= pyEW.sil_Wr(mineral[j], Omega[j,0], s[0], H[0], k_H_T[j,0], k_w_T[j,0],k_OH_T[j,0], n_H[j], n_OH[j], diss_f,  conv_mol) 
+                Wr[j,0]= smew.sil_Wr(mineral[j], Omega[j,0], s[0], H[0], k_H_T[j,0], k_w_T[j,0],k_OH_T[j,0], n_H[j], n_OH[j], diss_f,  conv_mol) 
                 #weathering flux [mol-conv/d] 
                 EW[j,0] = Wr[j,0]*SA[0]*rock_f[j,0]
                 
@@ -423,8 +423,8 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                 
                 #saturation and weathering rate
                 for j in range(0, number_min):
-                    Omega[j,i] = pyEW.sil_Omega(mineral[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp[j], conv_mol,conv_Al) #[-]           
-                    Wr[j,i]= pyEW.sil_Wr(mineral[j], Omega[j,i], s[i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol) 
+                    Omega[j,i] = smew.sil_Omega(mineral[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp[j], conv_mol,conv_Al) #[-]           
+                    Wr[j,i]= smew.sil_Wr(mineral[j], Omega[j,i], s[i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol) 
 
                 #post application only
                 if i> tt_app:
@@ -441,7 +441,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                     d[:,i] = d[:,i-1] - 2*d_shrink*lamb[:,i-1] # [m]
                     d[:,i][d[:,i] < 0] = 0
                     delta_d[:,i] = np.insert(np.diff(d[:,i]),0,d[0,i]) # [m]                
-                    [lamb[:,i], SSA[:,i], psd[:,i], SA[i]] = pyEW.psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
+                    [lamb[:,i], SSA[:,i], psd[:,i], SA[i]] = smew.psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
                  
                 #weathering fluxes         
                 EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i] # [mol/d]
