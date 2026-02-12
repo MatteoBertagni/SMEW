@@ -5,6 +5,10 @@ from smew.biogeochem import (
     biogeochem_balance
 )
 
+from smew.biogeochem2psd import (
+    biogeochem_balance2psd
+)
+
 from smew.constants import (
     D_0,
     Dw_0,
@@ -36,8 +40,10 @@ from smew.ic import (
 )
 
 from smew.weathering import (
-    carb_W,
-    Omega_sil
+    psd_evol,
+    sil_Wr,
+    sil_Omega,
+    carb_W
 )
 
 from smew.moisture import (
