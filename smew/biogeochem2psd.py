@@ -5,7 +5,7 @@ Created on Mon Dec 16 14:34:44 2019
 """
 
 import numpy as np
-import pyEW
+import smew
 from scipy import optimize
 from scipy.optimize import fsolve
 #minimize, least_squares, newton_krylov, broyden1, root, broyden2
