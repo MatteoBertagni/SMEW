@@ -63,7 +63,7 @@ def soil_const(soil):
         s_w = 0.11 #wilting
         s_i = 0.33 #max transpiration
         #s_fc = 0.35 #field capacity - not needed in the current formulation
-        b = 4.05 #power law exponent of the retention curve
+        b = 4.05 #power law exponent of the rentention curve
         K_s = 14 #(m/d)
         n = 0.35 #porosity
     elif soil == 'loamy sand':
@@ -154,19 +154,120 @@ def soil_const(soil):
 #------------------------------------------------------------------------------
  # EW mineral constants 
 
-def min_const(mineral, T_K, conv_mol):
+def min_const(mineral, conv_mol):
     
-    # All values are from Palandri (2004)
-    # The exceptions are the solubility product constants (K_sp), which, when available, are from Morel et al., (1993) -- https://booksite.elsevier.com/9780120885305/appendices/Web_Appendices.pdf
-    
-    k_diss_H_t = np.zeros(len(T_K))
-    k_diss_w_t = np.zeros(len(T_K))
-    k_diss_OH_t = np.zeros(len(T_K))
-    
-    R = 8.314/conv_mol # [J mol-1 K-1]: universal gas constant 
-    T_ref = 25+273.15 # [K]: temperature standard conditions
+    # Most values are from Palandri (2004) unless otherwise specified
+    # Solubility product constants (K_sp) are, when available, from Morel et al., (1993) -- https://booksite.elsevier.com/9780120885305/appendices/Web_Appendices.pdf unless otherwise specified
         
-    if mineral == 'forsterite': #Mg2SiO4
+    if mineral == 'albite': #NaAlSiO3
+            #rho_min = 2.6*1e6 # [g/m3]: density
+            MM_min =  263/conv_mol # [g/mol-conv]
+            k_diss_H = 10**(-10.16)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_w = 10**(-12.56)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_OH = 10**(-15.6)*24*3600*conv_mol
+            E_H = 65/conv_mol# [kJ/mol-conv]: activation energies 
+            E_w = 70/conv_mol# [kJ/mol-conv]
+            E_OH = 71/conv_mol
+            n_H = 0.457 # reaction order
+            n_OH = - 0.572
+            min_st = [0, 0, 0, 1, 1, 3]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            K_sp = 10**(-0.68)
+
+    elif mineral == 'alkali_feldspar': #K0.41Na0.56Ca0.03Al1.03Si2.97O8 (Kelland et al., 2020)
+            MM_min =  156/conv_mol # [g/mol-conv]
+            k_diss_H = 10**(-10.06)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_w = 10**(-12.41)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_OH = 10**(-21.2)*24*3600*conv_mol
+            E_H = 51/conv_mol# [kJ/mol-conv]: activation energies 
+            E_w = 38/conv_mol# [kJ/mol-conv]
+            E_OH = 94/conv_mol
+            n_H =  0.5 # reaction order
+            n_OH = -0.82
+            min_st = [0.03, 0, 0.41, 0.56, 1.03, 2.97]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            K_sp = np.nan
+
+    elif mineral == 'analcime': #NaAlSi2O6(H2O) 
+            #rho_min = 2.3*1e6 # [g/m3]: density
+            MM_min =  200/conv_mol # [g/mol-conv]
+            k_diss_H = 0 # [mol-conv m-2 d-1]
+            k_diss_w = 10**(-11)*24*3600*conv_mol # [mol-conv m-2 d-1] #Murphy et al., 1996, 10.2475/ajs.296.2.128
+            k_diss_OH = 0
+            E_H = 0
+            E_w = 8/conv_mol# [kJ/mol-conv]
+            E_OH = 0
+            n_H = 0 # reaction order
+            n_OH = 0
+            min_st = [1, 0, 0, 0, 2, 2]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            K_sp = 10**(-14.67)
+    
+    elif mineral == 'andesine': #Na0.6Ca0.4Al1.4Si2.6O8 
+            MM_min =  172/conv_mol # [g/mol-conv]
+            k_diss_H = 10**(-8.88)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_w = 10**(-11.47)*24*3600*conv_mol
+            k_diss_OH = 0
+            E_H = 53.5/conv_mol
+            E_w = 57.4/conv_mol# [kJ/mol-conv]
+            E_OH = 0
+            n_H = 0.541 # reaction order
+            n_OH = 0
+            min_st = [0.4, 0, 0, 0.6, 1.4, 2.6]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            K_sp = np.nan
+            
+    elif mineral == 'apatite': #Ca5(PO4)3(OH)
+            MM_min =  422/conv_mol # [g/mol-conv]
+            k_diss_H = 10**(-4.29)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_w = 10**(-6.)*24*3600*conv_mol 
+            k_diss_OH = 0
+            E_H = 250/conv_mol# [kJ/mol-conv]: activation energies 
+            E_w = 250/conv_mol
+            E_OH = 1
+            n_H =  0.17 # reaction order
+            n_OH = 1
+            min_st = [5, 0, 0, 0, 0, 0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            K_sp = np.nan
+            
+    elif mineral == 'anorthite': #CaAl2Si2O8
+            #rho_min = 2.73*1e6 # [g/m3]: density
+            MM_min =  278/conv_mol # [g/mol-conv]
+            k_diss_H = 10**(-3.5)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_w = 10**(-9.12)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_OH = 0
+            E_H = 16.6/conv_mol# [kJ/mol-conv]: activation energies 
+            E_w = 17.8/conv_mol# [kJ/mol-conv]
+            E_OH = 0
+            n_H = 1.4 # reaction order
+            n_OH = 1
+            min_st = [1, 0, 0, 0, 2, 2]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            K_sp = 10**(9.83)
+            
+    elif mineral == 'augite': #Ca0.9Na0.1Mg0.9Fe0.2Al0.4Ti0.1Si1.9O6 (http://webmineral.com)
+            #rho_min = 2.73*1e6 # [g/m3]: density
+            MM_min =  236/conv_mol # [g/mol-conv]
+            k_diss_H = 10**(-6.82)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_w = 10**(-11.97)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_OH = 0
+            E_H = 78/conv_mol# [kJ/mol-conv]: activation energies 
+            E_w = 78/conv_mol# [kJ/mol-conv]
+            E_OH = 0
+            n_H =  0.7 # reaction order
+            n_OH = 1
+            min_st = [0.9, 0.9, 0, 0.1, 0.4, 1.9]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            K_sp = np.nan
+
+    elif mineral == 'diopside': #MgCaSi2O6
+            MM_min =  216/conv_mol # [g/mol-conv]
+            k_diss_H = 10**(-6.36)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_w = 10**(-11.11)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_OH = 0
+            E_H = 96/conv_mol# [kJ/mol-conv]: activation energies 
+            E_w = 40/conv_mol# [kJ/mol-conv]
+            E_OH = 0
+            n_H =  0.71 # reaction order
+            n_OH = 1
+            min_st = [1, 1, 0, 0, 0, 2]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            K_sp = 10**(5.30)
+        
+    elif mineral == 'forsterite': #Mg2SiO4
             #rho_min = 2.8*1e6 # [g/m3]: density
             MM_min = 140/conv_mol # [g/mol-conv]
             k_diss_H = 10**(-6.85)*24*3600*conv_mol # [mol-conv m-2 d-1]
@@ -191,51 +292,9 @@ def min_const(mineral, T_K, conv_mol):
             n_H = 0.47 # reaction order
             n_OH = 1
             min_st = [0, 1, 0, 0, 0, 1]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
-            K_sp = np.nan      
-            
-    elif mineral == 'wollastonite': #CaSiO3
-            #rho_min = 2.9*1e6 # [g/m3]: density
-            MM_min = 116/conv_mol # [g/mol-conv]
-            k_diss_H = 10**(-5.37)*24*3600*conv_mol #(-5.37) [mol-conv m-2 d-1]
-            k_diss_w = 10**(-8.88)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_OH = 0
-            E_H = 54.7/conv_mol# [kJ/mol-conv]: activation energies 
-            E_w = 54.7/conv_mol# [kJ/mol-conv]
-            E_OH = 0
-            n_H = 0.4 # reaction order
-            n_OH = 1
-            min_st = [1, 0, 0, 0, 0, 1]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
-            K_sp = 10**(6.82)
-            
-    elif mineral == 'albite': #NaAlSiO3
-            #rho_min = 2.6*1e6 # [g/m3]: density
-            MM_min =  263/conv_mol # [g/mol-conv]
-            k_diss_H = 10**(-10.16)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_w = 10**(-12.56)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_OH = 10**(-15.6)*24*3600*conv_mol
-            E_H = 65/conv_mol# [kJ/mol-conv]: activation energies 
-            E_w = 70/conv_mol# [kJ/mol-conv]
-            E_OH = 71/conv_mol
-            n_H = 0.457 # reaction order
-            n_OH = - 0.572
-            min_st = [0, 0, 0, 1, 1, 3]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
-            K_sp = 10**(-0.68)
-            
-    elif mineral == 'anorthite': #CaAl2Si2O8
-            #rho_min = 2.73*1e6 # [g/m3]: density
-            MM_min =  278/conv_mol # [g/mol-conv]
-            k_diss_H = 10**(-3.5)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_w = 10**(-9.12)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_OH = 0
-            E_H = 16.6/conv_mol# [kJ/mol-conv]: activation energies 
-            E_w = 17.8/conv_mol# [kJ/mol-conv]
-            E_OH = 0
-            n_H = 1.4 # reaction order
-            n_OH = 1
-            min_st = [1, 0, 0, 0, 2, 2]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
-            K_sp = 10**(9.83)
-            
-    elif mineral == 'labradorite': #Na0.4Ca0.6Al1.6Si2.4O8 (http://webmineral.com/data/Labradorite.shtml)
+            K_sp = np.nan   
+    
+    elif mineral == 'labradorite': #Na0.45Ca0.55Al1.6Si2.4O8 (Dupla Field data, alternative http://webmineral.com/data/Labradorite.shtml)
             #rho_min = 2.73*1e6 # [g/m3]: density
             MM_min =  272/conv_mol # [g/mol-conv]
             k_diss_H = 10**(-7.87)*24*3600*conv_mol # [mol-conv m-2 d-1]
@@ -246,23 +305,9 @@ def min_const(mineral, T_K, conv_mol):
             E_OH = 0
             n_H =  0.6 # reaction order
             n_OH = 1
-            min_st = [0.6, 0, 0, 0.4, 1.6, 2.4]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.55, 0, 0, 0.45, 1.6, 2.4]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = np.nan 
-            
-    elif mineral == 'augite': #Ca0.9Na0.1Mg0.9Fe0.2Al0.4Ti0.1Si1.9O6 (http://webmineral.com)
-            #rho_min = 2.73*1e6 # [g/m3]: density
-            MM_min =  236/conv_mol # [g/mol-conv]
-            k_diss_H = 10**(-6.82)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_w = 10**(-11.97)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_OH = 0
-            E_H = 78/conv_mol# [kJ/mol-conv]: activation energies 
-            E_w = 78/conv_mol# [kJ/mol-conv]
-            E_OH = 0
-            n_H =  0.7 # reaction order
-            n_OH = 1
-            min_st = [0.9, 0.9, 0, 0.1, 0.4, 1.9]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
-            K_sp = np.nan  
-            
+              
     elif mineral == 'leucite': #K(AlSi2O6)
             MM_min =  218/conv_mol # [g/mol-conv]
             k_diss_H = 10**(-6.00)*24*3600*conv_mol # [mol-conv m-2 d-1]
@@ -274,47 +319,8 @@ def min_const(mineral, T_K, conv_mol):
             n_H =  0.7 # reaction order
             n_OH = -0.2
             min_st = [0, 0, 1, 0, 1, 2]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
-            K_sp = np.nan  
-            
-    elif mineral == 'diopside': #MgCaSi2O6
-            MM_min =  216/conv_mol # [g/mol-conv]
-            k_diss_H = 10**(-6.36)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_w = 10**(-11.11)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_OH = 0
-            E_H = 96/conv_mol# [kJ/mol-conv]: activation energies 
-            E_w = 40/conv_mol# [kJ/mol-conv]
-            E_OH = 0
-            n_H =  0.71 # reaction order
-            n_OH = 1
-            min_st = [1, 1, 0, 0, 0, 2]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
-            K_sp = 10**(5.30)
-    
-    elif mineral == 'alkali_feldspar': #K0.41Na0.56Ca0.03Al1.03Si2.97O8 (Kelland et al., 2020)
-            MM_min =  156/conv_mol # [g/mol-conv]
-            k_diss_H = 10**(-10.06)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_w = 10**(-12.41)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_OH = 10**(-21.2)*24*3600*conv_mol
-            E_H = 51/conv_mol# [kJ/mol-conv]: activation energies 
-            E_w = 38/conv_mol# [kJ/mol-conv]
-            E_OH = 94/conv_mol
-            n_H =  0.5 # reaction order
-            n_OH = -0.82
-            min_st = [0.03, 0, 0.41, 0.56, 1.03, 2.97]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
-            K_sp = np.nan
-            
-    elif mineral == 'apatite': #Ca5(PO4)3(OH)
-            MM_min =  422/conv_mol # [g/mol-conv]
-            k_diss_H = 10**(-4.29)*24*3600*conv_mol # [mol-conv m-2 d-1]
-            k_diss_w = 10**(-6.)*24*3600*conv_mol 
-            k_diss_OH = 0
-            E_H = 250/conv_mol# [kJ/mol-conv]: activation energies 
-            E_w = 250/conv_mol
-            E_OH = 1
-            n_H =  0.17 # reaction order
-            n_OH = 1
-            min_st = [5, 0, 0, 0, 0, 0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
-            K_sp = np.nan
-            
+            K_sp = np.nan   
+       
     elif mineral == 'nepheline': #Na0.75K0.25(AlSiO4)
             MM_min =  146/conv_mol # [g/mol-conv]
             k_diss_H = 10**(-2.73)*24*3600*conv_mol # [mol-conv m-2 d-1]
@@ -340,16 +346,25 @@ def min_const(mineral, T_K, conv_mol):
             n_OH = -0.22
             min_st = [0, 0, 1, 0, 3, 3]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = 10**(4.54) #Soil and Water Chemistry An Integrative Approach (Michael E. Essington)
+
+    elif mineral == 'wollastonite': #CaSiO3
+            #rho_min = 2.9*1e6 # [g/m3]: density
+            MM_min = 116/conv_mol # [g/mol-conv]
+            k_diss_H = 10**(-5.37)*24*3600*conv_mol #(-5.37) [mol-conv m-2 d-1]
+            k_diss_w = 10**(-8.88)*24*3600*conv_mol # [mol-conv m-2 d-1]
+            k_diss_OH = 0
+            E_H = 54.7/conv_mol# [kJ/mol-conv]: activation energies 
+            E_w = 54.7/conv_mol# [kJ/mol-conv]
+            E_OH = 0
+            n_H = 0.4 # reaction order
+            n_OH = 1
+            min_st = [1, 0, 0, 0, 0, 1]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            K_sp = 10**(6.82)
             
     else:
         raise ValueError("No data for this mineral")
-            
-    for i in range(len(T_K)): 
-        k_diss_H_t[i] = k_diss_H*np.exp(-E_H*1000/R*(1/T_K[i]-1/T_ref))
-        k_diss_w_t[i] = k_diss_w*np.exp(-E_w*1000/R*(1/T_K[i]-1/T_ref))
-        k_diss_OH_t[i] = k_diss_OH*np.exp(-E_OH*1000/R*(1/T_K[i]-1/T_ref))
-                                                      
-    return(MM_min,k_diss_H_t,k_diss_w_t,k_diss_OH_t,n_H,n_OH,min_st,K_sp)
+
+    return(MM_min,k_diss_H,k_diss_w,k_diss_OH,n_H,n_OH,E_H,E_w,E_OH,min_st,K_sp)
 
 #------------------------------------------------------------------------------
  # Carbonate weathering constants  
@@ -357,7 +372,7 @@ def min_const(mineral, T_K, conv_mol):
 
 def carb_weath_const(conv_mol):
     
-    # Carbonate solutibility products
+    # Carbonate solubility products
     #https://booksite.elsevier.com/9780120885305/appendices/Web_Appendices.pdf
     K_CaCO3 = 10**(-8.35)*conv_mol**2 # Calcite
     K_MgCO3 = 10**(-7.46)*conv_mol**2 # Magnesite
@@ -386,8 +401,8 @@ def K_GT_CEC(soil, conv_mol):
         K_Ca_Mg = 10**(0.56); #[-]
         K_Ca_K = 10**(-1.16)*conv_mol #[conc]
         K_Ca_Na = 10**(0.75)*conv_mol #[conc]
-        K_Ca_H = 10**(-5)*conv_mol #[conc]
-        K_Ca_Al = 10**(-1.7)/conv_mol #[conc^-1] #heterovalent 
+        K_Ca_H = 10**(-5)*conv_mol #[conc] works with: 0.5 1e-9 *conv_mol, tePas et al 
+        K_Ca_Al = 10**(-1.7)/conv_mol #[conc^-1] #heterovalent (make it higher to favor Ca adsorbed) 
         #K_Ca_AlOH = 10**(-1.7)
         #K_Ca_AlOH2 = 10**(-1.7)*conv_mol
     
