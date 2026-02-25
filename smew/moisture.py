@@ -6,8 +6,10 @@ Created on Thu Dec 12 10:30:44 2019
 import numpy as np
 import scipy.stats
 import smew
+from numba import njit
 
 
+@njit
 def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt):
     
     #constants
@@ -16,25 +18,26 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt):
     # Initialization
     #--------------------------------------------------------------------------      
     if keyword_wb == 1:
-        s=np.zeros([len(rain)])
+        s=np.zeros((len(rain)))
         s[0] = s_in # initial value
     elif keyword_wb == 0:
         s = s_in*np.ones(round(t_end/dt))
         
-    L = np.zeros([len(s)])
-    E = np.zeros([len(s)])
-    T = np.zeros([len(s)])
-    Q = np.zeros([len(s)])
-    Irr = np.zeros([len(s)])
+    L = np.zeros((len(s)))
+    E = np.zeros((len(s)))
+    T = np.zeros((len(s)))
+    Q = np.zeros((len(s)))
+    Irr = np.zeros((len(s)))
     
     # moisture dynamics
     #--------------------------------------------------------------------------      
     if keyword_wb == 1:
+
+        # Evaporation [m/d]
+        E0 = 0.5*ET0
         
         for i in range(0, len(rain)-1):
 
-            # Evaporation [m/d]
-            E0 = 0.5*ET0
             if s[i]<=s_h:
                 E[i] = 0
             elif s[i]<=s_i:
@@ -87,4 +90,4 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt):
         I = E+T+L 
         Q = np.zeros(len(s))       
     
-    return(s, s_w, s_i, I, L, T, E, Q, Irr, n)
+    return s, s_w, s_i, I, L, T, E, Q, Irr, n

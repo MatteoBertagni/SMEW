@@ -5,6 +5,7 @@ Created on Mon Dec 16 14:34:44 2019
 """
 
 import numpy as np
+from numba import njit
 
 
 #------------------------------------------------------------------------------
@@ -54,6 +55,7 @@ def plant_nutr_f():
 #------------------------------------------------------------------------------
  # soil constants
 
+@njit
 def soil_const(soil):
     
     # values are from Laio et al., (2001, Adv. Water Resources)
@@ -147,9 +149,9 @@ def soil_const(soil):
         K_s = 0.11
         n = 0.5
     else:
-        print("Invalid soil type!")
+        raise ValueError("Invalid soil type!")
                                                       
-    return(s_h, s_w, s_i, b, K_s, n)
+    return s_h, s_w, s_i, b, K_s, n
 
 #------------------------------------------------------------------------------
  # EW mineral constants 
