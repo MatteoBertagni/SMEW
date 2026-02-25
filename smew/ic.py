@@ -6,8 +6,7 @@ Created on Mon Dec 16 14:34:44 2019
 
 import numpy as np
 import smew
-from scipy import optimize
-from scipy.optimize import least_squares, fsolve, minimize, newton_krylov, broyden1, root, broyden2
+from scipy.optimize import fsolve
 
 #------------------------------------------------------------------------------
  # conc to CEC fractions

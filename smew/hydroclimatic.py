@@ -4,10 +4,8 @@
 Created on Thu Dec 12 10:30:44 2019
 """
 import numpy as np
-import math
 import pyeto as eto
 import scipy.stats
-from scipy.signal import savgol_filter
 
 
 #--------------------------------------------------------------------------------------------------
