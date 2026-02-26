@@ -16,7 +16,7 @@ pip install smew
 
 # Folders
 
-- `pyEW`: contains the python codes for the SMEW numerical model
+- `smew`: contains the python codes for the SMEW numerical model
 - `Exp_data`: contains the experimental data obtained from the various publications through a web plot digitizer (https://apps.automeris.io/wpd/)
 - `pyeto`: contains the Python codes to estimate the potential evapotranspiration (Mark Richards, https://pyeto.readthedocs.io/en/latest/index.html)
 
