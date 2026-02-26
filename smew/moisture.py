@@ -32,11 +32,12 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt):
     #--------------------------------------------------------------------------      
     if keyword_wb == 1:
 
-        # Evaporation [m/d]
+        # Potential evaporation [m/d]
         E0 = 0.5*ET0
         
         for i in range(0, len(rain)-1):
-
+            
+            # Evaporation [m/d]
             if s[i]<=s_h:
                 E[i] = 0
             elif s[i]<=s_i:
