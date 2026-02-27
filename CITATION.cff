@@ -1,0 +1,46 @@
+cff-version: 1.1.0
+title: smew
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Matteo Bernard
+    family-names: Bertagni
+    email: matteo.bertagni@polito.it
+    affiliation: Politecnico di Torino
+    orcid: 'https://orcid.org/0000-0001-5912-4794'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.14356660
+    description: Zenodo repository
+repository-code: 'https://github.com/MatteoBertagni/SMEW'
+abstract: >-
+  Soil Model for Enhanced Weathering (SMEW): a dynamic,
+  depth-averaged ecohydrological and biogeochemical model
+  for enhanced weathering dynamics in the upper soil
+  layers. 
+keywords:
+  - carbon
+  - agriculture
+  - enhanced weathering
+  - moisture
+references:
+  - type: article
+    authors:
+      - family-names: "Bertagni"
+        given-names: "Matteo Bernard"
+      - family-names: "Calabrese"
+        given-names: "Salvatore"
+      - family-names: "Cipolla"
+        given-names: "Giuseppe"
+      - family-names: "Noto"
+        given-names: "Leonardo Valerio"
+      - family-names: "Porporato"
+        given-names: "Amilcare"
+    title: "Advancing Enhanced Weathering Modeling in Soils: Critical Comparison With Experimental Data"
+    journal: "Journal of Advances in Modeling Earth Systems"
+    year: 2025
+    doi: "10.1029/2024MS004224"
+    url: "https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2024MS004224"
+license: AGPL-3.0-only
