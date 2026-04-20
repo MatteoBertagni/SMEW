@@ -408,7 +408,7 @@ def K_GT_CEC(soil, conv_mol):
         #K_Ca_AlOH = 10**(-1.7)
         #K_Ca_AlOH2 = 10**(-1.7)*conv_mol
     
-    elif soil in ['loam', 'silty loam', 'silt']:
+    elif soil in ['loam', 'silt loam', 'silt']:
         K_Ca_Mg = 10**(0.1); #[-]
         K_Ca_K = 10**(-2)*conv_mol
         K_Ca_Na = 10**(0.38)*conv_mol
