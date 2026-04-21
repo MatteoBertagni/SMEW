@@ -8,7 +8,10 @@ import numpy as np
 import smew
 from numba import njit
 from scipy.optimize import fsolve
+from smew.biogeochem_fast import solve_biogeochem_eq
 #minimize, least_squares, newton_krylov, broyden1, root, broyden2
+
+USE_LEGACY_SOLVER = False
 
 @njit
 def _equations_water_numba(p, Alk_rain, k1, k2, CO2_w_rain, k_w):
@@ -417,25 +420,47 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             Ca0 = (Ca_tot[i]-f_Ca[i-1]/2*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*Ca[i-1]/s[i]
             K0 =  (K_tot[i]-f_K[i-1]*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*K[i-1]/s[i]
             H0 = H[i-1]
-            def eqH(p):
-                    # H0 = p
-                    return _eqH_numba(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
-            H0_2 =fsolve(eqH, H[i-1])[0]
-            
-            #solution 1
-            x0 = np.array([Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])         
-            sol = fsolve(equations,x0, xtol=1e-12)                                           
-            errors[:,i] = equations(sol) #residuals
-            
-            #solution 2
-            res_threshold = 1e-1
-            if np.any(abs(errors[:,i]) > res_threshold):
-                x0 = np.array([Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])
-                sol = fsolve(equations, x0, xtol=1e-14)
-                errors[:,i] = equations(sol)
+
+            if USE_LEGACY_SOLVER:
+                def eqH(p):
+                        # H0 = p
+                        return _eqH_numba(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
+                H0_2 =fsolve(eqH, H[i-1])[0]
+
+                #solution 1
+                x0 = np.array([Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])
+                sol = fsolve(equations,x0, xtol=1e-12)
+                errors[:,i] = equations(sol) #residuals
+
+                #solution 2
+                res_threshold = 1e-1
                 if np.any(abs(errors[:,i]) > res_threshold):
-                    print(i)
-                    raise ValueError("Solution not converging")          
+                    x0 = np.array([Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])
+                    sol = fsolve(equations, x0, xtol=1e-14)
+                    errors[:,i] = equations(sol)
+                    if np.any(abs(errors[:,i]) > res_threshold):
+                        print(i)
+                        raise ValueError("Solution not converging")
+            else:
+                x0 = np.array([Alk0, CO2_w0, H[i-1], R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
+                               f_Al[i-1], f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]], dtype=np.float64)
+
+                # --- CALL CYTHON SOLVER ---
+                sol, status = solve_biogeochem_eq(
+                    x0, Alk_tot[i], n, Zr, s[i], IC_tot[i],
+                    k1[i], k2[i], k_H[i], k_w[i], CEC_tot,
+                    conv_Al, Al_tot[i], K1, K2, K3, K4,
+                    Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i],
+                    K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
+                )
+
+                if status <= 0:
+                    print(f"Convergence failed at index {i} with status {status}")
+                    raise ValueError("Cython solver failed to converge.")
+
+            # Unpack results back into the arrays
+            Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], \
+            f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = sol
 
             #pH and C
             pH[i] = -np.log10(H[i]/conv_mol) # [-]

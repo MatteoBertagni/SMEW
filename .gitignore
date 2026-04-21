@@ -4,6 +4,7 @@
 
 dist/
 smew.egg-info/
+build/
 
 # --- Python ---
 __pycache__/
@@ -25,3 +26,7 @@ Thumbs.db
 
 # --- Logs ---
 *.log
+
+# Cython
+*.so
+*.c
