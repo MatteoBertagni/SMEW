@@ -8,10 +8,32 @@ import numpy as np
 import smew
 from numba import njit
 from scipy.optimize import fsolve
-from smew.biogeochem_fast import solve_biogeochem_eq
-#minimize, least_squares, newton_krylov, broyden1, root, broyden2
+import warnings
+import logging
 
-USE_LEGACY_SOLVER = False
+# Attempt to load the fast Cython solver. Fall back to SciPy if not found.
+try:
+    from smew.biogeochem_fast import solve_biogeochem_eq
+    USE_LEGACY_SOLVER = False
+except ImportError:
+    USE_LEGACY_SOLVER = True
+    solve_biogeochem_eq = None  # Placeholder to prevent undefined variable errors
+
+
+def log_solver_status(logger: logging.Logger | None):
+    """
+    Logs the status of the solver selection based on the availability of the optimized solver.
+
+    :param logger: The instance of the logger used to output messages. If None, the root logger will be used.
+    """
+    if logger is None:
+        logger = logging.getLogger()
+    if USE_LEGACY_SOLVER:
+        message = "cminpack/fast solver not found. SMEW will fall back to the legacy SciPy solver."
+        warnings.warn(message)
+        logger.warning(message)
+    else:
+        logger.info("cminpack/fast solver found. SMEW will use the optimized Cython solver functions.")
 
 @njit
 def _equations_water_numba(p, Alk_rain, k1, k2, CO2_w_rain, k_w):

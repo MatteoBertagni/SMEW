@@ -8,20 +8,73 @@ Zenodo repository: [https://doi.org/10.5281/zenodo.14356660](https://doi.org/10.
 GitHub repository: [https://github.com/MatteoBertagni/SMEW](https://github.com/MatteoBertagni/SMEW)  
 PyPi package: [https://pypi.org/project/smew](https://pypi.org/project/smew)
 
-Install with:
+You can install and use SMEW simply by pulling the Python package as follows:
+```bash
+pip install smew
+```
+Be aware that this doesn't install the cminpack library which is required for the fast version of SMEW (see below for 
+the full installation procedure). 
+
+## Installation
+
+The fast version of SMEW relies on cminpack, a C-library for solving nonlinear equations. 
+Because of this compiled dependency, the installation process depends on your system setup.
+If you choose to not install the cminpack library, SMEW will fall back to the scipy solver (no additional configuration 
+is required to use the Scipy fallback).
+If cminpack is not installed, SMEW automatically falls back to the scipy solver.
+While scipy also uses minpack (written in Fortran), this implementation is slower (~ x2) due to Python function call 
+overhead.
+In contrast, the cminpack library is called directly from Cython, significantly reducing that overhead.
+
+### With Conda (no root privilege required)
+
+Create and activate the Conda environment for cminpack:
+
+```bash
+conda create -n smew_env python cminpack -c conda-forge
+conda activate smew_env
+```
+
+Install SMEW:
 
 ```bash
 pip install smew
 ```
 
-# Folders
+### With your system package manager (root privilege required)
+
+If you are installing smew on a personal machine or a VM where you have root access, you can install cminpack 
+system-wide and use a standard Python virtual environment.
+
+For Ubuntu:
+
+```bash
+sudo apt-get update
+sudo apt-get install libcminpack-dev
+```
+
+If you don't already have a virtual environment create one and activate it:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Install SMEW:
+
+```bash
+pip install smew
+```
+
+
+## Folders
 
 - `pyEW`: contains the python codes for the SMEW numerical model
 - `Exp_data`: contains the experimental data obtained from the various publications through a web plot digitizer (https://apps.automeris.io/wpd/)
 - `pyeto`: contains the Python codes to estimate the potential evapotranspiration (Mark Richards, https://pyeto.readthedocs.io/en/latest/index.html)
 
 
-# Jupyter notebooks
+## Jupyter notebooks
 
 - `Example`: provides an example of simulation for an EW application 
 - `Vials_Dietzen`: model-experiment comparisons with the experiments by Dietzen et al. (2018)
@@ -30,7 +83,7 @@ pip install smew
 - `Mesocosm_Kelland`: model-experiment comparisons with the experiments by Kelland et al. (2020)
 
 
-# Instructions
+## Instructions
 
 1. Download or pull the whole repository into a selected working directory.
 2. Run the Juptyer notebook 'Example' to verify that the model components (pyEW) are correctly used within the notebooks.
@@ -43,6 +96,6 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 
 See the `license` file for details.
 
-# Contact
+## Contact
 
 You can contact me at @MatteoBertagni ([matteo.bertagni@polito.it](mailto:matteo.bertagni@polito.it)) for more information about the research.
