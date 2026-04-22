@@ -66,6 +66,24 @@ Install SMEW:
 pip install smew
 ```
 
+### Install a development version
+
+Alternatively to `pip install smew`, you can install the model from a branch of this repository:
+
+```bash
+pip install git+https://github.com/MatteoBertagni/SMEW.git@main
+```
+
+or from your local version of the model (in editable mode):
+
+```bash
+pip install -e /path/to/smew/
+```
+
+Please note that you still need to have cminpack installed thought conda or your system package manager to use the fast
+solver.
+If you make changes in the Cython code, you will need to reinstall the package to trigger a new compilation.
+
 
 ## Folders
 
