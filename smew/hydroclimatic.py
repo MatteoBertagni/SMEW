@@ -64,6 +64,9 @@ def ET0(latitude,altitude,temp_air,temp_soil,temp_min,temp_max, wind,albedo,Zr,c
         cs_rad = eto.cs_rad(altitude, et_rad) # Clear sky radiation [MJ m-2 day-1]
         sol_rad = eto.sol_rad_from_t(et_rad, cs_rad, temp_min[i], temp_max[i], coastal) # Gross incoming solar radiation [MJ m-2 d-1]
         ni_sw_rad = eto.net_in_sol_rad(sol_rad, albedo) # net-incoming shortwave rad [MJ m-2 day-1]
+        # Add a tiny epsilon to prevent ZeroDivisionError during polar nights
+        if cs_rad <= 0.0:
+            cs_rad = 1e-9
         no_lw_rad = eto.net_out_lw_rad(273+temp_min[i], 273+temp_max[i], sol_rad, cs_rad, avp) # net outgoing long wave rad [MJ m-2 d-1]
         net_rad = eto.net_rad(ni_sw_rad,no_lw_rad) # net incoming solar radiation [MJ m-2 day-1]
         shf = 0 # Soil heat flux (G) [MJ m-2 day-1]
