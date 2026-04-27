@@ -18,7 +18,6 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt):
     #--------------------------------------------------------------------------      
     if keyword_wb == 1:
         s=np.zeros((len(rain)))
-        s[0] = s_in # initial value
     elif keyword_wb == 0:
         s = s_in*np.ones(round(t_end/dt))
         
@@ -41,7 +40,8 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt):
                 E[i] = 0
             elif s[i]<=s_i:
                 E[i] = (s[i]-s_h)/(s_i-s_h)*E0[i]*(1-v[i]/k_v)
-            elif s[i]<=1:
+            # elif s[i]<=1:
+            else:
                 E[i] = E0[i]*(1-v[i]/k_v)
 
             # Transpiration [m/d]
@@ -49,7 +49,8 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt):
                 T[i] = 0
             elif s[i]<=s_i:
                 T[i] = (s[i]-s_w)/(s_i-s_w)*ET0[i]*v[i]/k_v
-            elif s[i]<=1:
+            # elif s[i]<=1:
+            else:
                 T[i] = ET0[i]*v[i]/k_v
 
             # Leakage [m/d]
@@ -66,6 +67,8 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt):
             #to avoid numerical issues
             if s[i+1] >= 0.98:
                 s[i+1] = 0.98
+            elif s[i+1] <= 0.01:
+                s[i+1] = 0.01
 
         #infiltration [m]
         I=rain-Q
