@@ -18,6 +18,7 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt):
     #--------------------------------------------------------------------------      
     if keyword_wb == 1:
         s=np.zeros((len(rain)))
+        s[0] = s_in # initial value
     elif keyword_wb == 0:
         s = s_in*np.ones(round(t_end/dt))
         
