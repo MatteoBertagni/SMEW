@@ -427,7 +427,7 @@ def K_GT_CEC(soil, conv_mol):
         #K_Ca_AlOH2 = 10**(-0.2)*conv_mol
     
     else:
-        raise ValueError("Unknown soil type")
+        raise ValueError(f"Unknown soil type {soil}")
         
     # K_Na_K = (K_Ca_K/K_Ca_Na)**(1/2)]
     # K_Na_Al = (K_Ca_Al/K_Ca_Na**3)**(1/2)
