@@ -149,7 +149,7 @@ def soil_const(soil):
         K_s = 0.11
         n = 0.5
     else:
-        raise ValueError("Invalid soil type!")
+        raise ValueError(f"Invalid soil type: {soil}")
                                                       
     return s_h, s_w, s_i, b, K_s, n
 
