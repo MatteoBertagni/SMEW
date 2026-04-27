@@ -416,8 +416,9 @@ def K_GT_CEC(soil, conv_mol):
         K_Ca_Al = 10**(-0.86)/conv_mol
         #K_Ca_AlOH = 10**(-0.86)
         #K_Ca_AlOH2 = 10**(-0.86)*conv_mol
-        
-    elif soil in ['clay', 'clay loam', 'silty clay']:
+
+    # TODO: fix temporally added "silty clay loam", "sandy clay loam" and "sandy clay"
+    elif soil in ['clay', 'clay loam', 'silty clay', "silty clay loam", "sandy clay loam", "sandy clay"]:
         K_Ca_Mg = 10**(0.39); #[-]
         K_Ca_K = 10**(-2.42)*conv_mol
         K_Ca_Na = 10**(0.774)*conv_mol
