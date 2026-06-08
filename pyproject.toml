@@ -24,7 +24,9 @@ dependencies = [
     "pandas",
     "scipy",
     "dill",
-    "matplotlib"
+    "matplotlib",
+    "numba",
+    "Cython"
 ]
 requires-python = ">=3.10"
 
