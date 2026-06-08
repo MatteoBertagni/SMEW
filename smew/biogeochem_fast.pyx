@@ -54,6 +54,9 @@ cdef int biogeochem_equations_c(void *p, int n, const double *x, double *fvec, i
     cdef double Alk = x[0]
     cdef double CO2_w = x[1]
     cdef double H = x[2]
+    # Prevents floating-point overflow when dividing by H^2 in basic soils
+    if H < 1e-15:
+        H = 1e-15
     cdef double R_alk = x[3]
     cdef double Al_w = x[4]
     cdef double Al = x[5]
@@ -93,15 +96,15 @@ cdef int biogeochem_equations_c(void *p, int n, const double *x, double *fvec, i
     fvec[9] = K * nZrs1000 + f_K * args.CEC_tot - args.K_tot
     # Equations 11-15: Gaines-Thomas exchange equations
     # Equation 11: Aluminum exchange
-    fvec[10] = f_Al - (Al / args.conv_Al) * sqrt( (f_Ca * f_Ca * f_Ca) / (args.K_Ca_Al * Ca * Ca * Ca) )
-    # Equation 12: Magnesium exchange
+    fvec[10] = f_Al - (Al / args.conv_Al) * sqrt( (fabs(f_Ca) * fabs(f_Ca) * fabs(f_Ca)) / (args.K_Ca_Al * fabs(Ca) * fabs(Ca) * fabs(Ca)) )
+    # Equation 12: Magnesium exchange (No fractional power, so no fabs needed)
     fvec[11] = f_Mg - Mg * (f_Ca / (args.K_Ca_Mg * Ca))
     # Equation 13: Sodium exchange
-    fvec[12] = f_Na - Na * sqrt( f_Ca / (args.K_Ca_Na * Ca) )
+    fvec[12] = f_Na - Na * sqrt( fabs(f_Ca) / (args.K_Ca_Na * fabs(Ca)) )
     # Equation 14: Potassium exchange
-    fvec[13] = f_K - K * sqrt( f_Ca / (args.K_Ca_K * Ca) )
+    fvec[13] = f_K - K * sqrt( fabs(f_Ca) / (args.K_Ca_K * fabs(Ca)) )
     # Equation 15: Hydrogen exchange
-    fvec[14] = f_H - H * sqrt( f_Ca / (args.K_Ca_H * Ca) )
+    fvec[14] = f_H - H * sqrt( fabs(f_Ca) / (args.K_Ca_H * fabs(Ca)) )
     # Equation 16: Sum of exchange fractions must be 1
     fvec[15] = 1.0 - (f_Ca + f_Al + f_Mg + f_Na + f_K + f_H)
 
