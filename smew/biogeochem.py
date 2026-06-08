@@ -67,11 +67,11 @@ def _biogeochem_equations_numba(
         Ca*nZrs1000+f_Ca/2*CEC_tot-Ca_tot,
         Na*nZrs1000+f_Na*CEC_tot-Na_tot,
         K*nZrs1000+f_K*CEC_tot-K_tot,
-        f_Al - (Al/conv_Al)*(f_Ca**3/(K_Ca_Al*Ca**3))**(1/2),
+        f_Al - (Al/conv_Al)*(abs(f_Ca)**3/(K_Ca_Al*abs(Ca)**3))**(1/2),
         f_Mg - Mg*(f_Ca/(K_Ca_Mg*Ca)),
-        f_Na - Na*(f_Ca/(K_Ca_Na*Ca))**(1/2),
-        f_K - K*(f_Ca/(K_Ca_K*Ca))**(1/2),
-        f_H - H*(f_Ca/(K_Ca_H*Ca))**(1/2),
+        f_Na - Na*(abs(f_Ca)/(K_Ca_Na*abs(Ca)))**(1/2),
+        f_K - K*(abs(f_Ca)/(K_Ca_K*abs(Ca)))**(1/2),
+        f_H - H*(abs(f_Ca)/(K_Ca_H*abs(Ca)))**(1/2),
         1-(f_Ca+f_Al+f_Mg+f_Na+f_K+f_H)
     )
 
@@ -451,6 +451,8 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
 
                 #solution 1
                 x0 = np.array([Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])
+                # # enforce strict positivity to avoid zero/negative division and NaNs
+                # x0 = np.maximum(x0, 1e-15)
                 sol = fsolve(equations,x0, xtol=1e-12)
                 errors[:,i] = equations(sol) #residuals
 
@@ -466,6 +468,9 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             else:
                 x0 = np.array([Alk0, CO2_w0, H[i-1], R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
                                f_Al[i-1], f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]], dtype=np.float64)
+                #
+                # # enforce strict positivity to avoid zero/negative division and NaNs
+                # x0 = np.maximum(x0, 1e-15)
 
                 # --- CALL CYTHON SOLVER ---
                 sol, status = solve_biogeochem_eq(
