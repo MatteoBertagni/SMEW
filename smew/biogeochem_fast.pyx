@@ -29,7 +29,7 @@ cdef struct EquationArgs:
 
 
 # 2. FORCE RAW C PERFORMANCE AND BYPASS ZERO-CHECKING
-@cython.cdivision(True)
+# @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef int biogeochem_equations_c_jac(void *p, int n, const double *state, double *fvec, double *fjac, int ldfjac, int iflag) nogil noexcept:
@@ -39,21 +39,21 @@ cdef int biogeochem_equations_c_jac(void *p, int n, const double *state, double 
     cdef double nZrs1000 = args.n * args.Zr * args.s * 1000.0
 
     cdef double Alk   = state[0]
-    cdef double CO2_w = fmax(state[1], 1e-16)
-    cdef double H     = fmax(state[2], 1e-16)
+    cdef double CO2_w = state[1]
+    cdef double H     = state[2]
     cdef double R_alk = state[3]
-    cdef double Al_w  = fmax(state[4], 1e-16)
-    cdef double Al    = fmax(state[5], 1e-16)
-    cdef double Mg    = fmax(state[6], 1e-16)
-    cdef double Ca    = fmax(state[7], 1e-16)
-    cdef double Na    = fmax(state[8], 1e-16)
-    cdef double K     = fmax(state[9], 1e-16)
-    cdef double f_Al  = fmax(state[10], 1e-16)
-    cdef double f_Mg  = fmax(state[11], 1e-16)
-    cdef double f_Na  = fmax(state[12], 1e-16)
-    cdef double f_K   = fmax(state[13], 1e-16)
-    cdef double f_H   = fmax(state[14], 1e-16)
-    cdef double f_Ca  = fmax(state[15], 1e-16)
+    cdef double Al_w  = state[4]
+    cdef double Al    = state[5]
+    cdef double Mg    = state[6]
+    cdef double Ca    = state[7]
+    cdef double Na    = state[8]
+    cdef double K     = state[9]
+    cdef double f_Al  = state[10]
+    cdef double f_Mg  = state[11]
+    cdef double f_Na  = state[12]
+    cdef double f_K   = state[13]
+    cdef double f_H   = state[14]
+    cdef double f_Ca  = state[15]
 
     cdef double H2 = H * H
     cdef double H3 = H2 * H
@@ -194,7 +194,7 @@ cdef int biogeochem_equations_c_jac(void *p, int n, const double *state, double 
 
     return 0
 
-@cython.cdivision(True)
+# @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef int biogeochem_equations_c_legacy(void *p, int n, const double *state, double *fvec, int iflag) nogil noexcept:
@@ -204,21 +204,21 @@ cdef int biogeochem_equations_c_legacy(void *p, int n, const double *state, doub
     cdef double nZrs1000 = args.n * args.Zr * args.s * 1000.0
 
     cdef double Alk   = state[0]
-    cdef double CO2_w = fmax(state[1], 1e-16)
-    cdef double H     = fmax(state[2], 1e-16)
+    cdef double CO2_w = state[1]
+    cdef double H     = state[2]
     cdef double R_alk = state[3]
-    cdef double Al_w  = fmax(state[4], 1e-16)
-    cdef double Al    = fmax(state[5], 1e-16)
-    cdef double Mg    = fmax(state[6], 1e-16)
-    cdef double Ca    = fmax(state[7], 1e-16)
-    cdef double Na    = fmax(state[8], 1e-16)
-    cdef double K     = fmax(state[9], 1e-16)
-    cdef double f_Al  = fmax(state[10], 1e-16)
-    cdef double f_Mg  = fmax(state[11], 1e-16)
-    cdef double f_Na  = fmax(state[12], 1e-16)
-    cdef double f_K   = fmax(state[13], 1e-16)
-    cdef double f_H   = fmax(state[14], 1e-16)
-    cdef double f_Ca  = fmax(state[15], 1e-16)
+    cdef double Al_w  = state[4]
+    cdef double Al    = state[5]
+    cdef double Mg    = state[6]
+    cdef double Ca    = state[7]
+    cdef double Na    = state[8]
+    cdef double K     = state[9]
+    cdef double f_Al  = state[10]
+    cdef double f_Mg  = state[11]
+    cdef double f_Na  = state[12]
+    cdef double f_K   = state[13]
+    cdef double f_H   = state[14]
+    cdef double f_Ca  = state[15]
 
     cdef double H2 = H * H
     cdef double H3 = H2 * H
