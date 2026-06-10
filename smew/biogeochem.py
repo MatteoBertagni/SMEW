@@ -13,7 +13,10 @@ import logging
 
 # Attempt to load the fast Cython solver. Fall back to SciPy if not found.
 try:
-    from smew.biogeochem_fast import solve_biogeochem_eq
+    # from smew.biogeochem_fast import solve_biogeochem_eq_jac_log as solve_biogeochem_eq
+    # from smew.biogeochem_fast import solve_biogeochem_eq_jac as solve_biogeochem_eq
+    from smew.biogeochem_fast import solve_biogeochem_eq_fd as solve_biogeochem_eq
+
     USE_LEGACY_SOLVER = False
 except ImportError:
     USE_LEGACY_SOLVER = True
@@ -473,7 +476,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                 # x0 = np.maximum(x0, 1e-15)
 
                 # --- CALL CYTHON SOLVER ---
-                sol, status = solve_biogeochem_eq(
+                sol, residuals, status = solve_biogeochem_eq(
                     x0, Alk_tot[i], n, Zr, s[i], IC_tot[i],
                     k1[i], k2[i], k_H[i], k_w[i], CEC_tot,
                     conv_Al, Al_tot[i], K1, K2, K3, K4,
@@ -484,6 +487,33 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                 if status <= 0:
                     print(f"Convergence failed at index {i} with status {status}")
                     raise ValueError("Cython solver failed to converge.")
+
+                if status == 4:
+                    # Mapping indices to names for easy reading
+                    var_names = [
+                        "Alk", "CO2_w", "H", "R_alk", "Al_w", "Al", "Mg", "Ca", "Na",
+                        "K", "f_Al", "f_Mg", "f_Na", "f_K", "f_H", "f_Ca"
+                    ]
+                    eq_names = [
+                        "Eq 0: Alk Mass Balance", "Eq 1: Inorganic Carbon Balance", "Eq 2: Water/Carbon Equilibrium",
+                        "Eq 3: Sorbed Charge Match", "Eq 4: Aluminum Mass Balance", "Eq 5: Al Speciation/Denom",
+                        "Eq 6: Mg Mass Balance", "Eq 7: Ca Mass Balance", "Eq 8: Na Mass Balance",
+                        "Eq 9: K Mass Balance", "Eq 10: Ca-Al Exchange", "Eq 11: Ca-Mg Exchange",
+                        "Eq 12: Ca-Na Exchange", "Eq 13: Ca-K Exchange", "Eq 14: Ca-H Exchange",
+                        "Eq 15: Equivalent Fractions Sum (= 1)"
+                    ]
+                    print("\n=== DIAGNOSTIC REPORT FOR STATUS 4 FAILURE ===")
+                    print(f"{'Variable Name':<15} | {'Final Value':<15}")
+                    print("-" * 35)
+                    for name, val in zip(var_names, sol):
+                        print(f"{name:<15} | {val:<15.6e}")
+
+                    print(f"\n{'Equation Name':<30} | {'Final Residual (Error)':<20}")
+                    print("-" * 55)
+                    for name, res in zip(eq_names, residuals):
+                        print(f"{name:<30} | {res:<20.6e}")
+
+                    raise ValueError("cminpack solver error: status: 4")
 
             # Unpack results back into the arrays
             Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], \

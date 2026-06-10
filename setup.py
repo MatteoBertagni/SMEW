@@ -80,7 +80,8 @@ if cminpack_include:
                 include_dirs=include_dirs,
                 library_dirs=library_dirs,
                 libraries=["cminpack"],
-                runtime_library_dirs=runtime_library_dirs
+                runtime_library_dirs=runtime_library_dirs,
+                extra_compile_args=['-O3', '-mavx2']
             )
         
             extensions = cythonize([ext], language_level="3")
