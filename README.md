@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/SMEW_logo.png" alt="SMEW logo" width="400">
+</p>
+
 # Soil Model for Enhanced Weathering (SMEW)
 
 This folder contains all material related to the Soil Model for Enhanced Weathering (SMEW) published in Bertagni et al., 2025, JAMES
