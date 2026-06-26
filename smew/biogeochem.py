@@ -469,6 +469,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                         print(i)
                         raise ValueError("Solution not converging")
             else:
+                # first initial guess
                 x0 = np.array([Alk0, CO2_w0, H[i-1], R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
                                f_Al[i-1], f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]], dtype=np.float64)
                 #
@@ -484,36 +485,52 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                     K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
                 )
 
-                if status <= 0:
-                    print(f"Convergence failed at index {i} with status {status}")
-                    raise ValueError("Cython solver failed to converge.")
+                if status != 1:
+                    # try with another initial guess:
+                    def eqH(p):
+                            # H0 = p
+                            return _eqH_numba(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
+                    H0_2 = fsolve(eqH, H[i-1])[0]
+                    x0 = np.array([Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
+                                   f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]], dtype=np.float64)
 
-                if status == 4:
-                    # Mapping indices to names for easy reading
-                    var_names = [
-                        "Alk", "CO2_w", "H", "R_alk", "Al_w", "Al", "Mg", "Ca", "Na",
-                        "K", "f_Al", "f_Mg", "f_Na", "f_K", "f_H", "f_Ca"
-                    ]
-                    eq_names = [
-                        "Eq 0: Alk Mass Balance", "Eq 1: Inorganic Carbon Balance", "Eq 2: Water/Carbon Equilibrium",
-                        "Eq 3: Sorbed Charge Match", "Eq 4: Aluminum Mass Balance", "Eq 5: Al Speciation/Denom",
-                        "Eq 6: Mg Mass Balance", "Eq 7: Ca Mass Balance", "Eq 8: Na Mass Balance",
-                        "Eq 9: K Mass Balance", "Eq 10: Ca-Al Exchange", "Eq 11: Ca-Mg Exchange",
-                        "Eq 12: Ca-Na Exchange", "Eq 13: Ca-K Exchange", "Eq 14: Ca-H Exchange",
-                        "Eq 15: Equivalent Fractions Sum (= 1)"
-                    ]
-                    print("\n=== DIAGNOSTIC REPORT FOR STATUS 4 FAILURE ===")
-                    print(f"{'Variable Name':<15} | {'Final Value':<15}")
-                    print("-" * 35)
-                    for name, val in zip(var_names, sol):
-                        print(f"{name:<15} | {val:<15.6e}")
+                    # --- CALL CYTHON SOLVER ---
+                    sol, residuals, status = solve_biogeochem_eq(
+                        x0, Alk_tot[i], n, Zr, s[i], IC_tot[i],
+                        k1[i], k2[i], k_H[i], k_w[i], CEC_tot,
+                        conv_Al, Al_tot[i], K1, K2, K3, K4,
+                        Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i],
+                        K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
+                    )
 
-                    print(f"\n{'Equation Name':<30} | {'Final Residual (Error)':<20}")
-                    print("-" * 55)
-                    for name, res in zip(eq_names, residuals):
-                        print(f"{name:<30} | {res:<20.6e}")
+                    if status != 1:
+                        # Report the failed convergence:
+                        # Mapping indices to names for easy reading
+                        var_names = [
+                            "Alk", "CO2_w", "H", "R_alk", "Al_w", "Al", "Mg", "Ca", "Na",
+                            "K", "f_Al", "f_Mg", "f_Na", "f_K", "f_H", "f_Ca"
+                        ]
+                        eq_names = [
+                            "Eq 0: Alk Mass Balance", "Eq 1: Inorganic Carbon Balance", "Eq 2: Water/Carbon Equilibrium",
+                            "Eq 3: Sorbed Charge Match", "Eq 4: Aluminum Mass Balance", "Eq 5: Al Speciation/Denom",
+                            "Eq 6: Mg Mass Balance", "Eq 7: Ca Mass Balance", "Eq 8: Na Mass Balance",
+                            "Eq 9: K Mass Balance", "Eq 10: Ca-Al Exchange", "Eq 11: Ca-Mg Exchange",
+                            "Eq 12: Ca-Na Exchange", "Eq 13: Ca-K Exchange", "Eq 14: Ca-H Exchange",
+                            "Eq 15: Equivalent Fractions Sum (= 1)"
+                        ]
+                        print(f"\n=== DIAGNOSTIC REPORT FOR STATUS {status} FAILURE ===")
+                        print(f"Convergence failed at index {i} with status {status}")
+                        print(f"{'Variable Name':<15} | {'Final Value':<15}")
+                        print("-" * 35)
+                        for name, val in zip(var_names, sol):
+                            print(f"{name:<15} | {val:<15.6e}")
 
-                    raise ValueError("cminpack solver error: status: 4")
+                        print(f"\n{'Equation Name':<30} | {'Final Residual (Error)':<20}")
+                        print("-" * 55)
+                        for name, res in zip(eq_names, residuals):
+                            print(f"{name:<30} | {res:<20.6e}")
+
+                        raise ValueError(f"cminpack solver error: status: {status}")
 
             # Unpack results back into the arrays
             Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], \
