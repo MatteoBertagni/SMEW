@@ -158,15 +158,15 @@ def moisture_balance(
     # if keyword_wb == 0:
     else:
         # leakage [m/d]
-        L = K_s*s**(3+2*b)
+        L = (K_s*s**(3+2*b)).astype(rain.dtype)
         # Evaporation [m/d]
         if s_in>=s_h:
-            E = (s_in-s_h)/((s_i+1)/2-s_h)*ET_pot*(1-v/k_v)
+            E = ((s_in-s_h)/((s_i+1)/2-s_h)*ET_pot*(1-v/k_v)).astype(rain.dtype)
         # Transpiration [m/d]
         if s_in>=s_w and s_in<=s_i:
-            T = (s-s_w)/(s_i-s_w)*ET_pot*v/k_v
+            T = ((s-s_w)/(s_i-s_w)*ET_pot*v/k_v).astype(rain.dtype)
         elif s_in>=s_i:
-            T = ET_pot*v/k_v
+            T = (ET_pot*v/k_v).astype(rain.dtype)
        
         rain = E+T+L #[m]
         I = E+T+L 
