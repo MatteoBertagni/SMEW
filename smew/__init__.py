@@ -56,6 +56,7 @@ from smew.organic_carbon import (
 
 from smew.vegetation import (
     veg,
+    veg_seasonal,
     up_act
 )
 
