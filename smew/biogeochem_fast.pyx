@@ -574,32 +574,38 @@ def solve_biogeochem_eq_jac(
 
     return result, residuals, status
 
-def solve_biogeochem_eq_fd(
-    double[:] x0_arr,
+
+cdef public int solve_biogeochem_eq_fd(
+    double *x0,          # Input/Output pointer (Numba passes .ctypes.data)
+    double *residuals,   # Output pointer for errors
     double Alk_tot_in, double n_in, double Zr_in, double s_in, double IC_tot_in,
     double k1_in, double k2_in, double k_H_in, double k_w_in, double CEC_tot_in,
     double conv_Al_in, double Al_tot_in, double K1_in, double K2_in, double K3_in,
     double K4_in, double Mg_tot_in, double Ca_tot_in, double Na_tot_in, double K_tot_in,
     double K_Ca_Al_in, double K_Ca_Mg_in, double K_Ca_Na_in, double K_Ca_K_in, double K_Ca_H_in
-):
+) nogil:
     cdef int n_vars = 16
     cdef int lwa = 488
     cdef double tol = 1e-8
     cdef int status
 
-    cdef double *x = <double *>malloc(n_vars * sizeof(double))
+    # cdef double *x = <double *>malloc(n_vars * sizeof(double))
     cdef double *fvec = <double *>malloc(n_vars * sizeof(double))
     cdef double *wa = <double *>malloc(lwa * sizeof(double))
 
-    if not x or not fvec or not wa:
-        if x: free(x)
+    cdef int i
+
+    # if not x or not fvec or not wa:
+    if not fvec or not wa:
+        # if x: free(x)
         if fvec: free(fvec)
         if wa: free(wa)
-        raise MemoryError("Failed to allocate C-arrays.")
+        return -999
+        # raise MemoryError("Failed to allocate C-arrays.")
 
-    cdef int i
-    for i in range(n_vars):
-        x[i] = x0_arr[i]
+    # cdef int i
+    # for i in range(n_vars):
+    #     x[i] = x0_arr[i]
 
     cdef EquationArgs args
     args.Alk_tot = Alk_tot_in
@@ -629,21 +635,115 @@ def solve_biogeochem_eq_fd(
     args.K_Ca_H = K_Ca_H_in
     args.func_calls = 0
 
-    with nogil:
-        status = hybrd1(biogeochem_equations_c_fd, <void*>&args, n_vars, x, fvec, tol, wa, lwa)
+    # with nogil:
+    status = hybrd1(biogeochem_equations_c_fd, <void*>&args, n_vars, x0, fvec, tol, wa, lwa)
 
-    if status != 1:
-        print(f"LEG Status: {status} | F-Evals: {args.func_calls}")
+    # if status != 1:
+    #     print(f"LEG Status: {status} | F-Evals: {args.func_calls}")
 
-    cdef double[:] result = np.zeros(n_vars, dtype=np.float64)
-    cdef double[:] residuals = np.zeros(n_vars, dtype=np.float64)
+    # cdef double[:] result = np.zeros(n_vars, dtype=np.float64)
+    # cdef double[:] residuals = np.zeros(n_vars, dtype=np.float64)
 
+    # Copy the final errors from the local fvec into Numba's residuals pointer
     for i in range(n_vars):
-        result[i] = x[i]
+        # result[i] = x0[i]
         residuals[i] = fvec[i]  # Capture the final error of equation i
 
-    free(x)
+    # free(x)
     free(fvec)
     free(wa)
 
-    return result, residuals, status
+    # return result, residuals, status
+    return status
+
+
+# ==============================================================================
+# 1D Solver for the Rainwater H+ Equilibrium
+# ==============================================================================
+cdef struct EqWaterArgs:
+    double Alk_rain, k1, k2, CO2_w_rain, k_w
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef int eq_water_c(void *p, int n, const double *state, double *fvec, int iflag) nogil noexcept:
+    cdef EqWaterArgs* args = <EqWaterArgs*>p
+    cdef double H_rain = state[0]
+
+    fvec[0] = args.Alk_rain - (args.k1 * args.CO2_w_rain / H_rain + 2.0 * args.k1 * args.k2 * args.CO2_w_rain / (H_rain * H_rain) - H_rain + args.k_w / H_rain)
+    return 0
+
+cdef public int solve_water_eq_fd(
+    double *x0,
+    double Alk_rain_in, double k1_in, double k2_in, double CO2_w_rain_in, double k_w_in
+) nogil:
+    cdef int n_vars = 1
+    cdef int lwa = 10
+    cdef double tol = 1e-8
+    cdef int status
+
+    cdef double *fvec = <double *>malloc(n_vars * sizeof(double))
+    cdef double *wa = <double *>malloc(lwa * sizeof(double))
+
+    if not fvec or not wa:
+        if fvec: free(fvec)
+        if wa: free(wa)
+        return -999
+
+    cdef EqWaterArgs args
+    args.Alk_rain = Alk_rain_in
+    args.k1 = k1_in
+    args.k2 = k2_in
+    args.CO2_w_rain = CO2_w_rain_in
+    args.k_w = k_w_in
+
+    status = hybrd1(eq_water_c, <void*>&args, n_vars, x0, fvec, tol, wa, lwa)
+
+    free(fvec)
+    free(wa)
+    return status
+
+
+# ==============================================================================
+# 1D Solver for the H0 Fallback Guess
+# ==============================================================================
+cdef struct EqHArgs:
+    double k1, k2, CO2_w0, k_w, Alk0
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef int eq_H_c(void *p, int n, const double *state, double *fvec, int iflag) nogil noexcept:
+    cdef EqHArgs* args = <EqHArgs*>p
+    cdef double H0 = state[0]
+
+    fvec[0] = (args.k1 * args.CO2_w0 / H0 + 2.0 * args.k1 * args.k2 * args.CO2_w0 / (H0 * H0) - H0 + args.k_w / H0) - args.Alk0
+    return 0
+
+cdef public int solve_H_eq_fd(
+    double *x0,
+    double k1_in, double k2_in, double CO2_w0_in, double k_w_in, double Alk0_in
+) nogil:
+    cdef int n_vars = 1
+    cdef int lwa = 10
+    cdef double tol = 1e-8
+    cdef int status
+
+    cdef double *fvec = <double *>malloc(n_vars * sizeof(double))
+    cdef double *wa = <double *>malloc(lwa * sizeof(double))
+
+    if not fvec or not wa:
+        if fvec: free(fvec)
+        if wa: free(wa)
+        return -999
+
+    cdef EqHArgs args
+    args.k1 = k1_in
+    args.k2 = k2_in
+    args.CO2_w0 = CO2_w0_in
+    args.k_w = k_w_in
+    args.Alk0 = Alk0_in
+
+    status = hybrd1(eq_H_c, <void*>&args, n_vars, x0, fvec, tol, wa, lwa)
+
+    free(fvec)
+    free(wa)
+    return status

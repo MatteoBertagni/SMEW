@@ -10,7 +10,7 @@ from numba import njit
 
 #------------------------------------------------------------------------------
  # atmospheric CO2
-    
+@njit
 def CO2_atm(conv_mol):
     
     CO2_atm = 412E-6/22.41*conv_mol # [mol-conv/l] 
@@ -19,7 +19,7 @@ def CO2_atm(conv_mol):
 
 #------------------------------------------------------------------------------
  # soil CO2 diffusivity 
-    
+@njit
 def D_0():
     
     D_0 = 1.6E-5*3600*24 #free-air diffusion [m2/d]
@@ -28,7 +28,7 @@ def D_0():
 
 #------------------------------------------------------------------------------
  # solute diffusivity in soil water
-    
+@njit
 def Dw_0():
     
     Dw_0 = 1e-9*3600*24 # [m2/d]
@@ -37,7 +37,7 @@ def Dw_0():
 
 #------------------------------------------------------------------------------
  # % of nutrients in plant dry matter (ideally plant dependent)
-    
+@njit
 def plant_nutr_f():
     
     #current values are from Kelland's (2020) measurement for sorghum
@@ -155,7 +155,7 @@ def soil_const(soil):
 
 #------------------------------------------------------------------------------
  # EW mineral constants 
-
+@njit
 def min_const(mineral, conv_mol):
     
     # Most values are from Palandri (2004) unless otherwise specified
@@ -172,7 +172,7 @@ def min_const(mineral, conv_mol):
             E_OH = 71/conv_mol
             n_H = 0.457 # reaction order
             n_OH = - 0.572
-            min_st = [0, 0, 0, 1, 1, 3]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.0, 0.0, 0.0, 1.0, 1.0, 3.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = 10**(-0.68)
 
     elif mineral == 'alkali_feldspar': #K0.41Na0.56Ca0.03Al1.03Si2.97O8 (Kelland et al., 2020)
@@ -185,7 +185,7 @@ def min_const(mineral, conv_mol):
             E_OH = 94/conv_mol
             n_H =  0.5 # reaction order
             n_OH = -0.82
-            min_st = [0.03, 0, 0.41, 0.56, 1.03, 2.97]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.03, 0.0, 0.41, 0.56, 1.03, 2.97]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = np.nan
 
     elif mineral == 'analcime': #NaAlSi2O6(H2O) 
@@ -199,7 +199,7 @@ def min_const(mineral, conv_mol):
             E_OH = 0
             n_H = 0 # reaction order
             n_OH = 0
-            min_st = [1, 0, 0, 0, 2, 2]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [1.0, 0.0, 0.0, 0.0, 2.0, 2.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = 10**(-14.67)
     
     elif mineral == 'andesine': #Na0.6Ca0.4Al1.4Si2.6O8 
@@ -212,7 +212,7 @@ def min_const(mineral, conv_mol):
             E_OH = 0
             n_H = 0.541 # reaction order
             n_OH = 0
-            min_st = [0.4, 0, 0, 0.6, 1.4, 2.6]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.4, 0.0, 0.0, 0.6, 1.4, 2.6]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = np.nan
             
     elif mineral == 'apatite': #Ca5(PO4)3(OH)
@@ -225,7 +225,7 @@ def min_const(mineral, conv_mol):
             E_OH = 1
             n_H =  0.17 # reaction order
             n_OH = 1
-            min_st = [5, 0, 0, 0, 0, 0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [5.0, 0.0, 0.0, 0.0, 0.0, 0.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = np.nan
             
     elif mineral == 'anorthite': #CaAl2Si2O8
@@ -239,7 +239,7 @@ def min_const(mineral, conv_mol):
             E_OH = 0
             n_H = 1.4 # reaction order
             n_OH = 1
-            min_st = [1, 0, 0, 0, 2, 2]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [1.0, 0.0, 0.0, 0.0, 2.0, 2.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = 10**(9.83)
             
     elif mineral == 'augite': #Ca0.9Na0.1Mg0.9Fe0.2Al0.4Ti0.1Si1.9O6 (http://webmineral.com)
@@ -253,7 +253,7 @@ def min_const(mineral, conv_mol):
             E_OH = 0
             n_H =  0.7 # reaction order
             n_OH = 1
-            min_st = [0.9, 0.9, 0, 0.1, 0.4, 1.9]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.9, 0.9, 0.0, 0.1, 0.4, 1.9]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = np.nan
 
     elif mineral == 'diopside': #MgCaSi2O6
@@ -266,7 +266,7 @@ def min_const(mineral, conv_mol):
             E_OH = 0
             n_H =  0.71 # reaction order
             n_OH = 1
-            min_st = [1, 1, 0, 0, 0, 2]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [1.0, 1.0, 0.0, 0.0, 0.0, 2.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = 10**(5.30)
         
     elif mineral == 'forsterite': #Mg2SiO4
@@ -280,7 +280,7 @@ def min_const(mineral, conv_mol):
             E_OH = 0
             n_H = 0.47 # reaction order
             n_OH = 1
-            min_st = [0, 2, 0, 0, 0, 1]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.0, 2.0, 0.0, 0.0, 0.0, 1.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = 10**(7.11) 
             
     elif mineral == 'Fe_forsterite': #FeMgSiO4
@@ -293,7 +293,7 @@ def min_const(mineral, conv_mol):
             E_OH = 0
             n_H = 0.47 # reaction order
             n_OH = 1
-            min_st = [0, 1, 0, 0, 0, 1]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.0, 1.0, 0.0, 0.0, 0.0, 1.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = np.nan   
     
     elif mineral == 'labradorite': #Na0.45Ca0.55Al1.6Si2.4O8 (Dupla Field data, alternative http://webmineral.com/data/Labradorite.shtml)
@@ -307,7 +307,7 @@ def min_const(mineral, conv_mol):
             E_OH = 0
             n_H =  0.6 # reaction order
             n_OH = 1
-            min_st = [0.55, 0, 0, 0.45, 1.6, 2.4]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.55, 0.0, 0.0, 0.45, 1.6, 2.4]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = np.nan 
               
     elif mineral == 'leucite': #K(AlSi2O6)
@@ -320,7 +320,7 @@ def min_const(mineral, conv_mol):
             E_OH = 56.6/conv_mol
             n_H =  0.7 # reaction order
             n_OH = -0.2
-            min_st = [0, 0, 1, 0, 1, 2]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.0, 0.0, 1.0, 0.0, 1.0, 2.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = np.nan   
        
     elif mineral == 'nepheline': #Na0.75K0.25(AlSiO4)
@@ -333,7 +333,7 @@ def min_const(mineral, conv_mol):
             E_OH = 38/conv_mol
             n_H =  1.13 # reaction order
             n_OH = -0.2
-            min_st = [0, 0, 0.25, 0.75, 1, 1]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.0, 0.0, 0.25, 0.75, 1.0, 1.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = np.nan
             
     elif mineral == 'muscovite': #KAl3Si3O10(OH)2
@@ -346,7 +346,7 @@ def min_const(mineral, conv_mol):
             E_OH = 22/conv_mol
             n_H =  0.37 # reaction order
             n_OH = -0.22
-            min_st = [0, 0, 1, 0, 3, 3]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [0.0, 0.0, 1.0, 0.0, 3.0, 3.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = 10**(4.54) #Soil and Water Chemistry An Integrative Approach (Michael E. Essington)
 
     elif mineral == 'wollastonite': #CaSiO3
@@ -360,18 +360,17 @@ def min_const(mineral, conv_mol):
             E_OH = 0
             n_H = 0.4 # reaction order
             n_OH = 1
-            min_st = [1, 0, 0, 0, 0, 1]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
+            min_st = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0]# Stochiometric coefficients [Ca, Mg, K, Na, Al, Si]
             K_sp = 10**(6.82)
             
     else:
         raise ValueError("No data for this mineral")
 
-    return(MM_min,k_diss_H,k_diss_w,k_diss_OH,n_H,n_OH,E_H,E_w,E_OH,min_st,K_sp)
+    return MM_min,k_diss_H,k_diss_w,k_diss_OH,n_H,n_OH,E_H,E_w,E_OH,min_st,K_sp
 
 #------------------------------------------------------------------------------
- # Carbonate weathering constants  
-    
-
+ # Carbonate weathering constants
+@njit
 def carb_weath_const(conv_mol):
     
     # Carbonate solubility products
@@ -393,7 +392,7 @@ def carb_weath_const(conv_mol):
     
 #------------------------------------------------------------------------------
  # CEC constants (Gaines-Thomas) 
-
+@njit
 def K_GT_CEC(soil, conv_mol):
             
     # Current values are from a meta-analysis of Dutch soils (0-30 cm, https://edepot.wur.nl/31605)
@@ -439,7 +438,7 @@ def K_GT_CEC(soil, conv_mol):
 
 #------------------------------------------------------------------------------
  # Aluminium speciation (pag. 398 Weil and Brady)
-
+@njit
 def K_Al(conv_mol):
               
     pK1 = 5 
@@ -457,7 +456,7 @@ def K_Al(conv_mol):
 
 #------------------------------------------------------------------------------
  # carbonate speciation [Stumm and Morgan, 1996]
-
+@njit
 def K_C(T_K,conv_mol):
     
     T_ref = 25+273.15 # [K]: temperature standard conditions
@@ -479,7 +478,7 @@ def K_C(T_K,conv_mol):
 
 #------------------------------------------------------------------------------
  # molar masses [g/mol]
-
+@njit
 def MM(conv_mol):
     
     MM_Mg = 24/conv_mol 
