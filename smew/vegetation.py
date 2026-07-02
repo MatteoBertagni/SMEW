@@ -122,6 +122,7 @@ def veg_seasonal(
 
 #------------------------------------------------------------------------------
  # active uptake [Ca, Mg, K, Si] inspired by Porporato et al (2003, AWR)  and Porporato (2021, ecohydrology book)
+@njit
 def up_act(v, delta_v, xi, dt, T, Ca, Mg, K, Si, Dw, Zr, k_v, RAI, root_d):
     
     UP_act = np.zeros(len(xi))
