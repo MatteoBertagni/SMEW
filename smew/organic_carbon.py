@@ -4,23 +4,30 @@
 Created on Mon Dec 16 12:19:42 2019
 """
 import numpy as np
-import smew
-from statistics import mean
+from numba import njit
 
+# numba doesn't support smew.fct_name style calls, so we import each function manually
+from smew.constants import MM as smew_MM
+from smew.constants import soil_const as smew_soil_const
+from smew.constants import CO2_atm as smew_CO2_atm
+from smew.constants import D_0 as smew_D_0
+
+
+@njit
 def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, temp_soil,dt,conv_mol, tau_OC=None):
       
     # Preallocating the variables
     f_s = np.zeros(len(s))
-    f_T = np.zeros(len(s))
+    # f_T = np.zeros(len(s))  # Initialisation node needed as initialized from other variables below
     DEC = np.zeros(len(s))
     SOC = np.zeros(len(s))
     
     #constants
-    [MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al]=smew.MM(conv_mol)
-    [s_h, s_w, s_i, b, K_s, n] = smew.soil_const(soil) 
+    MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al = smew_MM(conv_mol)
+    s_h, s_w, s_i, b, K_s, n = smew_soil_const(soil)
     r = 0.7 # [-]: Fraction of carbon that goes into respiration
-    CO2_atm = smew.CO2_atm(conv_mol) # [mol-conv/l]
-    D_0 = smew.D_0() #free-air diffusion [m2/d]
+    CO2_atm = smew_CO2_atm(conv_mol) # [mol-conv/l]
+    D_0 = smew_D_0() #free-air diffusion [m2/d]
     D = D_0*(1-s)**(10/3)*n**(4/3) #Mill-Quirk (1961)
       
     #moisture impact on decomposition
@@ -62,11 +69,11 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
 
     # ADD estimate for qs-equilibrium (in absence of data)
     if ADD is None and SOC[0] is not None:
-        ADD = r*Zr*k_dec*mean(f_T)*mean(f_s)*SOC[0] # [gOC/(m2*d)] of added OC      
+        ADD = r*Zr*k_dec*np.mean(f_T)*np.mean(f_s)*SOC[0] # [gOC/(m2*d)] of added OC
     
     # SOC estimate for qs-equilibrium (in absence of data)
     if SOC_in is None and ADD is not None:
-        SOC[0] = (ADD/Zr)/(r*k_dec*mean(f_T)*mean(f_s)) #        
+        SOC[0] = (ADD/Zr)/(r*k_dec*np.mean(f_T)*np.mean(f_s)) #
            
     # OC equation
     DEC[0] = k_dec*f_T[0]*f_s[0]*SOC[0]

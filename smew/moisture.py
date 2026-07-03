@@ -9,7 +9,7 @@ from numba import njit
 import numpy as np
 from numpy.typing import NDArray
 
-import smew
+from smew.constants import soil_const as smew_soil_const
 
 
 @njit
@@ -79,7 +79,7 @@ def moisture_balance(
     """
     
     #constants
-    [s_h, s_w, s_i, b, K_s, n] = smew.soil_const(soil)       
+    [s_h, s_w, s_i, b, K_s, n] = smew_soil_const(soil)
     
     # Initialization
     #--------------------------------------------------------------------------      
