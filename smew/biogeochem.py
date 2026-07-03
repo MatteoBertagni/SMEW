@@ -630,7 +630,24 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
                 H0_2 = x0_H[0]
                 # x0 = np.array([Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
                 #                f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]], dtype=np.float64)
-                x0[2] = H0_2
+
+                # Reset the entire x0 array (as cminpack modify x0 in place)
+                x0[0] = Alk0
+                x0[1] = CO2_w0
+                x0[2] = H0_2  # Use the alternative H+ guess
+                x0[3] = R_alk0
+                x0[4] = Al_w0
+                x0[5] = Al0
+                x0[6] = Mg0
+                x0[7] = Ca0
+                x0[8] = Na0
+                x0[9] = K0
+                x0[10] = f_Al[i-1]
+                x0[11] = f_Mg[i-1]
+                x0[12] = f_Na[i-1]
+                x0[13] = f_K[i-1]
+                x0[14] = f_H[i-1]
+                x0[15] = f_Ca[i-1]
 
                 # Reset residuals array
                 for j in range(16):
@@ -684,6 +701,40 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
                     # Print static legends and dump the 1D arrays natively.
                     print("\n=== DIAGNOSTIC REPORT FOR STATUS", status, "FAILURE ===")
                     print("Convergence failed at index", i)
+
+                    print("\n--- FORCING & HYDROLOGY AT TIMESTEP ---")
+                    print("Soil Moisture (s):", s[i], " | Rain/Irrigation (I):", I[i])
+                    print("Transpiration (T):", T[i-1], " | Drainage/Leaching (L):", L[i-1])
+                    print("Soil Temp (K):", temp_soil[i] + 273.15)
+                    print("Advection Flux (ADV):", ADV[i])
+
+                    print("\n--- SYSTEM MASS BALANCES (TOTAL POOLS) ---")
+                    print("Ca_tot:", Ca_tot[i], " | Mg_tot:", Mg_tot[i])
+                    print("Na_tot:", Na_tot[i], " | K_tot:", K_tot[i])
+                    print("Al_tot:", Al_tot[i], " | Si_tot:", Si_tot[i])
+                    print("Alk_tot:", Alk_tot[i], " | An_tot:", An_tot[i])
+                    print("Inorg Carbon (IC_tot):", IC_tot[i])
+
+                    print("\n--- BIOLOGICAL UPTAKE FLUXES (i-1) ---")
+                    print("UP_Ca:", UP_Ca[i-1], " | UP_Mg:", UP_Mg[i-1])
+                    print("UP_K:", UP_K[i-1], " | UP_Si:", UP_Si[i-1])
+
+                    print("\n--- CARBONATE MINERALS STATE ---")
+                    print("CaCO3 Solid:", CaCO3[i], " | MgCO3 Solid:", MgCO3[i])
+                    print("W_CaCO3 Flux:", W_CaCO3[i-1], " | W_MgCO3 Flux:", W_MgCO3[i-1])
+
+                    if M_rock_in > 0:
+                        print("\n--- ROCK/SILICATE WEATHERING STATE (i-1) ---")
+                        print("Total Rock Mass (M_rock):", M_rock[i-1])
+                        print("Surface Area (SA):", SA[i-1])
+                        print("Mineral Masses (M_min):")
+                        print(M_min[:, i-1])
+                        print("Weathering Rates (Wr):")
+                        print(Wr[:, i-1])
+                        print("Weathering Fluxes (EW):")
+                        print(EW[:, i-1])
+                        print("Particle Diameter Class (d):")
+                        print(d[:, i-1])
 
                     print("\n--- VARIABLE VALUES (x0) ---")
                     print("0:Alk | 1:CO2_w | 2:H | 3:R_alk | 4:Al_w | 5:Al | 6:Mg | 7:Ca")
@@ -753,6 +804,7 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
                     d_shrink = np.sum(rock_f[:,i-1]*Wr[:,i-1]*MM_min[:]/rho_rock)*dt # [m]
                     d[:,i] = d[:,i-1] - 2*d_shrink*lamb[:,i-1] # [m]
                     d[:,i][d[:,i] < 0] = 0
+                    # d[:,i][d[:,i] < 1e-9] = 1e-9  # Fix: Prevent division by zero in SSA calcs
                     # delta_d[:,i] = np.insert(np.diff(d[:,i]),0,d[0,i]) # [m]
                     delta_d[0, i] = d[0, i]
                     delta_d[1:, i] = d[1:, i] - d[:-1, i]
