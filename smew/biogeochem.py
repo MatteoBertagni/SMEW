@@ -10,12 +10,9 @@ import logging
 import os
 import warnings
 
-# from scipy.optimize import fsolve
 from numba import njit
 import numpy as np
 
-# import smew
-# Import from constants
 from smew.constants import (
     CO2_atm as smew_CO2_atm,
     D_0 as smew_D_0,
@@ -28,7 +25,6 @@ from smew.constants import (
     min_const as smew_min_const
 )
 
-# Import from weathering
 from smew.weathering import (
     carb_W as smew_carb_W,
     sil_Omega as smew_sil_Omega,
@@ -36,7 +32,6 @@ from smew.weathering import (
     psd_evol as smew_psd_evol
 )
 
-# Import from vegetation
 from smew.vegetation import (
     up_act as smew_up_act
 )
@@ -108,19 +103,6 @@ BiogeochemResult = namedtuple("BiogeochemResult", [
 ])
 
 
-# For now only solve_biogeochem_eq_fd is implemented with C typing for being callable by numba
-# # Attempt to load the fast Cython solver. Fall back to SciPy if not found.
-# try:
-#     # from smew.biogeochem_fast import solve_biogeochem_eq_jac_log as solve_biogeochem_eq
-#     # from smew.biogeochem_fast import solve_biogeochem_eq_jac as solve_biogeochem_eq
-#     from smew.biogeochem_fast import solve_biogeochem_eq_fd as solve_biogeochem_eq
-#
-#     USE_LEGACY_SOLVER = False
-# except ImportError:
-#     USE_LEGACY_SOLVER = True
-#     solve_biogeochem_eq = None  # Placeholder to prevent undefined variable errors
-
-
 def log_solver_status(logger: logging.Logger | None):
     """
     Logs the status of the solver selection based on the availability of the optimized solver.
@@ -129,55 +111,10 @@ def log_solver_status(logger: logging.Logger | None):
     """
     if logger is None:
         logger = logging.getLogger()
-    # if USE_LEGACY_SOLVER:
-    #     message = "cminpack/fast solver not found. SMEW will fall back to the legacy SciPy solver."
-    #     warnings.warn(message)
-    #     logger.warning(message)
-    # else:
-    #     logger.info("cminpack/fast solver found. SMEW will use the optimized Cython solver functions.")
     _message = "log_solver_status is deprecated for now, you can ignore this message"
     warnings.warn(_message)
     logger.warning(_message)
 
-@njit
-def _equations_water_numba(p, Alk_rain, k1, k2, CO2_w_rain, k_w):
-    H_rain = p[0]
-    return Alk_rain-(k1*CO2_w_rain/H_rain+2*k1*k2*CO2_w_rain/(H_rain**2)-H_rain+k_w/H_rain)
-
-@njit
-def _eqH_numba(p, k1, k2, CO2_w0, k_w, Alk0):
-    H0 = p[0]
-    return (k1*CO2_w0/H0+2*k1*k2*CO2_w0/(H0**2)-H0+k_w/H0)-Alk0
-
-#implicit system
-@njit
-def _biogeochem_equations_numba(
-        p, Alk_tot, n, Zr, s, IC_tot, k1, k2, k_H, k_w, CEC_tot, conv_Al, Al_tot, K1, K2, K3, K4, Mg_tot, Ca_tot,
-        Na_tot, K_tot, K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
-):
-    Alk, CO2_w, H, R_alk, Al_w, Al, Mg, Ca, Na, K, f_Al, f_Mg, f_Na, f_K, f_H, f_Ca = p
-
-    # Precompute
-    nZrs1000 = n * Zr * s * 1000
-
-    return (
-        (Alk_tot-R_alk)-Alk*nZrs1000,
-        IC_tot-(CO2_w*(1+k1/H+k2*k1/(H**2))*s+(CO2_w/k_H)*(1-s))*(n*Zr*1000),
-        (k1*CO2_w/H+2*k1*k2*CO2_w/(H**2)-H+k_w/H)-Alk,
-        R_alk-(f_Mg+f_Ca+f_Na+f_K)*CEC_tot,
-        Al_w*nZrs1000+(f_Al/3)*CEC_tot*conv_Al-Al_tot,
-        Al-(H**4/(H**4+H**3*K1+H**2*K1*K2+H*K1*K2*K3+K1*K2*K3*K4))*Al_w,
-        Mg*nZrs1000+f_Mg/2*CEC_tot-Mg_tot,
-        Ca*nZrs1000+f_Ca/2*CEC_tot-Ca_tot,
-        Na*nZrs1000+f_Na*CEC_tot-Na_tot,
-        K*nZrs1000+f_K*CEC_tot-K_tot,
-        f_Al - (Al/conv_Al)*(abs(f_Ca)**3/(K_Ca_Al*abs(Ca)**3))**(1/2),
-        f_Mg - Mg*(f_Ca/(K_Ca_Mg*Ca)),
-        f_Na - Na*(abs(f_Ca)/(K_Ca_Na*abs(Ca)))**(1/2),
-        f_K - K*(abs(f_Ca)/(K_Ca_K*abs(Ca)))**(1/2),
-        f_H - H*(abs(f_Ca)/(K_Ca_H*abs(Ca)))**(1/2),
-        1-(f_Ca+f_Al+f_Mg+f_Na+f_K+f_H)
-    )
 
 @njit
 def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add):
@@ -298,9 +235,7 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
         psd = np.zeros((1, len(s)))
         SSA = np.zeros((1, len(s)))
 
-    # errors = np.zeros((16, len(s)))
-
-#------------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
     # Constants
     CO2_atm = smew_CO2_atm(conv_mol) # [mol_CO2/l_air] Atmospheric CO2 concentration
     T_K = temp_soil + 273.15
@@ -349,18 +284,21 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
     b = 0.35 #[-]
     a = (1/(2*1e-10))**b #[1/m^b]
 
-#------------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
     # RAINWATER
 
     Alk_rain = 0 #alk
     CO2_w_rain = k_H*CO2_atm # [mol/l] Henry's law
 
     for i in range(0, len(s)):
+        ##### LEGACY SOLVER #####
         # def equations(p):
         #     # H_rain[i] = p
         #     return _equations_water_numba(p, Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i])
         #
         # H_rain[i] = fsolve(equations, 10**-6*conv_mol)[0] # [mol/l]
+        #########################
+
         # Allocate 1D array for initial guess
         x0_water = np.array((10**-6 * conv_mol,), dtype=np.float64)
 
@@ -368,12 +306,13 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
             x0_water.ctypes.data,
             Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i]
         )
+        # TODO: check status_water
 
         # x0_water is overwritten inplace with the root
         H_rain[i] = x0_water[0]
         DIC_rain[i]=CO2_w_rain[i]+k1[i]*CO2_w_rain[i]/H_rain[i]+k2[i]*k1[i]*CO2_w_rain[i]/(H_rain[i]**2)
 
-#------------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
     # INITIAL CONDITIONS
 
     #pH
@@ -406,8 +345,6 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
 
     if An[0]<0:
         print("")
-        # print(f"Cations: Ca={Ca[0]}, Mg={Mg[0]}, K={K[0]}, Na={Na[0]}, Al={Al[0]}, H={H[0]}")
-        # print(f"HCO3[0] = k1[0]*CO2_w[0]/H[0] = {k1[0]}*{CO2_w[0]}/{H[0]} # [mol/l]")
         print(f"Alkalinity (Alk[0]): {Alk[0]} (Alk[0] = HCO3[0]+2*CO3[0]-H[0]+k_w[0]/H[0])")
         print(f"HCO3[0]={HCO3[0]} ; CO3[0]={CO3[0]} ; H[0]={H[0]} ; k_w[0]={k_w[0]}")
         print(f"Anions (An[0]): {An[0]} [mol_c/l]")
@@ -519,89 +456,145 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
                 #weathering flux [mol-conv/d]
                 EW[j,0] = Wr[j,0]*SA[0]*rock_f[j,0]
 
-#------------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
     #SYSTEM RESOLUTION
-
-    # printcounter = 0
-    # numb_print = 0
 
     for i in range(1, len(s)):
 
-            #CO2 advection due to moisture variation
-            if s[i]<s[i-1]:
-                ADV[i] = n*Zr*1000*(s[i]-s[i-1])*CO2_atm # [mol]
-            elif s[i]>s[i-1]:
-                ADV[i] = n*Zr*1000*(s[i]-s[i-1])*CO2_air[i-1]
+        #CO2 advection due to moisture variation
+        if s[i]<s[i-1]:
+            ADV[i] = n*Zr*1000*(s[i]-s[i-1])*CO2_atm # [mol]
+        elif s[i]>s[i-1]:
+            ADV[i] = n*Zr*1000*(s[i]-s[i-1])*CO2_air[i-1]
 
-            #active uptake [Ca, Mg, K, Si]
-            UP_act = smew_up_act(v[i], (v[i]-v[i-1]), xi, dt, T[i-1], Ca[i-1], Mg[i-1], K[i-1], Si[i-1], Dw[i-1], Zr, k_v, RAI, root_d)
-            UP_Ca[i-1], UP_Mg[i-1], UP_K[i-1], UP_Si[i-1] = UP_act # [mol-conv/d]
+        #active uptake [Ca, Mg, K, Si]
+        UP_act = smew_up_act(v[i], (v[i]-v[i-1]), xi, dt, T[i-1], Ca[i-1], Mg[i-1], K[i-1], Si[i-1], Dw[i-1], Zr, k_v, RAI, root_d)
+        UP_Ca[i-1], UP_Mg[i-1], UP_K[i-1], UP_Si[i-1] = UP_act # [mol-conv/d]
 
-            #explicit mass balances # [mol]
-            Ca_tot[i] = Ca_tot[i-1]+(I_Ca+np.sum(min_st[:,0]*EW[:,i-1])+W_CaCO3[i-1]-(L[i-1]+T[i-1])*1000*Ca[i-1]-UP_Ca[i-1])*dt
-            Mg_tot[i] = Mg_tot[i-1]+(I_Mg+np.sum(min_st[:,1]*EW[:,i-1])+W_MgCO3[i-1]-(L[i-1]+T[i-1])*1000*Mg[i-1]-UP_Mg[i-1])*dt
-            K_tot[i] = K_tot[i-1]+(I_K+np.sum(min_st[:,2]*EW[:,i-1])-(L[i-1]+T[i-1])*1000*K[i-1]-UP_K[i-1])*dt
-            Na_tot[i] = Na_tot[i-1]+(I_Na+np.sum(min_st[:,3]*EW[:,i-1])-(L[i-1]+T[i-1])*1000*Na[i-1])*dt
-            Al_tot[i] = Al_tot[i-1]+(np.sum(min_st[:,4]*EW[:,i-1])*conv_Al-L[i-1]*1000*(Al[i-1]+AlOH4[i-1]))*dt
-            Si_tot[i] = Si_tot[i-1]+(I_Si+np.sum(min_st[:,5]*EW[:,i-1])-(L[i-1]+T[i-1])*1000*Si[i-1]-UP_Si[i-1])*dt
-            An_tot[i] = An_tot[i-1]+(I_An - (L[i-1]+T[i-1])*An[i-1]*1000)*dt # [mol_c]
-            Alk_tot[i] = 2*Mg_tot[i]+2*Ca_tot[i]+Na_tot[i]+K_tot[i]-An_tot[i] # [mol_c]
-            IC_tot[i] = IC_tot[i-1]+I[i]*1000*DIC_rain[i]-ADV[i]+(W_CaCO3[i-1]+W_MgCO3[i-1]+r_het[i-1]+r_aut[i-1]-Fs[i-1]-L[i-1]*1000*DIC[i-1])*dt
+        #explicit mass balances # [mol]
+        Ca_tot[i] = Ca_tot[i-1]+(I_Ca+np.sum(min_st[:,0]*EW[:,i-1])+W_CaCO3[i-1]-(L[i-1]+T[i-1])*1000*Ca[i-1]-UP_Ca[i-1])*dt
+        Mg_tot[i] = Mg_tot[i-1]+(I_Mg+np.sum(min_st[:,1]*EW[:,i-1])+W_MgCO3[i-1]-(L[i-1]+T[i-1])*1000*Mg[i-1]-UP_Mg[i-1])*dt
+        K_tot[i] = K_tot[i-1]+(I_K+np.sum(min_st[:,2]*EW[:,i-1])-(L[i-1]+T[i-1])*1000*K[i-1]-UP_K[i-1])*dt
+        Na_tot[i] = Na_tot[i-1]+(I_Na+np.sum(min_st[:,3]*EW[:,i-1])-(L[i-1]+T[i-1])*1000*Na[i-1])*dt
+        Al_tot[i] = Al_tot[i-1]+(np.sum(min_st[:,4]*EW[:,i-1])*conv_Al-L[i-1]*1000*(Al[i-1]+AlOH4[i-1]))*dt
+        Si_tot[i] = Si_tot[i-1]+(I_Si+np.sum(min_st[:,5]*EW[:,i-1])-(L[i-1]+T[i-1])*1000*Si[i-1]-UP_Si[i-1])*dt
+        An_tot[i] = An_tot[i-1]+(I_An - (L[i-1]+T[i-1])*An[i-1]*1000)*dt # [mol_c]
+        Alk_tot[i] = 2*Mg_tot[i]+2*Ca_tot[i]+Na_tot[i]+K_tot[i]-An_tot[i] # [mol_c]
+        IC_tot[i] = IC_tot[i-1]+I[i]*1000*DIC_rain[i]-ADV[i]+(W_CaCO3[i-1]+W_MgCO3[i-1]+r_het[i-1]+r_aut[i-1]-Fs[i-1]-L[i-1]*1000*DIC[i-1])*dt
 
-            # #implicit system
-            # def equations(p):
-            #     Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = p
-            #     return _biogeochem_equations_numba(
-            #         p, Alk_tot[i], n, Zr, s[i], IC_tot[i], k1[i], k2[i], k_H[i], k_w[i], CEC_tot, conv_Al, Al_tot[i],
-            #         K1, K2, K3, K4, Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
-            #     )
+        ##### LEGACY SOLVER #####
+        # #implicit system
+        # def equations(p):
+        #     Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = p
+        #     return _biogeochem_equations_numba(
+        #         p, Alk_tot[i], n, Zr, s[i], IC_tot[i], k1[i], k2[i], k_H[i], k_w[i], CEC_tot, conv_Al, Al_tot[i],
+        #         K1, K2, K3, K4, Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
+        #     )
+        #########################
 
-            #initial guess
-            Alk0 = (Alk_tot[i]-R_alk[i-1])/(n*Zr*s[i]*1000)
-            CO2_w0 = IC_tot[i]/(n*Zr*1000)*1/(s[i]*(1+k1[i]/H[i-1]+k2[i]*k1[i]/(H[i-1]**2))+(1-s[i])/k_H[i])
-            R_alk0 = R_alk[i-1]
-            Al_w0 = (Al_tot[i]-(f_Al[i-1]/3)*CEC_tot*conv_Al)/(n*Zr*s[i]*1000)#s[i-1]*Al_w[i-1]/s[i]
-            Al0 = (H[i-1]**4/(H[i-1]**4+H[i-1]**3*K1+H[i-1]**2*K1*K2+H[i-1]*K1*K2*K3+K1*K2*K3*K4))*Al_w0
-            Mg0 = (Mg_tot[i]-f_Mg[i-1]/2*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*Mg[i-1]/s[i]
-            Na0 = (Na_tot[i]-f_Na[i-1]*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*Na[i-1]/s[i]
-            Ca0 = (Ca_tot[i]-f_Ca[i-1]/2*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*Ca[i-1]/s[i]
-            K0 =  (K_tot[i]-f_K[i-1]*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*K[i-1]/s[i]
-            H0 = H[i-1]
+        #initial guess
+        Alk0 = (Alk_tot[i]-R_alk[i-1])/(n*Zr*s[i]*1000)
+        CO2_w0 = IC_tot[i]/(n*Zr*1000)*1/(s[i]*(1+k1[i]/H[i-1]+k2[i]*k1[i]/(H[i-1]**2))+(1-s[i])/k_H[i])
+        R_alk0 = R_alk[i-1]
+        Al_w0 = (Al_tot[i]-(f_Al[i-1]/3)*CEC_tot*conv_Al)/(n*Zr*s[i]*1000)#s[i-1]*Al_w[i-1]/s[i]
+        Al0 = (H[i-1]**4/(H[i-1]**4+H[i-1]**3*K1+H[i-1]**2*K1*K2+H[i-1]*K1*K2*K3+K1*K2*K3*K4))*Al_w0
+        Mg0 = (Mg_tot[i]-f_Mg[i-1]/2*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*Mg[i-1]/s[i]
+        Na0 = (Na_tot[i]-f_Na[i-1]*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*Na[i-1]/s[i]
+        Ca0 = (Ca_tot[i]-f_Ca[i-1]/2*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*Ca[i-1]/s[i]
+        K0 =  (K_tot[i]-f_K[i-1]*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*K[i-1]/s[i]
+        H0 = H[i-1]
 
-            # if USE_LEGACY_SOLVER:
-            #     def eqH(p):
-            #             # H0 = p
-            #             return _eqH_numba(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
-            #     H0_2 =fsolve(eqH, H[i-1])[0]
-            #
-            #     #solution 1
-            #     x0 = np.array([Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])
-            #     # # enforce strict positivity to avoid zero/negative division and NaNs
-            #     # x0 = np.maximum(x0, 1e-15)
-            #     sol = fsolve(equations,x0, xtol=1e-12)
-            #     errors[:,i] = equations(sol) #residuals
-            #
-            #     #solution 2
-            #     res_threshold = 1e-1
-            #     if np.any(abs(errors[:,i]) > res_threshold):
-            #         x0 = np.array([Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])
-            #         sol = fsolve(equations, x0, xtol=1e-14)
-            #         errors[:,i] = equations(sol)
-            #         if np.any(abs(errors[:,i]) > res_threshold):
-            #             print(i)
-            #             raise ValueError("Solution not converging")
-            # else:
-            # first initial guess
-            # TODO: allocate once, then only assign the values
-            x0 = np.array((Alk0, CO2_w0, H[i-1], R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
-                           f_Al[i-1], f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]), dtype=np.float64)
-            residuals = np.zeros(16, dtype=np.float64)
-            #
-            # # enforce strict positivity to avoid zero/negative division and NaNs
-            # x0 = np.maximum(x0, 1e-15)
+        ##### LEGACY SOLVER #####
+        # def eqH(p):
+        #         # H0 = p
+        #         return _eqH_numba(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
+        # H0_2 =fsolve(eqH, H[i-1])[0]
+        #
+        # #solution 1
+        # x0 = np.array([Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])
+        # # # enforce strict positivity to avoid zero/negative division and NaNs
+        # # x0 = np.maximum(x0, 1e-15)
+        # sol = fsolve(equations,x0, xtol=1e-12)
+        # errors[:,i] = equations(sol) #residuals
+        #
+        # #solution 2
+        # res_threshold = 1e-1
+        # if np.any(abs(errors[:,i]) > res_threshold):
+        #     x0 = np.array([Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])
+        #     sol = fsolve(equations, x0, xtol=1e-14)
+        #     errors[:,i] = equations(sol)
+        #     if np.any(abs(errors[:,i]) > res_threshold):
+        #         print(i)
+        #         raise ValueError("Solution not converging")
+        #########################
+
+        # TODO: allocate once, then only assign the values
+        x0 = np.array((Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
+                       f_Al[i-1], f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]), dtype=np.float64)
+        residuals = np.zeros(16, dtype=np.float64)
+        #
+        # # enforce strict positivity to avoid zero/negative division and NaNs
+        # x0 = np.maximum(x0, 1e-15)
+
+        # --- CALL CYTHON SOLVER ---
+        # the solver will write x0 and residuals in place with the solution and residuals
+        status = solve_biogeochem_c(
+            x0.ctypes.data,          # Numba hands Cython the keys to the state array
+            residuals.ctypes.data,   # Numba hands Cython the keys to the residuals arr
+            Alk_tot[i], n, Zr, s[i], IC_tot[i],
+            k1[i], k2[i], k_H[i], k_w[i], CEC_tot,
+            conv_Al, Al_tot[i], K1, K2, K3, K4,
+            Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i],
+            K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
+        )
+
+        # 1: OK, > 1: not properly converged, < 1: fatal error. We should use != 1 but the model is not stable enough for now
+        # if status != 1:
+        if status < 1:
+            # try with another initial guess:
+
+            ##### LEGACY SOLVER #####
+            # def eqH(p):
+            #         # H0 = p
+            #         return _eqH_numba(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
+            # H0_2 = fsolve(eqH, H[i-1])[0]
+            #########################
+
+            # Fallback to calculating alternative H0_2 guess using the H-equation
+            x0_H = np.array((H[i-1],), dtype=np.float64)
+
+            status_H = solve_H_c(
+                x0_H.ctypes.data,
+                k1[i], k2[i], CO2_w0, k_w[i], Alk0
+            )
+            # TODO: check status_H
+
+            # Extract new guess
+            H0_2 = x0_H[0]
+
+            # Reset the entire x0 array (as cminpack modified x0 in place at the first trial)
+            x0[0] = Alk0
+            x0[1] = CO2_w0
+            x0[2] = H0_2  # Use the alternative H+ guess
+            x0[3] = R_alk0
+            x0[4] = Al_w0
+            x0[5] = Al0
+            x0[6] = Mg0
+            x0[7] = Ca0
+            x0[8] = Na0
+            x0[9] = K0
+            x0[10] = f_Al[i-1]
+            x0[11] = f_Mg[i-1]
+            x0[12] = f_Na[i-1]
+            x0[13] = f_K[i-1]
+            x0[14] = f_H[i-1]
+            x0[15] = f_Ca[i-1]
+
+            # Reset residuals array
+            for j in range(16):
+                residuals[j] = 0.0
 
             # --- CALL CYTHON SOLVER ---
-            # the solver will write x0 and residuals in place with the solution and residuals
             status = solve_biogeochem_c(
                 x0.ctypes.data,          # Numba hands Cython the keys to the state array
                 residuals.ctypes.data,   # Numba hands Cython the keys to the residuals arr
@@ -612,206 +605,125 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
                 K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
             )
 
-            if status != 1:
-                # try with another initial guess:
-                # def eqH(p):
-                #         # H0 = p
-                #         return _eqH_numba(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
-                # H0_2 = fsolve(eqH, H[i-1])[0]
-                # Fallback to calculating alternative H0_2 guess using the H-equation
-                x0_H = np.array((H[i-1],), dtype=np.float64)
+            # 1: OK, > 1: not properly converged, < 1: fatal error. We should use != 1 but the model is not stable enough for now
+            # if status != 1:
+            if status < 1:
+                # Report the failed convergence:
+                # Numba-safe: Completely avoid lists, tuples, and loops over strings.
+                # Print static legends and dump the 1D arrays natively.
+                print("\n=== DIAGNOSTIC REPORT FOR STATUS", status, "FAILURE ===")
+                print("Convergence failed at index", i)
 
-                status_H = solve_H_c(
-                    x0_H.ctypes.data,
-                    k1[i], k2[i], CO2_w0, k_w[i], Alk0
-                )
+                print("\n--- FORCING & HYDROLOGY AT TIMESTEP ---")
+                print("Soil Moisture (s):", s[i], " | Rain/Irrigation (I):", I[i])
+                print("Transpiration (T):", T[i-1], " | Drainage/Leaching (L):", L[i-1])
+                print("Soil Temp (K):", temp_soil[i] + 273.15)
+                print("Advection Flux (ADV):", ADV[i])
 
-                # Extract new guess
-                H0_2 = x0_H[0]
-                # x0 = np.array([Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
-                #                f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]], dtype=np.float64)
+                print("\n--- SYSTEM MASS BALANCES (TOTAL POOLS) ---")
+                print("Ca_tot:", Ca_tot[i], " | Mg_tot:", Mg_tot[i])
+                print("Na_tot:", Na_tot[i], " | K_tot:", K_tot[i])
+                print("Al_tot:", Al_tot[i], " | Si_tot:", Si_tot[i])
+                print("Alk_tot:", Alk_tot[i], " | An_tot:", An_tot[i])
+                print("Inorg Carbon (IC_tot):", IC_tot[i])
 
-                # Reset the entire x0 array (as cminpack modify x0 in place)
-                x0[0] = Alk0
-                x0[1] = CO2_w0
-                x0[2] = H0_2  # Use the alternative H+ guess
-                x0[3] = R_alk0
-                x0[4] = Al_w0
-                x0[5] = Al0
-                x0[6] = Mg0
-                x0[7] = Ca0
-                x0[8] = Na0
-                x0[9] = K0
-                x0[10] = f_Al[i-1]
-                x0[11] = f_Mg[i-1]
-                x0[12] = f_Na[i-1]
-                x0[13] = f_K[i-1]
-                x0[14] = f_H[i-1]
-                x0[15] = f_Ca[i-1]
+                print("\n--- BIOLOGICAL UPTAKE FLUXES (i-1) ---")
+                print("UP_Ca:", UP_Ca[i-1], " | UP_Mg:", UP_Mg[i-1])
+                print("UP_K:", UP_K[i-1], " | UP_Si:", UP_Si[i-1])
 
-                # Reset residuals array
-                for j in range(16):
-                    residuals[j] = 0.0
+                print("\n--- CARBONATE MINERALS STATE ---")
+                print("CaCO3 Solid:", CaCO3[i], " | MgCO3 Solid:", MgCO3[i])
+                print("W_CaCO3 Flux:", W_CaCO3[i-1], " | W_MgCO3 Flux:", W_MgCO3[i-1])
 
-                # --- CALL CYTHON SOLVER ---
-                status = solve_biogeochem_c(
-                    x0.ctypes.data,          # Numba hands Cython the keys to the state array
-                    residuals.ctypes.data,   # Numba hands Cython the keys to the residuals arr
-                    Alk_tot[i], n, Zr, s[i], IC_tot[i],
-                    k1[i], k2[i], k_H[i], k_w[i], CEC_tot,
-                    conv_Al, Al_tot[i], K1, K2, K3, K4,
-                    Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i],
-                    K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
-                )
+                if M_rock_in > 0:
+                    print("\n--- ROCK/SILICATE WEATHERING STATE (i-1) ---")
+                    print("Total Rock Mass (M_rock):", M_rock[i-1])
+                    print("Surface Area (SA):", SA[i-1])
+                    print("Mineral Masses (M_min):")
+                    print(M_min[:, i-1])
+                    print("Weathering Rates (Wr):")
+                    print(Wr[:, i-1])
+                    print("Weathering Fluxes (EW):")
+                    print(EW[:, i-1])
+                    print("Particle Diameter Class (d):")
+                    print(d[:, i-1])
 
-                # if status != 1:
-                #     # Report the failed convergence:
-                #     # Mapping indices to names for easy reading
-                #     var_names = [
-                #         "Alk", "CO2_w", "H", "R_alk", "Al_w", "Al", "Mg", "Ca", "Na",
-                #         "K", "f_Al", "f_Mg", "f_Na", "f_K", "f_H", "f_Ca"
-                #     ]
-                #     eq_names = [
-                #         "Eq 0: Alk Mass Balance", "Eq 1: Inorganic Carbon Balance", "Eq 2: Water/Carbon Equilibrium",
-                #         "Eq 3: Sorbed Charge Match", "Eq 4: Aluminum Mass Balance", "Eq 5: Al Speciation/Denom",
-                #         "Eq 6: Mg Mass Balance", "Eq 7: Ca Mass Balance", "Eq 8: Na Mass Balance",
-                #         "Eq 9: K Mass Balance", "Eq 10: Ca-Al Exchange", "Eq 11: Ca-Mg Exchange",
-                #         "Eq 12: Ca-Na Exchange", "Eq 13: Ca-K Exchange", "Eq 14: Ca-H Exchange",
-                #         "Eq 15: Equivalent Fractions Sum (= 1)"
-                #     ]
-                #     # Numba-safe: Standard print arguments instead of formatted f-strings
-                #     print("\n=== DIAGNOSTIC REPORT FOR STATUS", status, "FAILURE ===")
-                #     print("Convergence failed at index", i, "with status", status)
-                #     print("Variable Name   | Final Value")
-                #     print("-----------------------------------")
-                #     for j in range(16):
-                #         print(var_names[j], "|", x0[j])
-                #
-                #     print("\nEquation Name                  | Final Residual (Error)")
-                #     print("-------------------------------------------------------")
-                #     for j in range(16):
-                #         print(eq_names[j], "|", residuals[j])
-                #
-                #     # Numba-safe: Avoid dynamic f-strings inside Exceptions
-                #     print("cminpack solver error: status", status)
-                #     raise ValueError("cminpack solver error")
-                if status != 1:
-                    # Report the failed convergence:
-                    # Numba-safe: Completely avoid lists, tuples, and loops over strings.
-                    # Print static legends and dump the 1D arrays natively.
-                    print("\n=== DIAGNOSTIC REPORT FOR STATUS", status, "FAILURE ===")
-                    print("Convergence failed at index", i)
+                print("\n--- VARIABLE VALUES (x0) ---")
+                print("0:Alk | 1:CO2_w | 2:H | 3:R_alk | 4:Al_w | 5:Al | 6:Mg | 7:Ca")
+                print("8:Na | 9:K | 10:f_Al | 11:f_Mg | 12:f_Na | 13:f_K | 14:f_H | 15:f_Ca")
+                print(x0)
 
-                    print("\n--- FORCING & HYDROLOGY AT TIMESTEP ---")
-                    print("Soil Moisture (s):", s[i], " | Rain/Irrigation (I):", I[i])
-                    print("Transpiration (T):", T[i-1], " | Drainage/Leaching (L):", L[i-1])
-                    print("Soil Temp (K):", temp_soil[i] + 273.15)
-                    print("Advection Flux (ADV):", ADV[i])
+                print("\n--- RESIDUAL ERRORS ---")
+                print("Eq 0-3: Alk, IC, H2O/C, Charge | Eq 4-5: Al | Eq 6-9: Mg, Ca, Na, K")
+                print("Eq 10-15: Exch(Al, Mg, Na, K, H), SumFractions")
+                print(residuals)
 
-                    print("\n--- SYSTEM MASS BALANCES (TOTAL POOLS) ---")
-                    print("Ca_tot:", Ca_tot[i], " | Mg_tot:", Mg_tot[i])
-                    print("Na_tot:", Na_tot[i], " | K_tot:", K_tot[i])
-                    print("Al_tot:", Al_tot[i], " | Si_tot:", Si_tot[i])
-                    print("Alk_tot:", Alk_tot[i], " | An_tot:", An_tot[i])
-                    print("Inorg Carbon (IC_tot):", IC_tot[i])
+                print("\ncminpack solver error: status", status)
+                raise ValueError("cminpack solver error")
 
-                    print("\n--- BIOLOGICAL UPTAKE FLUXES (i-1) ---")
-                    print("UP_Ca:", UP_Ca[i-1], " | UP_Mg:", UP_Mg[i-1])
-                    print("UP_K:", UP_K[i-1], " | UP_Si:", UP_Si[i-1])
+        # Unpack results back into the arrays
+        Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], \
+        f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = x0
 
-                    print("\n--- CARBONATE MINERALS STATE ---")
-                    print("CaCO3 Solid:", CaCO3[i], " | MgCO3 Solid:", MgCO3[i])
-                    print("W_CaCO3 Flux:", W_CaCO3[i-1], " | W_MgCO3 Flux:", W_MgCO3[i-1])
+        #pH and C
+        pH[i] = -np.log10(H[i]/conv_mol) # [-]
+        CO2_air[i] = CO2_w[i]/k_H[i] #[mol/l]
+        HCO3[i] = k1[i]*CO2_w[i]/H[i]
+        CO3[i] = k2[i]*k1[i]*CO2_w[i]/(H[i]**2)
+        DIC[i] = CO2_w[i]+HCO3[i]+CO3[i]
 
-                    if M_rock_in > 0:
-                        print("\n--- ROCK/SILICATE WEATHERING STATE (i-1) ---")
-                        print("Total Rock Mass (M_rock):", M_rock[i-1])
-                        print("Surface Area (SA):", SA[i-1])
-                        print("Mineral Masses (M_min):")
-                        print(M_min[:, i-1])
-                        print("Weathering Rates (Wr):")
-                        print(Wr[:, i-1])
-                        print("Weathering Fluxes (EW):")
-                        print(EW[:, i-1])
-                        print("Particle Diameter Class (d):")
-                        print(d[:, i-1])
+        #Al speciation
+        AlOH[i] = (H[i]**3*K1/(H[i]**4+H[i]**3*K1+H[i]**2*K1*K2+H[i]*K1*K2*K3+K1*K2*K3*K4))*Al_w[i] #[mol/l]
+        AlOH2[i] = (H[i]**2*K1*K2/(H[i]**4+H[i]**3*K1+H[i]**2*K1*K2+H[i]*K1*K2*K3+K1*K2*K3*K4))*Al_w[i]
+        AlOH3[i] = (H[i]*K1*K2*K3/(H[i]**4+H[i]**3*K1+H[i]**2*K1*K2+H[i]*K1*K2*K3+K1*K2*K3*K4))*Al_w[i]
+        AlOH4[i] = Al_w[i]-(Al[i]+AlOH[i]+AlOH2[i]+AlOH3[i])
 
-                    print("\n--- VARIABLE VALUES (x0) ---")
-                    print("0:Alk | 1:CO2_w | 2:H | 3:R_alk | 4:Al_w | 5:Al | 6:Mg | 7:Ca")
-                    print("8:Na | 9:K | 10:f_Al | 11:f_Mg | 12:f_Na | 13:f_K | 14:f_H | 15:f_Ca")
-                    print(x0)
+        #concentrations
+        Si[i] = Si_tot[i]/(n*Zr*s[i]*1000) # [mol-conv/l]
+        An[i] = An_tot[i]/(n*Zr*s[i]*1000) # [mol_c-conv/l]
 
-                    print("\n--- RESIDUAL ERRORS ---")
-                    print("Eq 0-3: Alk, IC, H2O/C, Charge | Eq 4-5: Al | Eq 6-9: Mg, Ca, Na, K")
-                    print("Eq 10-15: Exch(Al, Mg, Na, K, H), SumFractions")
-                    print(residuals)
+        #CO2 diff flux
+        Fs[i] = D[i]/(Z_CO2)*(CO2_air[i]-CO2_atm)*1000 # [mol/d]
 
-                    print("\ncminpack solver error: status", status)
-                    raise ValueError("cminpack solver error")
+        #Carbonate minerals
+        CaCO3[i] = CaCO3[i-1] - W_CaCO3[i-1]*dt # [mol-conv]
+        MgCO3[i] = MgCO3[i-1] - W_MgCO3[i-1]*dt
 
-            # Unpack results back into the arrays
-            Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], \
-            f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = x0
+        #Carbonate weathering
+        Omega_CaCO3[i] = Ca[i]*CO3[i]/K_CaCO3 # [-]
+        Omega_MgCO3[i] = Mg[i]*CO3[i]/K_MgCO3
+        W_CaCO3[i], W_MgCO3[i] = smew_carb_W(CaCO3[i], MgCO3[i], Omega_CaCO3[i], Omega_MgCO3[i], s[i], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3)
 
-            #pH and C
-            pH[i] = -np.log10(H[i]/conv_mol) # [-]
-            CO2_air[i] = CO2_w[i]/k_H[i] #[mol/l]
-            HCO3[i] = k1[i]*CO2_w[i]/H[i]
-            CO3[i] = k2[i]*k1[i]*CO2_w[i]/(H[i]**2)
-            DIC[i] = CO2_w[i]+HCO3[i]+CO3[i]
+        #Silicate weathering
+        if M_rock_in > 0:
 
-            #Al speciation
-            AlOH[i] = (H[i]**3*K1/(H[i]**4+H[i]**3*K1+H[i]**2*K1*K2+H[i]*K1*K2*K3+K1*K2*K3*K4))*Al_w[i] #[mol/l]
-            AlOH2[i] = (H[i]**2*K1*K2/(H[i]**4+H[i]**3*K1+H[i]**2*K1*K2+H[i]*K1*K2*K3+K1*K2*K3*K4))*Al_w[i]
-            AlOH3[i] = (H[i]*K1*K2*K3/(H[i]**4+H[i]**3*K1+H[i]**2*K1*K2+H[i]*K1*K2*K3+K1*K2*K3*K4))*Al_w[i]
-            AlOH4[i] = Al_w[i]-(Al[i]+AlOH[i]+AlOH2[i]+AlOH3[i])
+            #saturation and weathering rate
+            for j in range(0, number_min):
+                Omega[j,i] = smew_sil_Omega(mineral[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp[j], conv_mol,conv_Al) #[-]
+                Wr[j,i]= smew_sil_Wr(mineral[j], Omega[j,i], s[i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol)
 
-            #concentrations
-            Si[i] = Si_tot[i]/(n*Zr*s[i]*1000) # [mol-conv/l]
-            An[i] = An_tot[i]/(n*Zr*s[i]*1000) # [mol_c-conv/l]
+            #post application only
+            if i> tt_app:
 
-            #CO2 diff flux
-            Fs[i] = D[i]/(Z_CO2)*(CO2_air[i]-CO2_atm)*1000 # [mol/d]
+                #mineral fractions in rock
+                M_min[:,i] = M_min[:,i-1]-EW[:,i-1]*MM_min[:]*dt # [g]
+                M_min[:, i] = np.maximum(M_min[:, i], 0)
+                M_rock[i] = np.sum(M_min[:,i]) + M_iner # [g]
+                if M_rock[i]>0:
+                    rock_f[:,i] = M_min[:,i]/M_rock[i] # [-]
 
-            #Carbonate minerals
-            CaCO3[i] = CaCO3[i-1] - W_CaCO3[i-1]*dt # [mol-conv]
-            MgCO3[i] = MgCO3[i-1] - W_MgCO3[i-1]*dt
+                #diameter variation
+                d_shrink = np.sum(rock_f[:,i-1]*Wr[:,i-1]*MM_min[:]/rho_rock)*dt # [m]
+                d[:,i] = d[:,i-1] - 2*d_shrink*lamb[:,i-1] # [m]
+                d[:,i][d[:,i] < 0] = 0
+                # d[:,i][d[:,i] < 1e-9] = 1e-9  # Fix: Prevent division by zero in SSA calcs
+                # delta_d[:,i] = np.insert(np.diff(d[:,i]),0,d[0,i]) # [m]
+                delta_d[0, i] = d[0, i]
+                delta_d[1:, i] = d[1:, i] - d[:-1, i]
+                lamb[:,i], SSA[:,i], psd[:,i], SA[i] = smew_psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
 
-            #Carbonate weathering
-            Omega_CaCO3[i] = Ca[i]*CO3[i]/K_CaCO3 # [-]
-            Omega_MgCO3[i] = Mg[i]*CO3[i]/K_MgCO3
-            W_CaCO3[i], W_MgCO3[i] = smew_carb_W(CaCO3[i], MgCO3[i], Omega_CaCO3[i], Omega_MgCO3[i], s[i], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3)
-
-            #Silicate weathering
-            if M_rock_in > 0:
-
-                #saturation and weathering rate
-                for j in range(0, number_min):
-                    Omega[j,i] = smew_sil_Omega(mineral[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp[j], conv_mol,conv_Al) #[-]
-                    Wr[j,i]= smew_sil_Wr(mineral[j], Omega[j,i], s[i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol)
-
-                #post application only
-                if i> tt_app:
-
-                    #mineral fractions in rock
-                    M_min[:,i] = M_min[:,i-1]-EW[:,i-1]*MM_min[:]*dt # [g]
-                    M_min[:, i] = np.maximum(M_min[:, i], 0)
-                    M_rock[i] = np.sum(M_min[:,i]) + M_iner # [g]
-                    if M_rock[i]>0:
-                        rock_f[:,i] = M_min[:,i]/M_rock[i] # [-]
-
-                    #diameter variation
-                    d_shrink = np.sum(rock_f[:,i-1]*Wr[:,i-1]*MM_min[:]/rho_rock)*dt # [m]
-                    d[:,i] = d[:,i-1] - 2*d_shrink*lamb[:,i-1] # [m]
-                    d[:,i][d[:,i] < 0] = 0
-                    # d[:,i][d[:,i] < 1e-9] = 1e-9  # Fix: Prevent division by zero in SSA calcs
-                    # delta_d[:,i] = np.insert(np.diff(d[:,i]),0,d[0,i]) # [m]
-                    delta_d[0, i] = d[0, i]
-                    delta_d[1:, i] = d[1:, i] - d[:-1, i]
-                    lamb[:,i], SSA[:,i], psd[:,i], SA[i] = smew_psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
-
-                #weathering fluxes
-                EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i] # [mol/d]
+            #weathering fluxes
+            EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i] # [mol/d]
 
     return BiogeochemResult(
         pH, H, CO2_w, CO2_air, HCO3, CO3, DIC, Alk,
@@ -830,7 +742,7 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
 
 def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add):
     """
-    For backward compatibility, calls _biogeochem_balance_numba
+    For backward compatibility, calls _biogeochem_balance_numba and returns the output as a dictionary.
     """
     result = _biogeochem_balance_numba(
                        n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add
