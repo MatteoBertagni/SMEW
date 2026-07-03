@@ -1,4 +1,3 @@
-from setuptools import setup, Extension
 import os
 import sys
 import logging
@@ -8,7 +7,7 @@ from setuptools import setup, Extension
 # Set up a logger that works within the setuptools ecosystem
 logger = logging.getLogger(__name__)
 
-# If we are running as a script, we need a basic config, 
+# If we are running as a script, we need a basic config,
 # otherwise setuptools/pip handles the handlers.
 if not logger.handlers:
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -61,20 +60,21 @@ extensions = []
 # Only attempt to build the Cython extension if cminpack headers were definitively found
 if cminpack_include:
     logger.info(f"cminpack found. Headers: {cminpack_include}, Libs: {cminpack_lib}")
-    
+
     try:
         import numpy
         from Cython.Build import cythonize
     except ImportError as e:
         missing_pkg = "numpy" if "numpy" in str(e) else "Cython"
-        logger.warn(f"{missing_pkg} not installed. Skipping fast solver build.")
+        logger.warning(f"{missing_pkg} not installed. Skipping fast solver build.")
     else:
         try:
             include_dirs = [numpy.get_include(), cminpack_include]
             library_dirs = [cminpack_lib] if cminpack_lib else []
             runtime_library_dirs = [cminpack_lib] if cminpack_lib else []
 
-            ext = Extension(
+            # Extension for biogeochem
+            ext_biogeochem = Extension(
                 name="smew.biogeochem_fast",
                 sources=["smew/biogeochem_fast.pyx"],
                 include_dirs=include_dirs,
@@ -83,8 +83,19 @@ if cminpack_include:
                 runtime_library_dirs=runtime_library_dirs,
                 extra_compile_args=['-O3', '-mavx2']
             )
-        
-            extensions = cythonize([ext], language_level="3")
+
+            # Extension for ic
+            ext_ic = Extension(
+                name="smew.ic_fast",
+                sources=["smew/ic_fast.pyx"],
+                include_dirs=include_dirs,
+                library_dirs=library_dirs,
+                libraries=["cminpack"],
+                runtime_library_dirs=runtime_library_dirs,
+                extra_compile_args=['-O3', '-mavx2']
+            )
+
+            extensions = cythonize([ext_biogeochem, ext_ic], language_level="3")
         except Exception as e:
             logger.error(f"Failed to cythonize extension: {e}")
             extensions = []
