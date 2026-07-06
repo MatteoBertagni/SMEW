@@ -12,7 +12,7 @@ from numba import njit
  # psd evolution 
  # Beerling et al., 2020
 
-@njit
+@njit(nogil=True)
 def psd_evol(d, delta_d, d_0, delta_d0, psd_0, n_d_cl, a, b, rho_rock):  
 
     lamb = np.zeros(n_d_cl)
@@ -33,7 +33,7 @@ def psd_evol(d, delta_d, d_0, delta_d0, psd_0, n_d_cl, a, b, rho_rock):
  # Silicate weathering [mol-conv/d]
  # Palandri et al., 2004
 
-@njit
+@njit(nogil=True)
 def sil_Wr(mineral, Omega, s, H, k_H_T, k_w_T, k_OH_T, n_H, n_OH, diss_f, conv_mol):
     
     #weathering rate [mol-conv/ m2 d]
@@ -44,7 +44,7 @@ def sil_Wr(mineral, Omega, s, H, k_H_T, k_w_T, k_OH_T, n_H, n_OH, diss_f, conv_m
  # Carbonate weathering [mol-conv/d]
  #In soil, precipitates form as discontinuous coatings on the surfaces of soil pores, so the precipitation surface area and geometry are indeterminate. https://nora.nerc.ac.uk/id/eprint/511084/1/Kirk%20et%20al%202015%20Geochmica%20et%20Cosmochimica%20Acta.pdf
 
-@njit
+@njit(nogil=True)
 def carb_W(CaCO3, MgCO3, Omega_CaCO3, Omega_MgCO3, s, Zr, r_CaCO3, r_MgCO3, tau_CaCO3, tau_MgCO3):
         
     #CaCO3
@@ -64,7 +64,7 @@ def carb_W(CaCO3, MgCO3, Omega_CaCO3, Omega_MgCO3, s, Zr, r_CaCO3, r_MgCO3, tau_
 #------------------------------------------------------------------------------
  # Silicate saturation index (Omega)
 
-@njit
+@njit(nogil=True)
 def sil_Omega(mineral, Ca, Mg, K, Na, Al, AlOH4, Si, H, K_sp, conv_mol, conv_Al):
         
     if mineral == 'albite':

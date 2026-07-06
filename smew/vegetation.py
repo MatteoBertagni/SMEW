@@ -6,7 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-@njit
+@njit(nogil=True)
 def get_stage_boundaries(
     stage_array: NDArray[np.int8],
     target_stage: int
@@ -38,7 +38,7 @@ def get_stage_boundaries(
     return np.array(starts, dtype=np.int32), np.array(stops, dtype=np.int32)
 
 
-@njit
+@njit(nogil=True)
 def get_season_boundaries(
     stage_array: NDArray[np.int8]
 ) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
@@ -82,7 +82,7 @@ def veg(v_in, T_v, k_v, t0_v, temp_soil,dt):
     return(v)
 
 
-@njit
+@njit(nogil=True)
 def veg_seasonal(
         growing_stage: NDArray[np.int8],
         k_v: float,
@@ -122,7 +122,7 @@ def veg_seasonal(
 
 #------------------------------------------------------------------------------
  # active uptake [Ca, Mg, K, Si] inspired by Porporato et al (2003, AWR)  and Porporato (2021, ecohydrology book)
-@njit
+@njit(nogil=True)
 def up_act(v, delta_v, xi, dt, T, Ca, Mg, K, Si, Dw, Zr, k_v, RAI, root_d):
     
     UP_act = np.zeros(len(xi))

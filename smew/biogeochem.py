@@ -116,7 +116,7 @@ def log_solver_status(logger: logging.Logger | None):
     logger.warning(_message)
 
 
-@njit
+@njit(nogil=True)
 def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add):
 
     # Preallocating the variables

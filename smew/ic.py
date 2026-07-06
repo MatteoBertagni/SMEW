@@ -63,7 +63,7 @@ solve_kelland_eq_c.argtypes = [
 #------------------------------------------------------------------------------
  # conc to CEC fractions
 
-@njit
+@njit(nogil=True)
 def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al):
 
     #constants
@@ -96,7 +96,7 @@ def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al):
 #------------------------------------------------------------------------------
  # CEC fractions to conc
 
-@njit
+@njit(nogil=True)
 def f_CEC_to_conc(f_CEC_in, pH_in, soil, conv_mol,conv_Al):
 
     #pH
@@ -138,7 +138,7 @@ def f_CEC_to_conc(f_CEC_in, pH_in, soil, conv_mol,conv_Al):
 #------------------------------------------------------------------------------
  # Input: Total (Ca, Mg, K, Na) and CEC base saturation (or acid saturation, f_H+f_Al)
 
-@njit
+@njit(nogil=True)
 def total_to_f_CEC_and_conc(total_in, pH_in, f_acid, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
 
     #constants
@@ -183,7 +183,7 @@ def total_to_f_CEC_and_conc(total_in, pH_in, f_acid, s, soil, n,Zr,CEC_tot,conv_
 #------------------------------------------------------------------------------
  # Calibration of K constants on coupled f_CEC and conc measurements
 
-@njit
+@njit(nogil=True)
 def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
 
     #pH
@@ -213,7 +213,7 @@ def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
 #------------------------------------------------------------------------------
  # Input: Total (Ca, Mg, K, Na) and Al_w
 
-@njit
+@njit(nogil=True)
 def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
 
     #constants
@@ -258,7 +258,7 @@ def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
 #------------------------------------------------------------------------------
  # Amann et al., fractions and Mg conc
 
-@njit
+@njit(nogil=True)
 def Amann(f_CEC_in, pH_in, Mg_in, soil, conv_mol,conv_Al):
 
     #pH

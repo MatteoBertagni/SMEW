@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 from smew.constants import soil_const as smew_soil_const
 
 
-@njit
+@njit(nogil=True)
 def moisture_balance(
     rain: NDArray[Any],
     Zr: float,

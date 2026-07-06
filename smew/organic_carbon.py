@@ -13,7 +13,7 @@ from smew.constants import CO2_atm as smew_CO2_atm
 from smew.constants import D_0 as smew_D_0
 
 
-@njit
+@njit(nogil=True)
 def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, temp_soil,dt,conv_mol, tau_OC=None):
       
     # Preallocating the variables
@@ -58,22 +58,22 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
 
     # input data: SOC_in and either tau_OC or CO2_air_in 
     # missing data (NaN) estimated via qs-state approximation
-    if SOC_in is not None:
+    if SOC_in is not None and not np.isnan(SOC_in):
         SOC[0] = SOC_in # [gOC/m3]
-        if tau_OC is not None:
+        if tau_OC is not None and not np.isnan(tau_OC):
             k_dec = 1/tau_OC # [1/d]
             #Fs_in = k_dec/MM_C*(r*Zr*f_s[0]*f_T[0]*SOC[0]*(1 + ratio_aut_het * v / k_v)) # [mol-conv/m2] (resp_het + resp_aut = Fs)
-        elif CO2_air_in is not None:
+        elif CO2_air_in is not None and not np.isnan(CO2_air_in):
             Fs_in = (D[0]*1000/(Z_CO2))*(CO2_air_in - CO2_atm) # [mol-conv/m2] 
             k_dec = MM_C*Fs_in/ (r*Zr*f_s[0]*f_T[0]*SOC[0]*(1 + ratio_aut_het * v[0] / k_v)) # [1/d] (resp_het + resp_aut = Fs)
 
     # ADD estimate for qs-equilibrium (in absence of data)
-    if ADD is None and SOC[0] is not None:
+    if (ADD is None or np.isnan(ADD)) and (SOC[0] is not None and not np.isnan(SOC[0])):
         ADD = r*Zr*k_dec*np.mean(f_T)*np.mean(f_s)*SOC[0] # [gOC/(m2*d)] of added OC
     
     # SOC estimate for qs-equilibrium (in absence of data)
-    if SOC_in is None and ADD is not None:
-        SOC[0] = (ADD/Zr)/(r*k_dec*np.mean(f_T)*np.mean(f_s)) #
+    if (SOC_in is None or np.isnan(SOC_in)) and (ADD is not None and not np.isnan(ADD)):
+        SOC[0] = float((ADD/Zr)/(r*k_dec*np.mean(f_T)*np.mean(f_s)))
            
     # OC equation
     DEC[0] = k_dec*f_T[0]*f_s[0]*SOC[0]
