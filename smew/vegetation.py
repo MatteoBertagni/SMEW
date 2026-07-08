@@ -68,7 +68,8 @@ def get_season_boundaries(
 
 #------------------------------------------------------------------------------
  # vegetation growth
-    
+
+@njit(nogil=True)
 def veg(v_in, T_v, k_v, t0_v, temp_soil,dt):
     
     v = np.zeros(len(temp_soil))
