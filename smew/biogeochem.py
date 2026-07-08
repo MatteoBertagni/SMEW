@@ -345,14 +345,14 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
 
     if An[0]<0:
         print("")
-        print(f"Alkalinity (Alk[0]): {Alk[0]} (Alk[0] = HCO3[0]+2*CO3[0]-H[0]+k_w[0]/H[0])")
-        print(f"HCO3[0]={HCO3[0]} ; CO3[0]={CO3[0]} ; H[0]={H[0]} ; k_w[0]={k_w[0]}")
-        print(f"Anions (An[0]): {An[0]} [mol_c/l]")
-        print(f"Cations: Ca={Ca[0]}, Mg={Mg[0]}, K={K[0]}, Na={Na[0]}, Al={Al[0]}, H={H[0]}")
-        print(f"HCO3[0] = k1[0]*CO2_w[0]/H[0] = {k1[0]}*{CO2_w[0]}/{H[0]} # [mol-conv/l]")
-        print(f"CO2_w[0] = k_H[0]*CO2_air[0] = {k_H[0]}*{CO2_air[0]} [mol-conv/l]")
-        print(f"r_het[0]={r_het[0]} ; r_aut[0]={r_aut[0]} [mol-conv/ m2 d]")
-        print(f"pH[0]={pH[0]} ; s[0]={s[0]}")
+        print("Alkalinity (Alk[0]):", Alk[0], " (Alk[0] = HCO3[0]+2*CO3[0]-H[0]+k_w[0]/H[0])")
+        print("HCO3[0]=", HCO3[0], " ; CO3[0]=", CO3[0], " ; H[0]=", H[0], " ; k_w[0]=", k_w[0], "")
+        print("Anions (An[0]): ", An[0], " [mol_c/l]")
+        print("Cations: Ca=", Ca[0], ", Mg=", Mg[0], ", K=", K[0], ", Na=", Na[0], ", Al=", Al[0], ", H=", H[0], "")
+        print("HCO3[0] = k1[0]*CO2_w[0]/H[0] = ", k1[0], "*", CO2_w[0], "/", H[0], " # [mol-conv/l]")
+        print("CO2_w[0] = k_H[0]*CO2_air[0] = ", k_H[0], "*", CO2_air[0], " [mol-conv/l]")
+        print("r_het[0]=", r_het[0], " ; r_aut[0]=", r_aut[0], " [mol-conv/ m2 d]")
+        print("pH[0]=", pH[0], " ; s[0]=", s[0], "")
 
         # # Dissolve solid CaCO3 to make up the exact difference.
         # # Since Ca is divalent (+2), we divide the missing charge by 2.
@@ -362,7 +362,7 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
         # # Recalculate Anions (will now be exactly 0)
         # An[0] = 2*Mg[0] + 2*Ca[0] + Na[0] + K[0] - Alk[0]
         #
-        # print(f"Dissolved CaCO3: {missing_calcium}")
+        # print("Dissolved CaCO3: ", missing_calcium)
 
         raise ValueError("Not enough cations for this alkalinity")
 

@@ -501,7 +501,7 @@ cdef int biogeochem_equations_c_fd(void *p, int n, const double *state, double *
 #         status = hybrj1(biogeochem_equations_c_jac_log, <void*>&args, n_vars, x, fvec, fjac, n_vars, tol, wa, lwa)
 #
 #     if status != 1:
-#         print(f"JAC_LOG: Status: {status} | F-Evals: {args.func_calls} | J-Evals: {args.jac_calls}")
+#         print("JAC_LOG: Status: ", status, " | F-Evals: ", args.func_calls, " | J-Evals: ", args.jac_calls)
 #
 #     cdef double[:] result = np.zeros(n_vars, dtype=np.float64)
 #     cdef double[:] residuals = np.zeros(n_vars, dtype=np.float64)
@@ -571,7 +571,7 @@ cdef int biogeochem_equations_c_fd(void *p, int n, const double *state, double *
 #         status = hybrj1(biogeochem_equations_c_jac, <void*>&args, n_vars, x, fvec, fjac, n_vars, tol, wa, lwa)
 #
 #     if status != 1:
-#         print(f"JAC Status: {status} | F-Evals: {args.func_calls} | J-Evals: {args.jac_calls}")
+#         print("JAC Status: ", status, " | F-Evals: ", args.func_calls, " | J-Evals: ", args.jac_calls)
 #
 #     cdef double[:] result = np.zeros(n_vars, dtype=np.float64)
 #     cdef double[:] residuals = np.zeros(n_vars, dtype=np.float64)
