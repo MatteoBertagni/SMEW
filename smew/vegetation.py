@@ -34,8 +34,18 @@ def get_stage_boundaries(
     if in_block:
         stops.append(len(stage_array))
 
-    # Convert typed lists back to standard NumPy arrays before returning
-    return np.array(starts, dtype=np.int32), np.array(stops, dtype=np.int32)
+    # Create empty NumPy arrays sized exactly to the starts and stops lists as numba fails to directly convert them to
+    # numpy array
+    out_starts = np.empty(len(starts), dtype=np.int32)
+    out_stops = np.empty(len(stops), dtype=np.int32)
+
+    for j in range(len(starts)):
+        out_starts[j] = starts[j]
+
+    for j in range(len(stops)):
+        out_stops[j] = stops[j]
+
+    return out_starts, out_stops
 
 
 @njit(nogil=True)
@@ -63,7 +73,16 @@ def get_season_boundaries(
     if in_block:
         stops.append(len(stage_array))
 
-    return np.array(starts, dtype=np.int32), np.array(stops, dtype=np.int32)
+    out_starts = np.empty(len(starts), dtype=np.int32)
+    out_stops = np.empty(len(stops), dtype=np.int32)
+
+    for j in range(len(starts)):
+        out_starts[j] = starts[j]
+
+    for j in range(len(stops)):
+        out_stops[j] = stops[j]
+
+    return out_starts, out_stops
 
 
 #------------------------------------------------------------------------------
