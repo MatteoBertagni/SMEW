@@ -103,6 +103,9 @@ BiogeochemResult = namedtuple("BiogeochemResult", [
 ])
 
 
+RES_THRESHOLD = 1e-1
+
+
 def log_solver_status(logger: logging.Logger | None):
     """
     Logs the status of the solver selection based on the availability of the optimized solver.
@@ -234,6 +237,8 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
         d = np.zeros((1, len(s)))
         psd = np.zeros((1, len(s)))
         SSA = np.zeros((1, len(s)))
+
+    errors = np.zeros((16, len(s)))
 
     #------------------------------------------------------------------------------
     # Constants
@@ -548,9 +553,14 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
             K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
         )
 
-        # 1: OK, > 1: not properly converged, < 1: fatal error. We should use != 1 but the model is not stable enough for now
+        # assign residuals to the main errors array
+        for j in range(16):
+            errors[j,i] = residuals[j]
+
+        # 1: OK, > 1: not properly converged, < 1: fatal error. We should use != 1 but the model is not stable enough
+        # for now, so we use a custom threshold
         # if status != 1:
-        if status < 1:
+        if np.any(np.abs(errors[:,i]) > RES_THRESHOLD) and status != 1:
             # try with another initial guess:
 
             ##### LEGACY SOLVER #####
@@ -605,12 +615,15 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
                 K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
             )
 
-            # 1: OK, > 1: not properly converged, < 1: fatal error. We should use != 1 but the model is not stable enough for now
+            # assign residuals to the main errors array
+            for j in range(16):
+                errors[j,i] = residuals[j]
+
+            # 1: OK, > 1: not properly converged, < 1: fatal error. We should use != 1 but the model is not stable
+            # enough for now, so we use a custom threshold
             # if status != 1:
-            if status < 1:
+            if np.any(np.abs(errors[:,i]) > RES_THRESHOLD) and status != 1:
                 # Report the failed convergence:
-                # Numba-safe: Completely avoid lists, tuples, and loops over strings.
-                # Print static legends and dump the 1D arrays natively.
                 print("\n=== DIAGNOSTIC REPORT FOR STATUS", status, "FAILURE ===")
                 print("Convergence failed at index", i)
 
