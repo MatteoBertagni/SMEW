@@ -41,8 +41,13 @@ from smew.ic import (
 
 from smew.weathering import (
     psd_evol,
+    psd_number_from_mass,
     sil_Wr,
     sil_Omega,
+    wetness_SA,
+    wet_f_Anand,
+    cumulative_area,
+    cumulative_area_index,
     carb_W
 )
 

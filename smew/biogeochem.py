@@ -50,7 +50,18 @@ def _biogeochem_equations_numba(
         1-(f_Ca+f_Al+f_Mg+f_Na+f_K+f_H)
     )
 
-def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add):
+   
+def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add, 
+                       keyword_ssa='linear', # options: 'constant', 'linear', 'nonlinear'
+                       pore_d_in=None,
+                       pore_pdf_in=None,
+                       rho_rock_in=None,
+                       mixalf_in=1.0
+                      ):
+    
+    if keyword_ssa == 'nonlinear':
+        if pore_d_in is None or pore_pdf_in is None:
+            raise ValueError("pore_d_in and pore_pdf_in must be provided when keyword_ssa='nonlinear'")
             
     # Preallocating the variables
     pH = np.zeros(len(s))
@@ -127,6 +138,8 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     lamb = np.zeros([1, len(s)])
     SSA = np.zeros([1, len(s)])
     psd = np.zeros([1, len(s)])
+
+    wet_f = np.zeros([len(s)])
      
     if M_rock_in > 0:
         number_min = len(mineral)
@@ -159,6 +172,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             lamb = np.zeros([n_d_cl, len(s)])
             SSA = np.zeros([n_d_cl, len(s)])
             psd = np.zeros([n_d_cl, len(s)])
+            psd_rock_num = np.zeros([n_d_cl, len(s)])            
         
     errors = np.zeros([16, len(s)]) 
     
@@ -205,7 +219,10 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             k_OH_T[j,:] = k_diss_OH[j]*np.exp(-E_OH[j]*1000/(8.314/conv_mol)*(1/T_K[:]-1/(25+273.15)))
     
     #rock density
-    rho_rock = 3*1e6 # [g/m3]
+    if rho_rock_in is None:
+        rho_rock = 3e6 # [g/m3]
+    else:
+        rho_rock = rho_rock_in
     
     #rock surface fractality (Beerling 2020)
     b = 0.35 #[-]
@@ -237,7 +254,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         Z_CO2 = Zr/2
     else:
         Z_CO2 = 0.15
-    CO2_air[0] = (r_het[0]+r_aut[0])/(D[0]*1000/(Z_CO2))+CO2_atm #mol-conv/l (Fs = resp_het + resp_aut)
+    CO2_air[0] = (r_het[0]+r_aut[0])/(D[0]*1000/(Z_CO2))+CO2_atm #mol-conv/l_air (Fs = resp_het + resp_aut), assumption of no leaching
     Fs[0] = D[0]/(Z_CO2)*(CO2_air[0]-CO2_atm)*1000 # [mol-conv/d]
     CO2_w[0] = k_H[0]*CO2_air[0] # [mol-conv/l] Henry's law
     
@@ -260,7 +277,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         print(An[0])
         raise ValueError("Not enough cations for this alkalinity")
         
-    # aluminium speciation
+    # aluminum speciation
     Al[0]=(H[0]**4/(H[0]**4+H[0]**3*K1+H[0]**2*K1*K2+H[0]*K1*K2*K3+K1*K2*K3*K4))*Al_w[0] #mol/l
     AlOH[0]=(H[0]**3*K1/(H[0]**4+H[0]**3*K1+H[0]**2*K1*K2+H[0]*K1*K2*K3+K1*K2*K3*K4))*Al_w[0]
     AlOH2[0]=(H[0]**2*K1*K2/(H[0]**4+H[0]**3*K1+H[0]**2*K1*K2+H[0]*K1*K2*K3+K1*K2*K3*K4))*Al_w[0]
@@ -327,8 +344,9 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         d[:,tt_app] = d_in #[m]
         delta_d[:,tt_app] = np.insert(np.diff(d[:,tt_app]),0,d[0,tt_app])
         
-        #particle size distribution
+        #particle size distribution by mass and number
         psd[:,tt_app] = psd_perc_in*M_rock[tt_app]/delta_d[:,tt_app] #[g/m]
+        psd_rock_num[:,tt_app] = smew.psd_number_from_mass(psd[:,tt_app], d[:,tt_app], rho_rock)
         
         #refinement of fractal constant based on measured SSA 
         if SSA_in > 0:
@@ -338,15 +356,19 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         lamb[:,tt_app] = a*d[:,tt_app]**b #[-]
         SSA[:,tt_app] = 6/(d[:,tt_app]*rho_rock)*lamb[:,tt_app] # [m2/g]
         SA[tt_app] = np.sum(SSA[:,tt_app]*psd[:,tt_app]*delta_d[:,tt_app]) #[m2]
+
+        #wet surface area fraction
+        wet_f[tt_app] = smew.wetness_SA(s[tt_app],keyword_ssa, pore_d_in, pore_pdf_in,  d[:,tt_app], psd_rock_num[:,tt_app], mixalf_in, d[-1,tt_app])
                     
         #mineral weathering
         if t_app == 0:
             for j in range(0, number_min):
-                Omega[j,0] = smew.sil_Omega(mineral[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp[j], conv_mol,conv_Al) #[-]
+                #saturation state [-]
+                Omega[j,0] = smew.sil_Omega(mineral[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp[j], conv_mol,conv_Al)
                 #weathering rate [mol-conv/ m2 d]                
-                Wr[j,0]= smew.sil_Wr(mineral[j], Omega[j,0], s[0], H[0], k_H_T[j,0], k_w_T[j,0],k_OH_T[j,0], n_H[j], n_OH[j], diss_f,  conv_mol) 
+                Wr[j,0] = smew.sil_Wr(mineral[j], Omega[j,0], H[0], k_H_T[j,0], k_w_T[j,0],k_OH_T[j,0], n_H[j], n_OH[j], diss_f,  conv_mol) 
                 #weathering flux [mol-conv/d] 
-                EW[j,0] = Wr[j,0]*SA[0]*rock_f[j,0]
+                EW[j,0] = Wr[j,0]*SA[0]*rock_f[j,0]*wet_f[0]
                 
 #------------------------------------------------------------------------------
     #SYSTEM RESOLUTION
@@ -451,8 +473,8 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                 #saturation and weathering rate
                 for j in range(0, number_min):
                     Omega[j,i] = smew.sil_Omega(mineral[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp[j], conv_mol,conv_Al) #[-]           
-                    Wr[j,i]= smew.sil_Wr(mineral[j], Omega[j,i], s[i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol) 
-
+                    Wr[j,i]= smew.sil_Wr(mineral[j], Omega[j,i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol)
+                
                 #post application only
                 if i> tt_app:
                     
@@ -469,9 +491,13 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                     d[:,i][d[:,i] < 0] = 0
                     delta_d[:,i] = np.insert(np.diff(d[:,i]),0,d[0,i]) # [m]                
                     [lamb[:,i], SSA[:,i], psd[:,i], SA[i]] = smew.psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
-                 
+                    psd_rock_num[:,i] = smew.psd_number_from_mass(psd[:,i], d[:,i], rho_rock)
+
+                #wetness scaling of the surface area
+                wet_f[i] = smew.wetness_SA(s[i],keyword_ssa, pore_d_in, pore_pdf_in, d[:,i], psd_rock_num[:, i], mixalf_in, d[-1,i])
+            
                 #weathering fluxes         
-                EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i] # [mol/d]
+                EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i]*wet_f[i] # [mol/d]
                     
 
     data = {k: v for k, v in locals().items()}
