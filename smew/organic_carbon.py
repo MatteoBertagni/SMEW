@@ -45,10 +45,10 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
     mean_temp = np.mean(temp_soil)
     # TODO: the model doesn't work for frozen environment
     if mean_temp <= 0.1:
-        f_T = np.zeros(len(s))
+        f_T = np.zeros(len(s), dtype=np.float64)
     else:
-        f_T = temp_soil / mean_temp
-    f_T[f_T < 0] = 0
+        f_T = (temp_soil / mean_temp).astype(np.float64)
+    f_T[f_T < 0] = 0.0
 
     #CO2 gas-diffusion baricenter
     if Zr <= 0.3:
