@@ -46,8 +46,7 @@ from smew.weathering import (
     sil_Omega,
     wetness_SA,
     wet_f_Anand,
-    cumulative_area,
-    cumulative_area_index,
+    normalized_cumulative_area,
     carb_W
 )
 
