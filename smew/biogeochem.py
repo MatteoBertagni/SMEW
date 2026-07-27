@@ -559,8 +559,9 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
 
         # 1: OK, > 1: not properly converged, < 1: fatal error. We should use != 1 but the model is not stable enough
         # for now, so we use a custom threshold
+        if status < 1:
         # if status != 1:
-        if np.any(np.abs(errors[:,i]) > RES_THRESHOLD) and status != 1:
+        # if np.any(np.abs(errors[:,i]) > RES_THRESHOLD) and status != 1:
             # try with another initial guess:
 
             ##### LEGACY SOLVER #####
@@ -621,8 +622,9 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
 
             # 1: OK, > 1: not properly converged, < 1: fatal error. We should use != 1 but the model is not stable
             # enough for now, so we use a custom threshold
+            if status < 1:
             # if status != 1:
-            if np.any(np.abs(errors[:,i]) > RES_THRESHOLD) and status != 1:
+            # if np.any(np.abs(errors[:,i]) > RES_THRESHOLD) and status != 1:
                 # Report the failed convergence:
                 print("\n=== DIAGNOSTIC REPORT FOR STATUS", status, "FAILURE ===")
                 print("Convergence failed at index", i)
