@@ -45,12 +45,8 @@ cdef public int solve_eqf_Ca_fd(
     cdef double tol = 1e-12
     cdef int status
 
-    cdef double *fvec = <double *>malloc(n_vars * sizeof(double))
-    cdef double *wa = <double *>malloc(lwa * sizeof(double))
-    if not fvec or not wa:
-        if fvec: free(fvec)
-        if wa: free(wa)
-        return -999
+    cdef double fvec[1]
+    cdef double wa[10]
 
     cdef EqfCaArgs args
     args.Al = Al_in
@@ -67,8 +63,7 @@ cdef public int solve_eqf_Ca_fd(
     args.K_Ca_H = K_Ca_H_in
 
     status = hybrd1(eqf_Ca_c, <void*>&args, n_vars, x0, fvec, tol, wa, lwa)
-    free(fvec)
-    free(wa)
+
     return status
 
 # ==============================================================================
@@ -133,12 +128,8 @@ cdef public int solve_total_eq_fd(
     cdef double tol = 1e-14
     cdef int status
 
-    cdef double *fvec = <double *>malloc(n_vars * sizeof(double))
-    cdef double *wa = <double *>malloc(lwa * sizeof(double))
-    if not fvec or not wa:
-        if fvec: free(fvec)
-        if wa: free(wa)
-        return -999
+    cdef double fvec[13]
+    cdef double wa[338]
 
     cdef EqTotalArgs args
     args.n_p = n_in
@@ -154,8 +145,7 @@ cdef public int solve_total_eq_fd(
     args.f_acid = f_acid_in
 
     status = hybrd1(eq_total_c, <void*>&args, n_vars, x0, fvec, tol, wa, lwa)
-    free(fvec)
-    free(wa)
+
     return status
 
 # ==============================================================================
@@ -195,12 +185,8 @@ cdef public int solve_kelland_eq_fd(
     cdef double tol = 1e-14
     cdef int status
 
-    cdef double *fvec = <double *>malloc(n_vars * sizeof(double))
-    cdef double *wa = <double *>malloc(lwa * sizeof(double))
-    if not fvec or not wa:
-        if fvec: free(fvec)
-        if wa: free(wa)
-        return -999
+    cdef double fvec[5]
+    cdef double wa[70]
 
     cdef EqKellandArgs args
     args.Al_w = Al_w_in; args.n_p = n_in; args.Zr = Zr_in; args.s0 = s0_in
@@ -210,6 +196,5 @@ cdef public int solve_kelland_eq_fd(
     args.f_Mg = f_Mg_in; args.f_Na = f_Na_in; args.f_K = f_K_in
 
     status = hybrd1(eq_kelland_c, <void*>&args, n_vars, x0, fvec, tol, wa, lwa)
-    free(fvec)
-    free(wa)
+
     return status

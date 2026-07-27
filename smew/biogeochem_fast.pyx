@@ -108,16 +108,11 @@ cdef public int solve_biogeochem_eq_fd(
     cdef double tol = 1e-12
     cdef int status
 
-    cdef double *fvec = <double *>malloc(n_vars * sizeof(double))
-    cdef double *wa = <double *>malloc(lwa * sizeof(double))
+    cdef double fvec[16]
+    cdef double wa[488]
 
     memset(fvec, 0, n_vars*sizeof(double))
     memset(wa, 0, lwa*sizeof(double))
-
-    if not fvec or not wa:
-        if fvec: free(fvec)
-        if wa: free(wa)
-        return -999
 
     cdef EquationArgs args
     args.Alk_tot = Alk_tot_in
@@ -153,9 +148,6 @@ cdef public int solve_biogeochem_eq_fd(
     # Re-evaluate at the actual returned solution:
     biogeochem_equations_c_fd(<void*>&args, n_vars, x0, residuals, 1)
 
-    free(fvec)
-    free(wa)
-
     return status
 
 
@@ -183,13 +175,8 @@ cdef public int solve_water_eq_fd(
     cdef double tol = 1e-12
     cdef int status
 
-    cdef double *fvec = <double *>malloc(n_vars * sizeof(double))
-    cdef double *wa = <double *>malloc(lwa * sizeof(double))
-
-    if not fvec or not wa:
-        if fvec: free(fvec)
-        if wa: free(wa)
-        return -999
+    cdef double fvec[1]
+    cdef double wa[10]
 
     cdef EqWaterArgs args
     args.Alk_rain = Alk_rain_in
@@ -199,9 +186,6 @@ cdef public int solve_water_eq_fd(
     args.k_w = k_w_in
 
     status = hybrd1(eq_water_c, <void*>&args, n_vars, x0, fvec, tol, wa, lwa)
-
-    free(fvec)
-    free(wa)
 
     return status
 
@@ -230,13 +214,8 @@ cdef public int solve_H_eq_fd(
     cdef double tol = 1e-12
     cdef int status
 
-    cdef double *fvec = <double *>malloc(n_vars * sizeof(double))
-    cdef double *wa = <double *>malloc(lwa * sizeof(double))
-
-    if not fvec or not wa:
-        if fvec: free(fvec)
-        if wa: free(wa)
-        return -999
+    cdef double fvec[1]
+    cdef double wa[10]
 
     cdef EqHArgs args
     args.k1 = k1_in
@@ -246,8 +225,5 @@ cdef public int solve_H_eq_fd(
     args.Alk0 = Alk0_in
 
     status = hybrd1(eq_H_c, <void*>&args, n_vars, x0, fvec, tol, wa, lwa)
-
-    free(fvec)
-    free(wa)
 
     return status
