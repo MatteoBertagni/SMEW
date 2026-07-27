@@ -81,7 +81,7 @@ if cminpack_include:
                 library_dirs=library_dirs,
                 libraries=["cminpack"],
                 runtime_library_dirs=runtime_library_dirs,
-                extra_compile_args=['-O3', '-mavx2']
+                extra_compile_args=['-O3', '-mavx2', '-std=gnu17']
             )
 
             # Extension for ic
@@ -92,7 +92,7 @@ if cminpack_include:
                 library_dirs=library_dirs,
                 libraries=["cminpack"],
                 runtime_library_dirs=runtime_library_dirs,
-                extra_compile_args=['-O3', '-mavx2']
+                extra_compile_args=['-O3', '-mavx2', '-std=gnu17']
             )
 
             extensions = cythonize([ext_biogeochem, ext_ic], language_level="3")
