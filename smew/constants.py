@@ -53,107 +53,145 @@ def plant_nutr_f():
     return v_f
 
 #------------------------------------------------------------------------------
- # soil constants
 
-@njit
-def soil_const(soil):
-    
-    # values are from Laio et al., (2001, Adv. Water Resources)
-    
-    if soil == 'sand':
-        s_h = 0.08 #hygroscopic point
-        s_w = 0.11 #wilting
-        s_i = 0.33 #max transpiration
-        #s_fc = 0.35 #field capacity - not needed in the current formulation
-        b = 4.05 #power law exponent of the rentention curve
-        K_s = 14 #(m/d)
-        n = 0.35 #porosity
-    elif soil == 'loamy sand':
-        s_h = 0.08
-        s_w = 0.11
-        s_i = 0.31
-        #s_fc = 0.52
-        b = 4.4
-        K_s = 13
-        n = 0.42
-    elif soil == 'sandy loam':
-        s_h = 0.14
-        s_w = 0.18
-        s_i = 0.46
-        #s_fc = 0.56
-        b = 4.9
-        K_s = 3
-        n = 0.43
-    elif soil == 'silt loam': # Clapp & Hornberger (2008)
-        s_h = 0.22
-        s_w = 0.28
-        s_i = 0.71
+    @njit
+def soil_hydraulic_const(soil):
+    """
+    Campbell/Clapp-Hornberger hydraulic parameters.
+
+    Returns
+    -------
+    psi_s_log_cm : float
+        antilog of the mean log saturation suction from Clapp & Hornberger (1978), Table 2. [cm H2O].
+    b : float
+        Campbell exponent [-].
+    K_s : float
+        Saturated hydraulic conductivity [m/d].
+    n : float
+        Porosity [-].
+    """
+
+    if soil == "sand":
+        psi_s_log_cm = 3.50
+        b = 4.05
+        K_s = 14.0
+        n = 0.395
+
+    elif soil == "loamy sand":
+        psi_s_log_cm = 1.78
+        b = 4.38
+        K_s = 13.0
+        n = 0.410
+
+    elif soil == "sandy loam":
+        psi_s_log_cm = 7.18
+        b = 4.90
+        K_s = 3.0
+        n = 0.435
+
+    elif soil == "silt loam":
+        psi_s_log_cm = 56.6
         b = 5.30
         K_s = 0.62
         n = 0.485
-    elif soil == 'silt': # Using values for silt loam because not in Clapp & Hornberger (2008)
-        s_h = 0.22
-        s_w = 0.28
-        s_i = 0.71
+
+    elif soil == "silt":
+        # Using silt loam, as there is no separate silt class in Clapp & Hornberger (1978, WRR) Table 2.
+        psi_s_log_cm = 56.6
         b = 5.30
         K_s = 0.62
         n = 0.485
-    elif soil == 'loam':
-        s_h = 0.19
-        s_w = 0.24
-        s_i = 0.57
-        #s_fc = 0.65
-        b = 5.4
+
+    elif soil == "loam":
+        psi_s_log_cm = 14.6
+        b = 5.39
         K_s = 0.6
-        n = 0.45
-    elif soil == 'sandy clay loam': 
-        s_h = 0.27
-        s_w = 0.32
-        s_i = 0.61
+        n = 0.451
+
+    elif soil == "sandy clay loam":
+        psi_s_log_cm = 8.63
         b = 7.12
         K_s = 0.54
-        n = 0.42
-    elif soil == 'silty clay loam': 
-        s_h = 0.32
-        s_w = 0.37
-        s_i = 0.68
+        n = 0.420
+
+    elif soil == "silty clay loam":
+        psi_s_log_cm = 14.6
         b = 7.75
         K_s = 0.15
-        n =  0.477
-    elif soil == 'clay loam':
-        s_h = 0.39
-        s_w = 0.45
-        s_i = 0.68
+        n = 0.477
+
+    elif soil == "clay loam":
+        psi_s_log_cm = 36.1
         b = 8.52
         K_s = 0.2
-        n = 0.47
-    elif soil == 'sandy clay': 
-        s_h = 0.39
-        s_w = 0.44
-        s_i = 0.69
+        n = 0.476
+
+    elif soil == "sandy clay":
+        psi_s_log_cm = 6.16
         b = 10.4
         K_s = 0.19
         n = 0.426
-    elif soil == 'silty clay': 
-        s_h = 0.43
-        s_w = 0.49
-        s_i = 0.76
+
+    elif soil == "silty clay":
+        psi_s_log_cm = 17.4
         b = 10.4
         K_s = 0.09
         n = 0.492
-    elif soil == 'clay':
-        s_h = 0.47
-        s_w = 0.52
-        s_i = 0.78
+
+    elif soil == "clay":
+        psi_s_log_cm = 18.6
         b = 11.4
         K_s = 0.11
-        n = 0.5
+        n = 0.482
+
     else:
         raise ValueError("Invalid soil type!")
-                                                      
+
+    return psi_s_log_cm, b, K_s, n
+    
+#------------------------------------------------------------------------------
+# soil hydrological constants
+
+@njit
+def soil_const(soil,
+    psi_h_mpa=-10.0,
+    psi_w_mpa=-3.0,
+    psi_i_mpa=-0.03
+):
+   """
+Parameters
+----------
+soil : str
+    Soil texture class.
+psi_h_mpa, psi_w_mpa, psi_i_mpa : float
+    Water potentials [MPa] used to compute s_h, s_w, and s_i.
+    Defaults are -10, -3, and -0.03 MPa, following Laio et al. (2001).
+
+Returns
+-------
+s_h, s_w, s_i : float
+    Hygroscopic, wilting, and incipient stress points [-].
+    
+"""
+
+    psi_s_log_cm, b, K_s, n = soil_hydraulic_const(soil)
+
+    mpa_to_cm = 10197.16213 #from MPa to cm H2O
+
+    psi_h_cm = abs(psi_h_mpa) * mpa_to_cm
+    psi_w_cm = abs(psi_w_mpa) * mpa_to_cm
+    psi_i_cm = abs(psi_i_mpa) * mpa_to_cm
+
+    # Campbell/Clapp-Hornberger relation: |psi| = |psi_s| * s^(-b)ù
+    
+    s_h = min(1.0, (psi_s_log_cm / psi_h_cm) ** (1.0 / b))
+    s_w = min(1.0, (psi_s_log_cm / psi_w_cm) ** (1.0 / b))
+    s_i = min(1.0, (psi_s_log_cm / psi_i_cm) ** (1.0 / b))
+
     return s_h, s_w, s_i, b, K_s, n
 
 #------------------------------------------------------------------------------
+    
  # EW mineral constants 
 
 def min_const(mineral, conv_mol):
