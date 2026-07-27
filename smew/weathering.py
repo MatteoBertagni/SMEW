@@ -5,7 +5,7 @@ Created on Mon Dec 16 14:34:44 2019
 """
 
 import numpy as np
-from scipy.integrate import simpson
+from scipy.integrate import cumulative_trapezoid
     
 #------------------------------------------------------------------------------
  # psd evolution (based on Beerling et al., 2020)
@@ -36,7 +36,7 @@ def psd_number_from_mass(mass_distribution_rock, diameter_rock, density_rock):
 
 #------------------------------------------------------------------------------
 
- # Wetness factor for the rock surface area in the soil [0-1]
+# Wetness factor for the rock surface area in the soil [0-1]
 
 def wetness_SA(s, keyword_ssa, pore_d, pore_pdf, d, psd_rock, mixalf, lmax):
 
@@ -56,59 +56,118 @@ def wetness_SA(s, keyword_ssa, pore_d, pore_pdf, d, psd_rock, mixalf, lmax):
 
 #------------------------------------------------------------------------------
 
-    # nonlinear scaling of the surface area with moisture (Anand et al., 2026, WRR)
-
 def wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf=1.0, lmax=None):
+    """
+    Calculate the nonlinear scaling of the surface area with moisture
+    by computing the fraction of rock-particle surface area in contact with soil water.
+
+    Based on Anand et al. (2026), Water Resources Research,
+    doi:10.1029/2025WR041479.
+
+    The largest water-filled pore size is obtained by inverting the
+    cumulative soil pore-size distribution at relative soil water 
+    saturation `s` (Equation 2). Rock-powder sizes are mapped to effective
+    pore locations according to the mixing parameter `mixalf` (Equation 4).
+    The wet surface fraction is then calculated as the normalized
+    cumulative surface area of particles located in water-filled pores
+    (Equation 3).
+
+    Continuous interpolation is used when inverting the pore-size
+    distribution and evaluation of the cumulative rock surface area.
+
+    Parameters
+    ----------
+    pore_d : array_like
+        Soil pore-size grid.
+    pore_pdf : array_like
+        Probability density associated with the pore-size grid.
+    s : float
+        Relative soil moisture or degree of pore saturation [0-1].
+    d : array_like
+        Rock-powder size.
+    psd_rock : array_like
+        Rock-powder number distribution.
+    mixalf : float, optional
+        Rock-soil mixing parameter, where 1 represents perfect mixing
+        and smaller values shift rock-powder particles toward larger soil pores.
+    lmax : float, optional
+        Maximum effective pore location. If not given, `max(d)` is used.
+
+    Returns
+    -------
+    float
+        Fraction of total rock-particle surface area that is wet [0-1].
+    """
+
+    if pore_d.size != pore_pdf.size:
+        raise ValueError("pore_d and pore_pdf must have the same length.")
+
+    if d.size != psd_rock.size:
+        raise ValueError("d and psd_rock must have the same length.")
+
+    if not 0 < mixalf <= 1:
+        raise ValueError("mixalf must be greater than 0 and no larger than 1.")
 
     if lmax is None:
-        lmax = d[-1]
+        lmax = np.max(d)
 
-    if s >= 1:
-        rw = pore_d[-1]
-    else:
-        rw = cumulative_area_index(pore_d, pore_pdf, s)[0]
+    s = float(np.clip(s, 0.0, 1.0))
 
+    # Convert soil moisture into largest water-filled pore
+    pore_grid, pore_cdf = normalized_cumulative_area( pore_d, pore_pdf)
+
+    # Continuous inverse of Equation 2: F_p(rw) = s (Anand et al., 2026, WRR)
+    rw = np.interp(s, pore_cdf, pore_grid)
+
+    # Convert particle diameter into its effective location
     c = (1.0 - mixalf) * lmax
     d_eff = mixalf * d + c
 
-    if rw >= d_eff[-1]:
-        wet_f = 1.0
-    else:
-        idx = np.searchsorted(d_eff, rw)
+    # Equation 3 integrand after transforming d to pore location (Anand et al., WRR, 2026)
+    rock_area_density = ( d**2 * psd_rock / mixalf)
 
-        area_cum = cumulative_area(
-            d_eff,
-            d**2 * (1.0 / mixalf) * psd_rock
-        )
+    rock_grid, rock_area_cdf = normalized_cumulative_area(d_eff, rock_area_density)
 
-        wet_f = area_cum[idx] / area_cum[-1]
+    # Evaluate cumulative wet surface area continuously at rw
+    wet_f = np.interp( rw, rock_grid, rock_area_cdf, left=0.0, right=1.0)
 
-    return wet_f
-
+    return float(np.clip(wet_f, 0.0, 1.0))
+ 
 #------------------------------------------------------------------------------
 
-def cumulative_area(xg, yg):
-    cum_area = np.zeros_like(xg, dtype=float)
+def normalized_cumulative_area(x, y):
+    """
+    Construct a normalized cumulative distribution by numerically
+    integrating a nonnegative density over an increasing grid.
 
-    for i in range(len(xg)):
-        x_sub = xg[:i+1]
-        y_sub = yg[:i+1]
+    The returned cumulative values range from 0 to 1 and are used to
+    represent the pore-size CDF in Equation 2 and the normalized
+    cumulative rock surface area in Equation 3 of Anand et al. WRR (2026).
+    """
+    
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
 
-        valid_idx = np.where(np.diff(x_sub, prepend=np.nan) != 0)[0]
-        x_valid = x_sub[valid_idx]
-        y_valid = y_sub[valid_idx]
+    # Ensure increasing x and remove repeated x values
+    order = np.argsort(x)
+    x = x[order]
+    y = y[order]
 
-        if len(x_valid) > 1:
-            cum_area[i] = simpson(y=y_valid, x=x_valid)
+    x_unique, unique_idx = np.unique(x, return_index=True)
+    y_unique = y[unique_idx]
 
-    return cum_area
+    # The distributions should not have negative density
+    y_unique = np.maximum(y_unique, 0.0)
 
+    cumulative = cumulative_trapezoid( y_unique, x_unique, initial=0.0)
 
-def cumulative_area_index(xg, yg, aint):
-    cum_area = cumulative_area(xg, yg)
-    idx = np.argmax(cum_area >= aint)
-    return xg[idx], idx
+    total = cumulative[-1]
 
+    if total <= 0:
+        raise ValueError("The distribution has zero total area.")
+
+    return x_unique, cumulative / total
+    
 #------------------------------------------------------------------------------
  
 # Carbonate weathering [mol-conv/d]
