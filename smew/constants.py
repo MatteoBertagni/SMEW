@@ -54,7 +54,7 @@ def plant_nutr_f():
 
 #------------------------------------------------------------------------------
 
-    @njit
+@njit
 def soil_hydraulic_const(soil):
     """
     Campbell/Clapp-Hornberger hydraulic parameters.
@@ -143,22 +143,18 @@ def soil_hydraulic_const(soil):
         b = 11.4
         K_s = 0.11
         n = 0.482
-
+        
     else:
         raise ValueError("Invalid soil type!")
-
+        
     return psi_s_log_cm, b, K_s, n
     
 #------------------------------------------------------------------------------
-# soil hydrological constants
+# soil hydraulic constants and moisture thresholds
 
 @njit
-def soil_const(soil,
-    psi_h_mpa=-10.0,
-    psi_w_mpa=-3.0,
-    psi_i_mpa=-0.03
-):
-   """
+def soil_const(soil, psi_h_mpa=-10.0, psi_w_mpa=-3.0, psi_i_mpa=-0.03):
+    """
 Parameters
 ----------
 soil : str
@@ -173,7 +169,6 @@ s_h, s_w, s_i : float
     Hygroscopic, wilting, and incipient stress points [-].
     
 """
-
     psi_s_log_cm, b, K_s, n = soil_hydraulic_const(soil)
 
     mpa_to_cm = 10197.16213 #from MPa to cm H2O
@@ -191,7 +186,7 @@ s_h, s_w, s_i : float
     return s_h, s_w, s_i, b, K_s, n
 
 #------------------------------------------------------------------------------
-    
+
  # EW mineral constants 
 
 def min_const(mineral, conv_mol):
