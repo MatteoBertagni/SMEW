@@ -82,6 +82,7 @@ solve_H_c.argtypes = [
 ]
 
 BiogeochemResult = namedtuple("BiogeochemResult", [
+    "error_code",
     # Carbonate system
     "pH", "H", "CO2_w", "CO2_air", "HCO3", "CO3", "DIC", "Alk",
     "IC_tot", "Fs", "ADV",
@@ -119,8 +120,9 @@ def log_solver_status(logger: logging.Logger | None):
     logger.warning(_message)
 
 
-@njit(nogil=True)
+@njit(nogil=True, error_model='numpy')
 def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add):
+    error_code = 0
 
     # Preallocating the variables
     pH = np.zeros(len(s))
@@ -369,7 +371,24 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
         #
         # print("Dissolved CaCO3: ", missing_calcium)
 
-        raise ValueError("Not enough cations for this alkalinity")
+        # exceptions are not possible with nogil
+        # raise ValueError("Not enough cations for this alkalinity")
+
+        error_code = -1
+        return BiogeochemResult(
+            error_code,
+            pH, H, CO2_w, CO2_air, HCO3, CO3, DIC, Alk,
+            IC_tot, Fs, ADV,
+            Ca, Mg, K, Na, Si, Al_w, Al,
+            Ca_tot, Mg_tot, K_tot, Na_tot, Al_tot, Si_tot,
+            Alk_tot, An_tot, An,
+            f_Ca, f_Mg, f_K, f_Na, f_Al, f_H, R_alk,
+            UP_Ca, UP_Mg, UP_K, UP_Si,
+            CaCO3, MgCO3, Omega_CaCO3, Omega_MgCO3,
+            W_CaCO3, W_MgCO3,
+            M_rock, SA, EW, Wr, min_st,
+            M_min, rock_f, Omega, d, psd, SSA,
+        )
 
     # aluminium speciation
     Al[0]=(H[0]**4/(H[0]**4+H[0]**3*K1+H[0]**2*K1*K2+H[0]*K1*K2*K3+K1*K2*K3*K4))*Al_w[0] #mol/l
@@ -674,7 +693,25 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
                 print(residuals)
 
                 print("\ncminpack solver error: status", status)
-                raise ValueError("cminpack solver error")
+
+                # exceptions are not possible with nogil
+                # raise ValueError("cminpack solver error")
+
+                error_code = -2
+                return BiogeochemResult(
+                    error_code,
+                    pH, H, CO2_w, CO2_air, HCO3, CO3, DIC, Alk,
+                    IC_tot, Fs, ADV,
+                    Ca, Mg, K, Na, Si, Al_w, Al,
+                    Ca_tot, Mg_tot, K_tot, Na_tot, Al_tot, Si_tot,
+                    Alk_tot, An_tot, An,
+                    f_Ca, f_Mg, f_K, f_Na, f_Al, f_H, R_alk,
+                    UP_Ca, UP_Mg, UP_K, UP_Si,
+                    CaCO3, MgCO3, Omega_CaCO3, Omega_MgCO3,
+                    W_CaCO3, W_MgCO3,
+                    M_rock, SA, EW, Wr, min_st,
+                    M_min, rock_f, Omega, d, psd, SSA,
+                )
 
         # Unpack results back into the arrays
         Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], \
@@ -740,7 +777,13 @@ def _biogeochem_balance_numba(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_a
             #weathering fluxes
             EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i] # [mol/d]
 
+    # if not np.all(np.isfinite(pH)) or not np.all(np.isfinite(Ca)):  # extend to whichever arrays matter
+    #     error_code = -3  # "diverged / non-finite solution"
+
+    error_code = 1 # success status code
+
     return BiogeochemResult(
+        error_code,
         pH, H, CO2_w, CO2_air, HCO3, CO3, DIC, Alk,
         IC_tot, Fs, ADV,
         Ca, Mg, K, Na, Si, Al_w, Al,
@@ -762,4 +805,17 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     result = _biogeochem_balance_numba(
                        n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add
     )
-    return result._asdict()
+
+    result_dict = result._asdict()
+    error_code = result_dict.pop("error_code")
+
+    if error_code == 0:
+        raise ValueError("Error code not set. Unable to assess function success.")
+    if error_code == -1:
+        raise ValueError("Not enough cations for this alkalinity")
+    if error_code == -2:
+        raise ValueError("cminpack solver error")
+    if error_code != 1:
+        raise ValueError(f"Unexpected error code: {error_code}")
+
+    return result_dict
