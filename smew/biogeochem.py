@@ -183,6 +183,9 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     # Constants
     CO2_atm = smew.CO2_atm(conv_mol) # [mol_CO2/l_air] Atmospheric CO2 concentration
     T_K = temp_soil + 273.15
+
+    #frozen soil
+    frozen = temp_soil <= 0.0
     
     # soil CO2 diffusivity 
     D_0 = smew.D_0() #free-air diffusion [m2/d]
@@ -322,14 +325,18 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     Al_tot[0] = Al_w[0]*n*Zr*s[0]*1000+(f_Al[0]/3)*CEC_tot*conv_Al # [mol]
     Si_tot[0] = Si[0]*n*Zr*s[0]*1000
     
-    #Carbonate minerals (considered as an additional pool)
+    #Carbonate minerals (added to the soil)
     CaCO3[0] = CaCO3_in # [mol-conv]
     MgCO3[0] = MgCO3_in
-    
+
     #Carbonate weathering
     Omega_CaCO3[0] = Ca[0]*CO3[0]/K_CaCO3 # [-]
     Omega_MgCO3[0] = Mg[0]*CO3[0]/K_MgCO3
-    [W_CaCO3[0], W_MgCO3[0]] = smew.carb_W(CaCO3[0], MgCO3[0], Omega_CaCO3[0], Omega_MgCO3[0], s[0], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3) # [mol-conv/ m2 d]
+    if frozen[0]:
+        W_CaCO3[0] = 0.0
+        W_MgCO3[0] = 0.0
+    else:
+        [W_CaCO3[0], W_MgCO3[0]] = smew.carb_W(CaCO3[0], MgCO3[0], Omega_CaCO3[0], Omega_MgCO3[0], s[0], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3) # [mol-conv/ m2 d]
         
     #Silicate weathering
     if M_rock_in > 0:
@@ -361,10 +368,13 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         SA[tt_app] = np.sum(SSA[:,tt_app]*psd[:,tt_app]*delta_d[:,tt_app]) #[m2]
 
         #wet surface area fraction
-        wet_f[tt_app] = smew.wetness_SA(s[tt_app],keyword_ssa, pore_d_in, pore_pdf_in,  d[:,tt_app], psd_rock_num[:,tt_app], mixalf_in, d[-1,tt_app])
+        if frozen[tt_app]:
+            wet_f[tt_app] = 0.0
+        else:
+            wet_f[tt_app] = smew.wetness_SA(s[tt_app],keyword_ssa, pore_d_in, pore_pdf_in,  d[:,tt_app], psd_rock_num[:,tt_app], mixalf_in, d[-1,tt_app])
                     
         #mineral weathering
-        if t_app == 0:
+        if t_app == 0 and not frozen[0]:
             for j in range(0, number_min):
                 #saturation state [-]
                 Omega[j,0] = smew.sil_Omega(mineral[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp[j], conv_mol,conv_Al)
@@ -372,7 +382,17 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                 Wr[j,0] = smew.sil_Wr(mineral[j], Omega[j,0], H[0], k_H_T[j,0], k_w_T[j,0],k_OH_T[j,0], n_H[j], n_OH[j], diss_f,  conv_mol) 
                 #weathering flux [mol-conv/d] 
                 EW[j,0] = Wr[j,0]*SA[0]*rock_f[j,0]*wet_f[0]
-                
+
+#------------------------------------------------------------------------------
+    #frozen option
+    frozen_state = [pH, H, f_H, Ca_tot, Ca, f_Ca, Mg_tot, Mg, f_Mg, K_tot, K, f_K, Na_tot, Na, f_Na, Si_tot, Si, An_tot, An,
+    Alk_tot, Alk, R_alk, CO2_w, HCO3, CO3, DIC, Al_tot, Al_w, Al, AlOH, AlOH2, AlOH3, AlOH4, f_Al, CaCO3, MgCO3, Omega_CaCO3, Omega_MgCO3]
+
+    frozen_zero = [UP_Ca, UP_Mg, UP_K, UP_Si, W_CaCO3, W_MgCO3, ADV, root_ex, wet_f]
+    
+    if M_rock_in > 0:
+        frozen_rock_state = [d, delta_d, lamb, SSA, psd, psd_rock_num, M_min, rock_f, Omega]
+    
 #------------------------------------------------------------------------------
     #SYSTEM RESOLUTION
         
@@ -380,6 +400,38 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     numb_print = 0
     
     for i in range(1, len(s)): 
+
+            # Frozen soil: aqueous chemistry and reactions pause, only gas-phase CO2 diffusion
+            if frozen[i]:
+
+                for arr in frozen_state:
+                    arr[i] = arr[i - 1]
+
+                
+                # Gas-phase CO2 relaxation toward atmospheric CO2
+                air_vol = n * Zr * (1.0 - s[i]) * 1000.0  # [L_air m-2]
+                k_diff = (D[i] / Z_CO2 * 1000.0) / air_vol  # [d-1]
+                CO2_air[i] = CO2_atm + (CO2_air[i - 1] - CO2_atm) * np.exp(-k_diff * dt)
+                Fs[i] = air_vol * (CO2_air[i - 1] - CO2_air[i]) / dt
+                IC_tot[i] = (DIC[i] * s[i] + CO2_air[i] * (1.0 - s[i])) * (n * Zr * 1000.0)
+                
+                # stop biological, hydrological, and reaction fluxes
+                for arr in frozen_zero:
+                    arr[i] = 0.0
+
+                if M_rock_in > 0:
+                    if i > tt_app:
+                        M_rock[i] = M_rock[i - 1]
+                        SA[i] = SA[i - 1]
+                
+                    for arr in frozen_rock_state:
+                        arr[:, i] = arr[:, i - 1]
+
+                    Wr[:, i] = 0.0
+                    EW[:, i] = 0.0
+                    wet_f[i] = 0.0
+
+                continue
         
             #CO2 advection due to moisture variation    
             if s[i]<s[i-1]:
