@@ -70,7 +70,8 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt,
 
             # Unfrozen step: stored snow/ice can melt and contribute to liquid input.
             if tau_melt > 0.0:
-                melt = snowpack[i] * (1.0 - np.exp(-dt / tau_melt))
+                melt_rate = (temp_soil[i] - 0.0) / tau_melt  # [1/d], tau_melt = degree-day timescale
+                melt = snowpack[i] * (1.0 - np.exp(-melt_rate * dt))
             else:
                 melt = snowpack[i]
 
