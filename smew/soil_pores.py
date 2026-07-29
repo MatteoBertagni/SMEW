@@ -32,30 +32,30 @@ MPA_TO_CM_H2O = 10197.16213
 #------------------------------------------------------------------------------
 
 def pore_pdf_ding2016(soil, n_points=500, h_min=10.0, h_max=10*MPA_TO_CM_H2O):
-
-"""
-Pore-size distribution from Ding et al. (2016) double-exponential
-water retention parameters.
-
-The water retention curve is mapped to pore diameter with
-d = 2 * 0.149 / h, where h is in cm H2O and d is returned in m.
-
-The density is computed in log-diameter space, dF/dln(d), and then
-normalized over pore diameter. This gives an effective density [1/m]
-for constructing the pore CDF used by wet_f_Anand.
-
-h_min and h_max are suction limits [cm H2O]. Lower h gives larger pores;
-higher h gives smaller pores. The default h_max corresponds to SMEW's
-10 MPa hygroscopic point.
-
-Returns
--------
-pore_d : ndarray
-    Pore diameter [m].
-pore_pdf : ndarray
-    Effective pore-size density [1/m].
-"""
-
+    
+    """
+    Pore-size distribution from Ding et al. (2016) double-exponential
+    water retention parameters.
+    
+    The water retention curve is mapped to pore diameter with
+    d = 2 * 0.149 / h, where h is in cm H2O and d is returned in m.
+    
+    The density is computed in log-diameter space, dF/dln(d), and then
+    normalized over pore diameter. This gives an effective density [1/m]
+    for constructing the pore CDF used by wet_f_Anand.
+    
+    h_min and h_max are suction limits [cm H2O]. Lower h gives larger pores;
+    higher h gives smaller pores. The default h_max corresponds to SMEW's
+    10 MPa hygroscopic point.
+    
+    Returns
+    -------
+    pore_d : ndarray
+        Pore diameter [m].
+    pore_pdf : ndarray
+        Effective pore-size density [1/m].
+    """
+    
     soil = ding2016_fallback.get(soil, soil)
     p = ding2016_param[soil]
 
@@ -79,23 +79,24 @@ pore_pdf : ndarray
 #------------------------------------------------------------------------------
 
 def pore_pdf_campbell(soil, n_points=500, h_max=10*MPA_TO_CM_H2O):
-"""
-Campbell-consistent pore-size distribution.
-
-The Campbell water retention curve is mapped to pore diameter with
-d = 2 * 0.149 / h, where h is in cm H2O and d is returned in m.
-
-The density is computed in log-diameter space, dF/dln(d), and then
-normalized over pore diameter. This gives an effective density [1/m]
-for constructing the pore CDF used by wet_f_Anand.
-
-Returns
--------
-pore_d : ndarray
-    Pore diameter [m].
-pore_pdf : ndarray
-    Effective pore-size density [1/m].
-"""
+    
+    """
+    Campbell-consistent pore-size distribution.
+    
+    The Campbell water retention curve is mapped to pore diameter with
+    d = 2 * 0.149 / h, where h is in cm H2O and d is returned in m.
+    
+    The density is computed in log-diameter space, dF/dln(d), and then
+    normalized over pore diameter. This gives an effective density [1/m]
+    for constructing the pore CDF used by wet_f_Anand.
+    
+    Returns
+    -------
+    pore_d : ndarray
+        Pore diameter [m].
+    pore_pdf : ndarray
+        Effective pore-size density [1/m].
+    """
 
     psi_s_log_cm, b, K_s, n = soil_hydraulic_const(soil)
 
