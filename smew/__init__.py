@@ -14,6 +14,7 @@ from smew.constants import (
     Dw_0,
     CO2_atm,
     plant_nutr_f,
+    soil_hydraulic_const,
     soil_const,
     carb_weath_const,
     min_const,
@@ -52,6 +53,12 @@ from smew.weathering import (
 
 from smew.moisture import (
     moisture_balance
+)
+
+from smew.soil_pores import (
+    soil_pore_pdf,
+    pore_pdf_ding2016,
+    pore_pdf_campbell,
 )
 
 from smew.organic_carbon import (

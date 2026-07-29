@@ -2,6 +2,13 @@
 .ipynb_checkpoints/
 **/.ipynb_checkpoints/
 
+# Example soil-structure data
+Example_SS_Data/
+
+# Local testing notebooks
+smew_local_tests.ipynb
+Example_SS.ipynb
+
 dist/
 smew.egg-info/
 

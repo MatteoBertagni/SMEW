@@ -59,9 +59,12 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                        mixalf_in=1.0
                       ):
     
-    if keyword_ssa == 'nonlinear':
-        if pore_d_in is None or pore_pdf_in is None:
-            raise ValueError("pore_d_in and pore_pdf_in must be provided when keyword_ssa='nonlinear'")
+    if keyword_ssa == "nonlinear" and (pore_d_in is None or pore_pdf_in is None):
+        raise ValueError(
+        "For keyword_ssa='nonlinear', provide both pore_d_in and pore_pdf_in. "
+        "They can be estimated with: "
+        "pore_d_in, pore_pdf_in = smew.soil_pore_pdf(soil)."
+    )
             
     # Preallocating the variables
     pH = np.zeros(len(s))

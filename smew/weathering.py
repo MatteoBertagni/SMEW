@@ -111,8 +111,6 @@ def wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf=1.0, lmax=None):
     if lmax is None:
         lmax = np.max(d)
 
-    s = float(np.clip(s, 0.0, 1.0))
-
     # Convert soil moisture into largest water-filled pore
     pore_grid, pore_cdf = normalized_cumulative_area( pore_d, pore_pdf)
 
