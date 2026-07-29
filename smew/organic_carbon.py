@@ -34,9 +34,13 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
         elif s[i]>s_i and s[i]<=1:
             f_s[i] = (1-s[i])/(1-s_i)
 
-    #temperature impact
-    f_T= temp_soil/mean(temp_soil)
-    f_T[f_T<0] = 0
+    # temperature impact on decomposition; decomposition stops below 0 degC
+    temp_active = np.maximum(temp_soil, 0.0)
+
+    if np.any(temp_active > 0.0):
+        f_T = temp_active / np.mean(temp_active[temp_active > 0.0])
+    else:
+        f_T = 0.0
        
     #CO2 gas-diffusion baricenter
     if Zr <= 0.3:
@@ -45,7 +49,7 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
         Z_CO2 = 0.15
 
     # input data: SOC_in and either tau_OC or CO2_air_in 
-    # missing data (NaN) estimated via qs-state approximation
+    # missing data (None) estimated via qs-state approximation
     if SOC_in is not None:
         SOC[0] = SOC_in # [gOC/m3]
         if tau_OC is not None:
@@ -53,15 +57,28 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
             #Fs_in = k_dec/MM_C*(r*Zr*f_s[0]*f_T[0]*SOC[0]*(1 + ratio_aut_het * v / k_v)) # [mol-conv/m2] (resp_het + resp_aut = Fs)
         elif CO2_air_in is not None:
             Fs_in = (D[0]*1000/(Z_CO2))*(CO2_air_in - CO2_atm) # [mol-conv/m2] 
-            k_dec = MM_C*Fs_in/ (r*Zr*f_s[0]*f_T[0]*SOC[0]*(1 + ratio_aut_het * v[0] / k_v)) # [1/d] (resp_het + resp_aut = Fs)
+            activity0 = f_s[0] * f_T[0] * (1.0 + ratio_aut_het * v[0] / k_v)
+            if activity0 <= 0.0:
+                raise ValueError("Cannot estimate k_dec from CO2_air_in when the initial soil is "
+                                 "frozen or biologically inactive. Provide tau_OC or start from an "
+                                 "unfrozen active timestep.")
+            k_dec = MM_C * Fs_in / (r * Zr * activity0 * SOC[0])
+
+    # mean decomposition activity
+    f_dec = f_T * f_s
+    mean_f_dec = np.mean(f_dec)
+
+    if mean_f_dec <= 0.0:
+        raise ValueError("Mean decomposition activity is zero. Cannot estimate ADD or SOC "
+            "from steady-state balance.")
 
     # ADD estimate for qs-equilibrium (in absence of data)
     if ADD is None and SOC[0] is not None:
-        ADD = r*Zr*k_dec*mean(f_T)*mean(f_s)*SOC[0] # [gOC/(m2*d)] of added OC      
-    
+        ADD = r * Zr * k_dec * mean_f_dec * SOC[0]  # [gOC/(m2*d)]
+
     # SOC estimate for qs-equilibrium (in absence of data)
     if SOC_in is None and ADD is not None:
-        SOC[0] = (ADD/Zr)/(r*k_dec*mean(f_T)*mean(f_s)) #        
+        SOC[0] = (ADD / Zr) / (r * k_dec * mean_f_dec)  # [gOC/m3]     
            
     # OC equation
     DEC[0] = k_dec*f_T[0]*f_s[0]*SOC[0]
