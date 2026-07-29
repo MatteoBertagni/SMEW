@@ -13,6 +13,15 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt,
                      temp_soil=None,
                      tau_melt=3.0):
     
+    """
+    temp_soil : array_like, optional
+    Soil temperature [degC]. If None, freezing is ignored and the
+    original water balance is used. If provided, precipitation is stored
+    as snow/ice when temp_soil <= 0 and melts when temp_soil > 0.
+    tau_melt: float, optional
+    Snow/ice melt timescale [d]. If tau_melt=0, melting is instantaneous.
+    """
+    
     #constants
     [s_h, s_w, s_i, b, K_s, n] = smew.soil_const(soil) 
     
@@ -59,7 +68,7 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt,
 
                 continue
 
-            # Here the soil is unfrozen and snowpack can melt
+            # Unfrozen step: stored snow/ice can melt and contribute to liquid input.
             if tau_melt > 0.0:
                 melt = snowpack[i] * (1.0 - np.exp(-dt / tau_melt))
             else:
