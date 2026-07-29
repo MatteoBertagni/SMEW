@@ -121,7 +121,7 @@ def pore_pdf_campbell(soil, n_points=500, h_max=10*MPA_TO_CM_H2O):
 
 #------------------------------------------------------------------------------
 
-def soil_pore_pdf(soil, pore_model="ding2016", n_points=500, s_min=0.01, h_min=10.0, h_max=10*MPA_TO_CM_H2O):
+def soil_pore_pdf(soil, pore_model="ding2016", n_points=500, h_min=10.0, h_max=10*MPA_TO_CM_H2O):
         
     """
     Estimate pore diameter PDF from soil texture.
