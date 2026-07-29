@@ -11,15 +11,15 @@ from numba import njit
 @njit
 def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt,
                      temp_soil=None,
-                     tau_melt=3.0):
+                     melt_rate = 0.005):
     
     """
     temp_soil : array_like, optional
     Soil temperature [degC]. If None, freezing is ignored and the
     original water balance is used. If provided, precipitation is stored
     as snow/ice when temp_soil <= 0 and melts when temp_soil > 0.
-    tau_melt: float, optional
-    Snow/ice melt timescale [d]. If tau_melt=0, melting is instantaneous.
+    melt rate: float, optional
+    degree-day melt rate [m water equivalent / d / °C]
     """
     
     #constants
@@ -69,12 +69,11 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt,
                 continue
 
             # Unfrozen step: stored snow/ice can melt and contribute to liquid input.
-            if tau_melt > 0.0:
-                melt_rate = (temp_soil[i] - 0.0) / tau_melt  # [1/d], tau_melt = degree-day timescale
-                melt = snowpack[i] * (1.0 - np.exp(-melt_rate * dt))
+            if temp_soil is None:
+                melt = 0.0
             else:
-                melt = snowpack[i]
-
+                melt = min(snowpack[i], melt_rate * max(temp_soil[i] - 0.0, 0.0) * dt)
+            
             snowpack[i + 1] = snowpack[i] - melt
 
             liquid_input = rain[i + 1] + melt
@@ -101,13 +100,9 @@ def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt,
             # Moisture dynamics
             s[i+1] = s[i]+liquid_input/(n*Zr)-((E[i]+T[i]+L[i])/(n*Zr)*dt)
 
-            #runoff [m]
-            if s[i+1] >= 1:
-                Q[i+1] = (s[i+1]-1)*(n*Zr)
-                s[i+1] = 1  
-
-            #to avoid numerical issues
+            # runoff [m], using 0.98 as numerical saturation cap
             if s[i+1] >= 0.98:
+                Q[i+1] = (s[i+1] - 0.98) * (n * Zr)
                 s[i+1] = 0.98
 
             # actual liquid infiltration [m]
