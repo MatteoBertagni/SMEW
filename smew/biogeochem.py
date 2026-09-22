@@ -141,6 +141,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     lamb = np.zeros([1, len(s)])
     SSA = np.zeros([1, len(s)])
     psd = np.zeros([1, len(s)])
+    psd_rock_num = np.zeros([1, len(s)])
 
     wet_f = np.zeros([len(s)])
      
