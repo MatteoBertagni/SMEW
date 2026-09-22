@@ -1,0 +1,201 @@
+# Full-year model configurations exercised by pytest.
+[scenarios.default]
+description = "Unmodified example inputs, with fixed weekly rainfall."
+
+[scenarios.constant_moisture]
+description = "The example with soil moisture maintained at its initial value."
+[scenarios.constant_moisture.overrides]
+moisture_mode = 0
+
+[scenarios.no_rock]
+description = "The example without an added silicate rock treatment."
+[scenarios.no_rock.overrides]
+rock_mass_g_m2 = 0.0
+application_day = 0.0
+
+# Compare every timestep using |actual-reference| <= atol + rtol*|reference|.
+# Absolute tolerances are in the units listed for each output.
+# These are development regression thresholds, not observational uncertainty.
+# The initial references were checked with two independent executions.
+[comparison]
+rtol = 1e-7
+
+[variables.rain]
+units = "m per timestep"
+atol = 1e-12
+minimum = 0.0
+
+[variables.temp_soil]
+units = "degrees C"
+atol = 1e-9
+# An envelope for this example, not a universal temperature constraint.
+minimum = -10.0
+maximum = 40.0
+
+[variables.s]
+units = "fraction of pore volume"
+atol = 1e-10
+minimum = 0.0
+maximum = 1.0
+
+[variables.L]
+units = "m/day"
+atol = 1e-12
+minimum = 0.0
+
+[variables.I]
+# The existing model uses different infiltration conventions in its two modes.
+units = "m/timestep (varying moisture); m/day (constant moisture)"
+atol = 1e-12
+minimum = 0.0
+
+[variables.T]
+units = "m/day"
+atol = 1e-12
+minimum = 0.0
+
+[variables.E]
+units = "m/day"
+atol = 1e-12
+minimum = 0.0
+
+[variables.Q]
+units = "m per timestep"
+atol = 1e-12
+minimum = 0.0
+
+[variables.v]
+units = "g/m2"
+atol = 1e-8
+minimum = 0.0
+maximum = 3000.0
+
+[variables.SOC]
+units = "g C/m3"
+atol = 1e-7
+minimum = 0.0
+
+[variables.r_het]
+units = "umol/m2/day"
+atol = 1e-5
+minimum = 0.0
+
+[variables.r_aut]
+units = "umol/m2/day"
+atol = 1e-5
+minimum = 0.0
+
+[variables.pH]
+units = "pH"
+rtol = 0.0
+atol = 1e-7
+# Broad range for this soil example; not a universal bound on pH.
+minimum = 0.0
+maximum = 14.0
+
+[variables.Alk]
+units = "umol charge/L"
+atol = 1e-5
+# Alkalinity can be negative: no nonnegative constraint.
+
+[variables.Ca]
+units = "umol/L"
+atol = 1e-5
+minimum = 0.0
+bound_atol = 1e-8
+
+[variables.Mg]
+units = "umol/L"
+atol = 1e-5
+minimum = 0.0
+bound_atol = 1e-8
+
+[variables.K]
+units = "umol/L"
+atol = 1e-5
+minimum = 0.0
+bound_atol = 1e-8
+
+[variables.Na]
+units = "umol/L"
+atol = 1e-5
+minimum = 0.0
+bound_atol = 1e-8
+
+[variables.Si]
+units = "umol/L"
+atol = 1e-5
+minimum = 0.0
+bound_atol = 1e-8
+
+[variables.DIC]
+units = "umol/L"
+atol = 1e-5
+minimum = 0.0
+bound_atol = 1e-8
+
+[variables.CO2_air]
+units = "umol/L air"
+atol = 1e-6
+minimum = 0.0
+bound_atol = 1e-8
+
+[variables.f_Ca]
+units = "CEC fraction"
+atol = 1e-9
+minimum = 0.0
+maximum = 1.0
+bound_atol = 1e-10
+
+[variables.f_Mg]
+units = "CEC fraction"
+atol = 1e-9
+minimum = 0.0
+maximum = 1.0
+bound_atol = 1e-10
+
+[variables.f_K]
+units = "CEC fraction"
+atol = 1e-9
+minimum = 0.0
+maximum = 1.0
+bound_atol = 1e-10
+
+[variables.f_Na]
+units = "CEC fraction"
+atol = 1e-9
+minimum = 0.0
+maximum = 1.0
+bound_atol = 1e-10
+
+[variables.f_Al]
+units = "CEC fraction"
+atol = 1e-9
+minimum = 0.0
+maximum = 1.0
+bound_atol = 1e-10
+
+[variables.f_H]
+units = "CEC fraction"
+atol = 1e-9
+minimum = 0.0
+maximum = 1.0
+bound_atol = 1e-10
+
+[variables.M_rock]
+units = "g/m2"
+atol = 1e-6
+minimum = 0.0
+maximum = 10000.0
+
+[variables.EW]
+units = "mol-conv/day, by mineral"
+atol = 1e-5
+minimum = 0.0
+bound_atol = 1e-8
+
+[variables.wet_f]
+units = "wet mineral surface fraction"
+atol = 1e-10
+minimum = 0.0
+maximum = 1.0
