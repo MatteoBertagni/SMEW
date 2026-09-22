@@ -24,9 +24,21 @@ dependencies = [
     "pandas",
     "scipy",
     "dill",
-    "matplotlib"
+    "matplotlib",
+    "numba"
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = [
+    "marimo>=0.19.7,<1",
+    "pytest>=8,<10",
+    "pytest-xdist[psutil]>=3.6,<4",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
 
 [tool.setuptools]
 packages = ["smew", "pyeto"]
