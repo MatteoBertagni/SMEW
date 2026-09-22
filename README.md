@@ -41,6 +41,13 @@ pip install smew
 3. Change the parameters in the file 'Example' to run specific simulations for different scenarios.
 4. For the Jupyter notebooks of the model-experiment comparison, define the selected base directory in the first cell of each notebook.
 
+## Development and model testing
+
+Requires Python 3.11+. Once the repository cloned, install with `pip install -e '.[dev]'`,
+then run `make test` for full-year time-series comparisons and physical-range checks.
+Use `make example` to open the marimo example with plots generated on demand.
+See [tests/README.md](tests/README.md) for setup and reference updates.
+
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
