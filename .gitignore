@@ -11,11 +11,20 @@ Example_SS.ipynb
 
 dist/
 smew.egg-info/
+build/
 
 # --- Python ---
 __pycache__/
 *.py[cod]
 *.pyo
+.pytest_cache/
+.venv/
+__marimo__/
+
+# Generated native-extension artifacts
+smew/*_fast.c
+smew/*_fast.h
+smew/*_fast*.so
 
 # --- Temporary files ---
 *.tmp
