@@ -7,6 +7,7 @@ Created on Mon Dec 16 14:34:44 2019
 import numpy as np
 import smew
 from scipy.optimize import fsolve
+from smew.equations import water_equations, h_equations, biogeochem_equations
 #minimize, least_squares, newton_krylov, broyden1, root, broyden2
 
 def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, M_rock_in2, t_app2, mineral2, rock_f_in2, d_in2, psd_perc_in2, SSA_in2, diss_f, dt, conv_Al, conv_mol, keyword_add):
@@ -230,8 +231,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
     
     for i in range(0, len(s)):
         def equations(p):
-            H_rain[i] = p
-            return(Alk_rain-(k1[i]*CO2_w_rain[i]/H_rain[i]+2*k1[i]*k2[i]*CO2_w_rain[i]/(H_rain[i]**2)-H_rain[i]+k_w[i]/H_rain[i]))
+            return water_equations(p, Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i])
         
         H_rain[i] = fsolve(equations, 10**-6*conv_mol) # [mol/l]
         DIC_rain[i]=CO2_w_rain[i]+k1[i]*CO2_w_rain[i]/H_rain[i]+k2[i]*k1[i]*CO2_w_rain[i]/(H_rain[i]**2)
@@ -430,23 +430,10 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
             #implicit system
             def equations(p):
                 Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = p
-            
-                return((Alk_tot[i]-R_alk[i])-Alk[i]*(n*Zr*s[i]*1000),\
-                       IC_tot[i]-(CO2_w[i]*(1+k1[i]/H[i]+k2[i]*k1[i]/(H[i]**2))*s[i]+(CO2_w[i]/k_H[i])*(1-s[i]))*(n*Zr*1000),\
-                       (k1[i]*CO2_w[i]/H[i]+2*k1[i]*k2[i]*CO2_w[i]/(H[i]**2)-H[i]+k_w[i]/H[i])-Alk[i],\
-                       R_alk[i]-(f_Mg[i]+f_Ca[i]+f_Na[i]+f_K[i])*CEC_tot,\
-                       Al_w[i]*n*Zr*s[i]*1000+(f_Al[i]/3)*CEC_tot*conv_Al-Al_tot[i],\
-                       Al[i]-(H[i]**4/(H[i]**4+H[i]**3*K1+H[i]**2*K1*K2+H[i]*K1*K2*K3+K1*K2*K3*K4))*Al_w[i],\
-                       Mg[i]*n*Zr*s[i]*1000+f_Mg[i]/2*CEC_tot-Mg_tot[i],\
-                       Ca[i]*n*Zr*s[i]*1000+f_Ca[i]/2*CEC_tot-Ca_tot[i],\
-                       Na[i]*n*Zr*s[i]*1000+f_Na[i]*CEC_tot-Na_tot[i],\
-                       K[i]*n*Zr*s[i]*1000+f_K[i]*CEC_tot-K_tot[i],\
-                       f_Al[i] - (Al[i]/conv_Al)*(f_Ca[i]**3/(K_Ca_Al*Ca[i]**3))**(1/2),\
-                       f_Mg[i] - Mg[i]*(f_Ca[i]/(K_Ca_Mg*Ca[i])),\
-                       f_Na[i] - Na[i]*(f_Ca[i]/(K_Ca_Na*Ca[i]))**(1/2),\
-                       f_K[i] - K[i]*(f_Ca[i]/(K_Ca_K*Ca[i]))**(1/2),\
-                       f_H[i] - H[i]*(f_Ca[i]/(K_Ca_H*Ca[i]))**(1/2),\
-                       1-(f_Ca[i]+f_Al[i]+f_Mg[i]+f_Na[i]+f_K[i]+f_H[i]))
+                return biogeochem_equations(
+                    p, Alk_tot[i], n, Zr, s[i], IC_tot[i], k1[i], k2[i], k_H[i], k_w[i], CEC_tot, conv_Al, Al_tot[i],
+                    K1, K2, K3, K4, Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
+                )
                        
             #initial guess
             Alk0 = (Alk_tot[i]-R_alk[i-1])/(n*Zr*s[i]*1000)
@@ -460,8 +447,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
             K0 =  (K_tot[i]-f_K[i-1]*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*K[i-1]/s[i]
             H0 = H[i-1]
             def eqH(p):
-                    H0 = p
-                    return((k1[i]*CO2_w0/H0+2*k1[i]*k2[i]*CO2_w0/(H0**2)-H0+k_w[i]/H0)-Alk0)
+                    return h_equations(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
             H0_2 =fsolve(eqH, H[i-1])[0]
             
             #solution 1

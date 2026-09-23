@@ -7,6 +7,8 @@ Created on Mon Dec 16 14:34:44 2019
 import numpy as np
 import smew
 from scipy.optimize import fsolve
+from smew.equations import (cec_calcium_equation, total_to_cec_equations,
+                            kelland_equations)
 
 #------------------------------------------------------------------------------
  # conc to CEC fractions
@@ -27,8 +29,8 @@ def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al):
         
     # CEC saturation, G-T convenction
     def eqf_Ca(p): #CEC Calcium (solvability eq is sum of fractions=1)
-        f_Ca = p
-        return(1-(f_Ca+(Al/conv_Al)*((f_Ca**3/(K_Ca_Al*Ca**3))**(1/2))+Mg*(f_Ca/(K_Ca_Mg*Ca))+Na*((f_Ca/(K_Ca_Na*Ca))**(1/2))+K*((f_Ca/(K_Ca_K*Ca))**(1/2))+H*((f_Ca/(K_Ca_H*Ca))**(1/2))))
+        return cec_calcium_equation(p, Al, conv_Al, Ca, Mg, Na, K, H,
+                                    K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H)
     
     #CEC fractions
     f_Ca = fsolve(eqf_Ca, 0.2) 
@@ -87,21 +89,10 @@ def total_to_f_CEC_and_conc(total_in, pH_in, f_acid, s, soil, n,Zr,CEC_tot,conv_
     H = 10**(-pH_in)*conv_mol 
 
     def equations(p):
-        Al_w, Al, Al_tot, Mg, Ca, Na, K, f_Mg, f_Na, f_K, f_Ca, f_Al, f_H = p
-
-        return(Al_w*n*Zr*s[0]*1000+(f_Al/3)*CEC_tot*conv_Al-Al_tot,\
-               Al-(H**4/(H**4+H**3*K1+H**2*K1*K2+H*K1*K2*K3+K1*K2*K3*K4))*Al_w,\
-               Mg*n*Zr*s[0]*1000+f_Mg/2*CEC_tot-Mg_tot,\
-               Ca*n*Zr*s[0]*1000+f_Ca/2*CEC_tot-Ca_tot,\
-               Na*n*Zr*s[0]*1000+f_Na*CEC_tot-Na_tot,\
-               K*n*Zr*s[0]*1000+f_K*CEC_tot-K_tot,\
-               f_Al - (Al/conv_Al)*(f_Ca**3/(K_Ca_Al*Ca**3))**(1/2),\
-               f_H - H*(f_Ca/(K_Ca_H*Ca))**(1/2),\
-               f_H + f_Al - f_acid,\
-               f_Mg - Mg*(f_Ca/(K_Ca_Mg*Ca)),\
-               f_Na - Na*(f_Ca/(K_Ca_Na*Ca))**(1/2),\
-               f_K - K*(f_Ca/(K_Ca_K*Ca))**(1/2),\
-               1-(f_Ca+f_Al+f_Mg+f_Na+f_K+f_H))   
+        return total_to_cec_equations(
+            p, H, n, Zr, s[0], CEC_tot, conv_Al, K1, K2, K3, K4,
+            Ca_tot, Mg_tot, K_tot, Na_tot, f_acid, K_Ca_Al, K_Ca_Mg,
+            K_Ca_Na, K_Ca_K, K_Ca_H)
     
     #initial guess
     f_Ca0 = 0.8*(1 - f_acid)
@@ -183,13 +174,9 @@ def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
     f_Na = (Na_tot - Na*n*Zr*s[0]*1000)/CEC_tot
         
     def equations(p):
-        Al_tot, CaCO3,  f_Al, f_H, f_Ca = p
-
-        return(Al_w*n*Zr*s[0]*1000+(f_Al/3)*CEC_tot*conv_Al-Al_tot,\
-               Ca*n*Zr*s[0]*1000+f_Ca/2*CEC_tot+CaCO3-Ca_tot,\
-               f_Al - (Al/conv_Al)*(f_Ca**3/(K_Ca_Al*Ca**3))**(1/2),\
-               f_H - H*(f_Ca/(K_Ca_H*Ca))**(1/2),\
-               1-(f_Ca+f_Al+f_Mg+f_Na+f_K+f_H))   
+        return kelland_equations(
+            p, Al_w, Al, H, Ca, Ca_tot, f_Mg, f_K, f_Na,
+            n, Zr, s[0], CEC_tot, conv_Al, K_Ca_Al, K_Ca_H)
     
     #initial guess
     f_H0 = 1e-3
@@ -249,4 +236,3 @@ def Amann(f_CEC_in, pH_in, Mg_in, soil, conv_mol,conv_Al):
     K_CEC = [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H]
         
     return(conc_in, K_CEC)
-
