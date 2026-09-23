@@ -14,7 +14,7 @@ with CHECKS_PATH.open("rb") as _file:
 
 def run_scenario(name):
     """Run one configuration without a browser or plot interaction."""
-    from examples.weathering import app
+    from tests.example_marimo_notebook import app
 
     overrides = CHECKS["scenarios"][name].get("overrides", {})
     _, definitions = app.run(defs=dict(overrides))

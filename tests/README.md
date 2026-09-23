@@ -8,7 +8,7 @@ python3 -m venv .venv
 make test
 ```
 
-Pytest runs three configurations of the [marimo example](../examples/weathering.py):
+Pytest runs three configurations of the [marimo example](../tests/example_marimo_notebook.py):
 the defaults, constant moisture, and no added rock. Each covers **365 days at a
 ten-minute timestep** (52,560 samples). Fixed weekly rainfall makes the runs
 repeatable. Assertions compare every selected timestep with its reference and
