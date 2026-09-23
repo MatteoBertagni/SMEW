@@ -11,10 +11,10 @@ test-serial:
 	$(PYTHON) -m pytest tests $(PYTEST_ARGS)
 
 example:
-	$(PYTHON) -m marimo edit examples/weathering.py
+	$(PYTHON) -m marimo edit tests/example_marimo_notebook.py
 
 check-notebooks:
-	$(PYTHON) -m marimo check --strict examples/weathering.py
+	$(PYTHON) -m marimo check --strict tests/example_marimo_notebook.py
 
 # Explicitly select one configured scenario; `make test` never updates references.
 update-baseline:
