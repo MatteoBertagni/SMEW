@@ -2,7 +2,10 @@ PYTHON ?= .venv/bin/python
 PYTEST_ARGS ?=
 CASE ?=
 
-.PHONY: test test-serial example check-notebooks update-baseline
+.PHONY: build test test-serial example check-notebooks update-baseline
+
+build:
+	$(PYTHON) -m build
 
 test:
 	$(PYTHON) -m pytest -n auto --maxprocesses=3 --dist=loadgroup tests $(PYTEST_ARGS)
