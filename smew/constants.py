@@ -5,7 +5,6 @@ Created on Mon Dec 16 14:34:44 2019
 """
 
 import numpy as np
-from numba import njit
 
 
 #------------------------------------------------------------------------------
@@ -54,7 +53,6 @@ def plant_nutr_f():
 
 #------------------------------------------------------------------------------
 
-@njit
 def soil_hydraulic_const(soil):
     """
     Campbell/Clapp-Hornberger hydraulic parameters.
@@ -152,7 +150,6 @@ def soil_hydraulic_const(soil):
 #------------------------------------------------------------------------------
 # soil hydraulic constants and moisture thresholds
 
-@njit
 def soil_const(soil, psi_h_mpa=-10.0, psi_w_mpa=-3.0, psi_i_mpa=-0.03):
     """
 Parameters

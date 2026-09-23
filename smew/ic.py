@@ -9,11 +9,13 @@ import smew
 from scipy.optimize import fsolve
 from smew.equations import (cec_calcium_equation, total_to_cec_equations,
                             kelland_equations)
+from smew._utils import require_backend
 
 #------------------------------------------------------------------------------
  # conc to CEC fractions
     
-def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al):
+def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al, *, backend="python"):
+    require_backend(backend)
             
     #constants 
     K_CEC = smew.K_GT_CEC(soil,conv_mol) #CEC Gaines-Thomas
@@ -77,7 +79,8 @@ def f_CEC_to_conc(f_CEC_in, pH_in, soil, conv_mol,conv_Al):
 #------------------------------------------------------------------------------
  # Input: Total (Ca, Mg, K, Na) and CEC base saturation (or acid saturation, f_H+f_Al)
     
-def total_to_f_CEC_and_conc(total_in, pH_in, f_acid, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
+def total_to_f_CEC_and_conc(total_in, pH_in, f_acid, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al, *, backend="python"):
+    require_backend(backend)
 
     #constants 
     K_CEC = smew.K_GT_CEC(soil, conv_mol) #CEC Gaines-Thomas
@@ -155,7 +158,8 @@ def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
 #------------------------------------------------------------------------------
  # Input: Total (Ca, Mg, K, Na) and Al_w
     
-def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
+def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al, *, backend="python"):
+    require_backend(backend)
 
     #constants 
     K_CEC = smew.K_GT_CEC(soil, conv_mol) #CEC Gaines-Thomas

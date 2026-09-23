@@ -18,6 +18,18 @@ Install with:
 pip install smew
 ```
 
+Simulation calls accept a keyword-only `backend` option. For now, `"python"`
+is the default and uses SciPy's `fsolve` with the Python equations:
+
+```python
+result = smew.biogeochem_balance(**inputs, backend="python")
+```
+
+`backend="compiled"` is reserved for the planned Cython/cminpack implementation
+and currently raises an error. The same option is available on
+`biogeochem_balance2psd` and the initialization functions that solve nonlinear
+systems (`conc_to_f_CEC`, `total_to_f_CEC_and_conc`, and `Kelland`).
+
 # Folders
 
 - `smew`: contains the python codes for the SMEW numerical model

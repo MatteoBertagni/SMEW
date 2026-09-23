@@ -5,10 +5,8 @@ Created on Thu Dec 12 10:30:44 2019
 """
 import numpy as np
 import smew
-from numba import njit
 
 
-@njit
 def moisture_balance(rain, Zr, soil, ET0, v, k_v, keyword_wb, s_in,t_end,dt,
                      temp_soil=None,
                      melt_rate = 0.005):

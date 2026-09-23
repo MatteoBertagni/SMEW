@@ -9,6 +9,7 @@ import smew
 from scipy.optimize import fsolve
 #minimize, least_squares, newton_krylov, broyden1, root, broyden2
 from smew.equations import water_equations, h_equations, biogeochem_equations
+from smew._utils import require_backend
 
    
 def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add, 
@@ -16,9 +17,11 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                        pore_d_in=None,
                        pore_pdf_in=None,
                        rho_rock_in=None,
-                       mixalf_in=1.0
+                       mixalf_in=1.0,
+                       *, backend="python"
                       ):
-    
+    require_backend(backend)
+
     if keyword_ssa == "nonlinear" and (pore_d_in is None or pore_pdf_in is None):
         raise ValueError(
         "For keyword_ssa='nonlinear', provide both pore_d_in and pore_pdf_in. "
@@ -517,5 +520,5 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                     
 
     data = {k: v for k, v in locals().items()}
-                               
+
     return data
