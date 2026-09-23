@@ -102,10 +102,10 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     Si_tot = np.zeros(len(s))
     UP_Si = np.zeros(len(s))
     
-    root_ex = np.zeros([len(s)])
+    root_ex = np.zeros(len(s))
     
-    An = np.zeros([len(s)])
-    An_tot = np.zeros([len(s)])
+    An = np.zeros(len(s))
+    An_tot = np.zeros(len(s))
     R_alk = np.zeros(len(s))
     Alk_tot = np.zeros(len(s))
     Alk = np.zeros(len(s))
@@ -133,17 +133,17 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     
     M_rock = np.zeros(len(s))
     SA = np.zeros(len(s))
-    EW = np.zeros([1, len(s)])
-    min_st = np.zeros([1, 6])
-    
-    d = np.zeros([1, len(s)])
-    delta_d = np.zeros([1, len(s)])
-    lamb = np.zeros([1, len(s)])
-    SSA = np.zeros([1, len(s)])
-    psd = np.zeros([1, len(s)])
-    psd_rock_num = np.zeros([1, len(s)])
+    EW = np.zeros((1, len(s)))
+    min_st = np.zeros((1, 6))
 
-    wet_f = np.zeros([len(s)])
+    d = np.zeros((1, len(s)))
+    delta_d = np.zeros((1, len(s)))
+    lamb = np.zeros((1, len(s)))
+    SSA = np.zeros((1, len(s)))
+    psd = np.zeros((1, len(s)))
+    psd_rock_num = np.zeros((1, len(s)))
+
+    wet_f = np.zeros(len(s))
      
     if M_rock_in > 0:
         number_min = len(mineral)
@@ -155,30 +155,30 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         n_H = np.zeros(number_min)
         n_OH = np.zeros(number_min)
         K_sp = np.zeros(number_min)
-        min_st = np.zeros([number_min, 6])
+        min_st = np.zeros((number_min, 6))
         k_diss_H = np.zeros(number_min)
         k_diss_w = np.zeros(number_min)
         k_diss_OH = np.zeros(number_min)
 
-        k_H_T = np.zeros([number_min, len(s)])
-        k_w_T = np.zeros([number_min, len(s)])
-        k_OH_T = np.zeros([number_min, len(s)])
-        Omega =  np.zeros([number_min, len(s)])
-        M_min = np.zeros([number_min, len(s)])
-        rock_f = np.zeros([number_min, len(s)])
-        Wr = np.zeros([number_min, len(s)])
-        EW = np.zeros([number_min, len(s)])
+        k_H_T = np.zeros((number_min, len(s)))
+        k_w_T = np.zeros((number_min, len(s)))
+        k_OH_T = np.zeros((number_min, len(s)))
+        Omega =  np.zeros((number_min, len(s)))
+        M_min = np.zeros((number_min, len(s)))
+        rock_f = np.zeros((number_min, len(s)))
+        Wr = np.zeros((number_min, len(s)))
+        EW = np.zeros((number_min, len(s)))
         
         n_d_cl = len(d_in)
         if n_d_cl > 1:
-            d = np.zeros([n_d_cl, len(s)])
-            delta_d = np.zeros([n_d_cl, len(s)]) 
-            lamb = np.zeros([n_d_cl, len(s)])
-            SSA = np.zeros([n_d_cl, len(s)])
-            psd = np.zeros([n_d_cl, len(s)])
-            psd_rock_num = np.zeros([n_d_cl, len(s)])            
+            d = np.zeros((n_d_cl, len(s)))
+            delta_d = np.zeros((n_d_cl, len(s)))
+            lamb = np.zeros((n_d_cl, len(s)))
+            SSA = np.zeros((n_d_cl, len(s)))
+            psd = np.zeros((n_d_cl, len(s)))
+            psd_rock_num = np.zeros((n_d_cl, len(s)))
         
-    errors = np.zeros([16, len(s)]) 
+    errors = np.zeros((16, len(s)))
     
 #------------------------------------------------------------------------------
     # Constants
@@ -197,24 +197,24 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     Dw = Dw_0*(n*s)**2 # Archie 1942, Grathwohl 1998 (book)
     
     # [g/mol-conv]: Molar masses    
-    [MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al]=smew.MM(conv_mol) 
+    MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al=smew.MM(conv_mol)
     
     # Aluminium speciation
-    [K1, K2, K3, K4] = smew.K_Al(conv_mol) 
+    K1, K2, K3, K4 = smew.K_Al(conv_mol)
     
     # carbonate spec  
-    [k1, k2, k_w, k_H] = smew.K_C(T_K,conv_mol)  
+    k1, k2, k_w, k_H = smew.K_C(T_K,conv_mol)
     
     #CEC Gaines-Thomas constants
-    [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H]  = K_CEC
+    K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H  = K_CEC
     
     #nutrient uptake by plants
-    [v_f_Ca, v_f_Mg, v_f_K, v_f_Si] = smew.plant_nutr_f()
+    v_f_Ca, v_f_Mg, v_f_K, v_f_Si = smew.plant_nutr_f()
     dry_perc = 0.1 #percent of dry mass
-    xi = dry_perc*np.array([v_f_Ca/MM_Ca, v_f_Mg/MM_Mg, v_f_K/MM_K, v_f_Si/MM_Si]) # [mol-conv/g_biomass]
+    xi = dry_perc*np.array((v_f_Ca/MM_Ca, v_f_Mg/MM_Mg, v_f_K/MM_K, v_f_Si/MM_Si)) # [mol-conv/g_biomass]
     
     #carb weathering constants
-    [K_CaCO3,K_MgCO3,r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3] = smew.carb_weath_const(conv_mol)
+    K_CaCO3,K_MgCO3,r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3 = smew.carb_weath_const(conv_mol)
     
     #mineral constants
     if M_rock_in > 0: 
@@ -275,7 +275,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     Alk[0]=HCO3[0]+2*CO3[0]-H[0]+k_w[0]/H[0]    
     
     # cations (mol/l)
-    [Ca[0], Mg[0], K[0], Na[0], Al_w[0]] = conc_in
+    Ca[0], Mg[0], K[0], Na[0], Al_w[0] = conc_in
            
     # anions (mol_c/l)
     An[0] = 2*Mg[0]+2*Ca[0]+Na[0]+K[0]-Alk[0] #[mol_c/l]
@@ -311,7 +311,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         I_Si = 0
     
     #CEC adsorbed species
-    [f_Ca[0], f_Mg[0], f_K[0], f_Na[0], f_Al[0], f_H[0]] = f_CEC_in
+    f_Ca[0], f_Mg[0], f_K[0], f_Na[0], f_Al[0], f_H[0] = f_CEC_in
     
     #reserve of alkalinity
     R_alk[0] = (f_Mg[0]+f_Ca[0]+f_Na[0]+f_K[0])*CEC_tot # [mol_c]
@@ -337,7 +337,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         W_CaCO3[0] = 0.0
         W_MgCO3[0] = 0.0
     else:
-        [W_CaCO3[0], W_MgCO3[0]] = smew.carb_W(CaCO3[0], MgCO3[0], Omega_CaCO3[0], Omega_MgCO3[0], s[0], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3) # [mol-conv/ m2 d]
+        W_CaCO3[0], W_MgCO3[0] = smew.carb_W(CaCO3[0], MgCO3[0], Omega_CaCO3[0], Omega_MgCO3[0], s[0], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3) # [mol-conv/ m2 d]
         
     #Silicate weathering
     if M_rock_in > 0:
@@ -386,13 +386,13 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
 
 #------------------------------------------------------------------------------
     #frozen option
-    frozen_state = [pH, H, f_H, Ca_tot, Ca, f_Ca, Mg_tot, Mg, f_Mg, K_tot, K, f_K, Na_tot, Na, f_Na, Si_tot, Si, An_tot, An,
-    Alk_tot, Alk, R_alk, CO2_w, HCO3, CO3, DIC, Al_tot, Al_w, Al, AlOH, AlOH2, AlOH3, AlOH4, f_Al, CaCO3, MgCO3, Omega_CaCO3, Omega_MgCO3]
+    frozen_state = (pH, H, f_H, Ca_tot, Ca, f_Ca, Mg_tot, Mg, f_Mg, K_tot, K, f_K, Na_tot, Na, f_Na, Si_tot, Si, An_tot, An,
+    Alk_tot, Alk, R_alk, CO2_w, HCO3, CO3, DIC, Al_tot, Al_w, Al, AlOH, AlOH2, AlOH3, AlOH4, f_Al, CaCO3, MgCO3, Omega_CaCO3, Omega_MgCO3)
 
-    frozen_zero = [UP_Ca, UP_Mg, UP_K, UP_Si, W_CaCO3, W_MgCO3, ADV, root_ex, wet_f]
+    frozen_zero = (UP_Ca, UP_Mg, UP_K, UP_Si, W_CaCO3, W_MgCO3, ADV, root_ex, wet_f)
     
     if M_rock_in > 0:
-        frozen_rock_state = [d, delta_d, lamb, SSA, psd, psd_rock_num, M_min, rock_f, Omega]
+        frozen_rock_state = (d, delta_d, lamb, SSA, psd, psd_rock_num, M_min, rock_f, Omega)
     
 #------------------------------------------------------------------------------
     #SYSTEM RESOLUTION
@@ -480,14 +480,14 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             H0_2 =fsolve(eqH, H[i-1])[0]
             
             #solution 1
-            x0 = np.array([Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])         
+            x0 = np.array((Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]))
             sol = fsolve(equations,x0, xtol=1e-12)                                           
             errors[:,i] = equations(sol) #residuals
             
             #solution 2
             res_threshold = 1e-1
             if np.any(abs(errors[:,i]) > res_threshold):
-                x0 = np.array([Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]])
+                x0 = np.array((Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]))
                 sol = fsolve(equations, x0, xtol=1e-14)
                 errors[:,i] = equations(sol)
                 if np.any(abs(errors[:,i]) > res_threshold):
@@ -521,7 +521,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             #Carbonate weathering
             Omega_CaCO3[i] = Ca[i]*CO3[i]/K_CaCO3 # [-]
             Omega_MgCO3[i] = Mg[i]*CO3[i]/K_MgCO3
-            [W_CaCO3[i], W_MgCO3[i]] = smew.carb_W(CaCO3[i], MgCO3[i], Omega_CaCO3[i], Omega_MgCO3[i], s[i], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3)
+            W_CaCO3[i], W_MgCO3[i] = smew.carb_W(CaCO3[i], MgCO3[i], Omega_CaCO3[i], Omega_MgCO3[i], s[i], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3)
                      
             #Silicate weathering
             if M_rock_in > 0:
@@ -546,7 +546,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                     d[:,i] = d[:,i-1] - 2*d_shrink*lamb[:,i-1] # [m]
                     d[:,i][d[:,i] < 0] = 0
                     delta_d[:,i] = np.insert(np.diff(d[:,i]),0,d[0,i]) # [m]                
-                    [lamb[:,i], SSA[:,i], psd[:,i], SA[i]] = smew.psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
+                    lamb[:,i], SSA[:,i], psd[:,i], SA[i] = smew.psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
                     psd_rock_num[:,i] = smew.psd_number_from_mass(psd[:,i], d[:,i], rho_rock)
 
                 #wetness scaling of the surface area

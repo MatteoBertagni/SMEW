@@ -15,11 +15,11 @@ def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al):
             
     #constants 
     K_CEC = smew.K_GT_CEC(soil,conv_mol) #CEC Gaines-Thomas
-    [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H] = K_CEC
-    [K1, K2, K3, K4] = smew.K_Al(conv_mol) #Al speciation
+    K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
+    K1, K2, K3, K4 = smew.K_Al(conv_mol) #Al speciation
     
     # cations (mol-conv/l)
-    [Ca, Mg, K, Na, Al_w] = conc_in
+    Ca, Mg, K, Na, Al_w = conc_in
     H = 10**(-pH_in)*conv_mol 
     
     # aluminium speciation
@@ -52,11 +52,11 @@ def f_CEC_to_conc(f_CEC_in, pH_in, soil, conv_mol,conv_Al):
     
     #constants 
     K_CEC = smew.K_GT_CEC(soil,conv_mol) #CEC Gaines-Thomas
-    [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H] = K_CEC
-    [K1, K2, K3, K4] = smew.K_Al(conv_mol) #Al speciation
+    K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
+    K1, K2, K3, K4 = smew.K_Al(conv_mol) #Al speciation
 
     #f_CEC [-]
-    [f_Ca, f_Mg, f_K, f_Na, f_Al, f_H] = f_CEC_in
+    f_Ca, f_Mg, f_K, f_Na, f_Al, f_H = f_CEC_in
        
     #estimates of concentrations
     Ca = (f_Ca/K_Ca_H)*(H/f_H)**2
@@ -79,11 +79,11 @@ def total_to_f_CEC_and_conc(total_in, pH_in, f_acid, s, soil, n,Zr,CEC_tot,conv_
 
     #constants 
     K_CEC = smew.K_GT_CEC(soil, conv_mol) #CEC Gaines-Thomas
-    [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H] = K_CEC
-    [K1, K2, K3, K4] = smew.K_Al(conv_mol) #Al speciation
+    K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
+    K1, K2, K3, K4 = smew.K_Al(conv_mol) #Al speciation
 
     # total (mol-conv/m2)
-    [Ca_tot, Mg_tot, K_tot, Na_tot] = total_in
+    Ca_tot, Mg_tot, K_tot, Na_tot = total_in
     H = 10**(-pH_in)*conv_mol 
 
     def equations(p):
@@ -118,11 +118,11 @@ def total_to_f_CEC_and_conc(total_in, pH_in, f_acid, s, soil, n,Zr,CEC_tot,conv_
     Al_w0 = Al0/(H**4/(H**4+H**3*K1+H**2*K1*K2+H*K1*K2*K3+K1*K2*K3*K4))
     Al_tot0 = (f_Al0/3)*CEC_tot*conv_Al+Al_w0*n*Zr*s[0]*1000
 
-    x0 = np.array([Al_w0, Al0, Al_tot0, Mg0, Ca0, Na0, K0, f_Mg0, f_Na0, f_K0, f_Ca0, f_Al0, f_H0])
+    x0 = np.array((Al_w0, Al0, Al_tot0, Mg0, Ca0, Na0, K0, f_Mg0, f_Na0, f_K0, f_Ca0, f_Al0, f_H0))
 
     #system solution
     sol = fsolve(equations,x0, xtol=1e-14)
-    [Al_w, Al, Al_tot, Mg, Ca, Na, K, f_Mg, f_Na, f_K, f_Ca, f_Al, f_H] = sol
+    Al_w, Al, Al_tot, Mg, Ca, Na, K, f_Mg, f_Na, f_K, f_Ca, f_Al, f_H = sol
 
     #K_Ca_Al = (Al/conv_Al/f_Al)**2*(f_Ca/Ca)**3
     #K_Ca_H = (f_Ca/Ca)*(H/f_H)**2
@@ -141,13 +141,13 @@ def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
     H = 10**(-pH_in)*conv_mol 
     
     #f_CEC [-]
-    [f_Ca, f_Mg, f_K, f_Na, f_Al, f_H] = f_CEC_in
+    f_Ca, f_Mg, f_K, f_Na, f_Al, f_H = f_CEC_in
     
     #conc [-]
-    [Ca, Mg, K, Na, Al_w] = conc_in
+    Ca, Mg, K, Na, Al_w = conc_in
     
     # Al spec
-    [K1, K2, K3, K4] = smew.K_Al(conv_mol)
+    K1, K2, K3, K4 = smew.K_Al(conv_mol)
     Al=(H**4/(H**4+H**3*K1+H**2*K1*K2+H*K1*K2*K3+K1*K2*K3*K4))*Al_w
     
     #estimates of K constants
@@ -168,12 +168,12 @@ def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
 
     #constants 
     K_CEC = smew.K_GT_CEC(soil, conv_mol) #CEC Gaines-Thomas
-    [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H] = K_CEC
-    [K1, K2, K3, K4] = smew.K_Al(conv_mol) #Al speciation
+    K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
+    K1, K2, K3, K4 = smew.K_Al(conv_mol) #Al speciation
 
     # known (mol-conv/m2)
-    [Ca_tot, Mg_tot, K_tot, Na_tot] = total_in
-    [Ca, Mg, K, Na, Al_w] = conc_in
+    Ca_tot, Mg_tot, K_tot, Na_tot = total_in
+    Ca, Mg, K, Na, Al_w = conc_in
     H = 10**(-pH_in)*conv_mol
     Al=(H**4/(H**4+H**3*K1+H**2*K1*K2+H*K1*K2*K3+K1*K2*K3*K4))*Al_w
 
@@ -198,11 +198,11 @@ def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
     Al_tot0 = (f_Al0/3)*CEC_tot*conv_Al+Al_w*n*Zr*s[0]*1000
     CaCO30 = Ca_tot-Ca*n*Zr*s[0]*1000+f_Ca0/2*CEC_tot   
 
-    x0 = np.array([Al_tot0, CaCO30, f_Al0, f_H0, f_Ca0])
+    x0 = np.array((Al_tot0, CaCO30, f_Al0, f_H0, f_Ca0))
 
     #system solution
     sol = fsolve(equations,x0, xtol=1e-14)
-    [Al_tot, CaCO3,  f_Al, f_H, f_Ca] = sol
+    Al_tot, CaCO3,  f_Al, f_H, f_Ca = sol
 
     #estimating soil-dependent K_CEC
     K_Ca_Mg = (f_Ca/Ca)*(Mg/f_Mg)
@@ -225,11 +225,11 @@ def Amann(f_CEC_in, pH_in, Mg_in, soil, conv_mol,conv_Al):
     
     #constants 
     K_CEC = smew.K_GT_CEC(soil,conv_mol) #CEC Gaines-Thomas
-    [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H] = K_CEC
-    [K1, K2, K3, K4] = smew.K_Al(conv_mol) #Al speciation
+    K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
+    K1, K2, K3, K4 = smew.K_Al(conv_mol) #Al speciation
 
     #f_CEC [-]
-    [f_Ca, f_Mg, f_K, f_Na, f_Al, f_H] = f_CEC_in
+    f_Ca, f_Mg, f_K, f_Na, f_Al, f_H = f_CEC_in
        
     #conc from measurements
     Mg = Mg_in
