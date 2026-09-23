@@ -2,10 +2,24 @@ PYTHON ?= .venv/bin/python
 PYTEST_ARGS ?=
 CASE ?=
 
-.PHONY: build test test-serial example check-notebooks update-baseline
+.PHONY: build build-native build-python install-native install-python clean test test-serial example check-notebooks update-baseline
 
-build:
-	$(PYTHON) -m build
+build: build-native
+
+build-native:
+	SMEW_BUILD_NATIVE=1 $(PYTHON) -m build
+
+build-python:
+	SMEW_BUILD_NATIVE=0 $(PYTHON) -m build
+
+install-native:
+	SMEW_BUILD_NATIVE=1 $(PYTHON) -m pip install --no-cache-dir -e .
+
+install-python:
+	SMEW_BUILD_NATIVE=0 $(PYTHON) -m pip install --no-cache-dir -e .
+
+clean:
+	rm -rf -- build dist smew.egg-info
 
 test:
 	$(PYTHON) -m pytest -n auto --maxprocesses=3 --dist=loadgroup tests $(PYTEST_ARGS)

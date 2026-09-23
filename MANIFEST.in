@@ -1,1 +1,3 @@
 graft third_party/cminpack
+include smew/equations.pxd
+prune build

@@ -60,6 +60,16 @@ then run `make test` for full-year time-series comparisons and physical-range ch
 Use `make example` to open the marimo example with plots generated on demand.
 See [tests/README.md](tests/README.md) for setup and reference updates.
 
+`make build` (or `make build-native`) creates a source archive and wheel with
+the private Cython equations extension. `make install-native` rebuilds it in
+the active editable installation after equation changes. Use
+`make install-python` for a source installation without a C compiler, or
+`make build-python` to package that variant. `make clean` removes generated
+build directories and distributions. The Python source remains
+available as `smew.equations`; restart the Python process after a native
+rebuild. The compiled simulation backend still awaits its solver adapter and
+remains unavailable at this stage.
+
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
