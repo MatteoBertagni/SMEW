@@ -66,6 +66,11 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 
 See the `license` file for details.
 
+SMEW includes cminpack's hybrid solver source under the terms in
+[third_party/cminpack/CopyrightMINPACK.txt](third_party/cminpack/CopyrightMINPACK.txt).
+This product includes software developed by the University of Chicago, as
+Operator of Argonne National Laboratory.
+
 # Contact
 
 You can contact me at @MatteoBertagni ([matteo.bertagni@polito.it](mailto:matteo.bertagni@polito.it)) for more information about the research.

@@ -11,6 +11,7 @@ authors = [{ name = "Matteo Bertagni", email = "matteo.bertagni@polito.it" }]
 license = " AGPL-3.0-only"
 license-files = [
     "LICENSE.txt",
+    "third_party/cminpack/CopyrightMINPACK.txt",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
