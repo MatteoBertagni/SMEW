@@ -12,6 +12,11 @@ from smew._utils import require_backend
 #minimize, least_squares, newton_krylov, broyden1, root, broyden2
 
 def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, M_rock_in2, t_app2, mineral2, rock_f_in2, d_in2, psd_perc_in2, SSA_in2, diss_f, dt, conv_Al, conv_mol, keyword_add, *, backend="python"):
+    if backend == "compiled":
+        raise NotImplementedError(
+            "biogeochem_balance2psd does not support the compiled backend; "
+            "use backend='python'."
+        )
     require_backend(backend)
 
             

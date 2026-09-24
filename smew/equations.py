@@ -69,11 +69,11 @@ def biogeochem_residual(
     out[7] = Ca*nZrs1000+f_Ca/2*CEC_tot-Ca_tot
     out[8] = Na*nZrs1000+f_Na*CEC_tot-Na_tot
     out[9] = K*nZrs1000+f_K*CEC_tot-K_tot
-    out[10] = f_Al - (Al/conv_Al)*(f_Ca**3/(K_Ca_Al*Ca**3))**(1/2)
+    out[10] = f_Al - (Al/conv_Al)*(f_Ca**3/(K_Ca_Al*Ca**3))**0.5
     out[11] = f_Mg - Mg*(f_Ca/(K_Ca_Mg*Ca))
-    out[12] = f_Na - Na*(f_Ca/(K_Ca_Na*Ca))**(1/2)
-    out[13] = f_K - K*(f_Ca/(K_Ca_K*Ca))**(1/2)
-    out[14] = f_H - H*(f_Ca/(K_Ca_H*Ca))**(1/2)
+    out[12] = f_Na - Na*(f_Ca/(K_Ca_Na*Ca))**0.5
+    out[13] = f_K - K*(f_Ca/(K_Ca_K*Ca))**0.5
+    out[14] = f_H - H*(f_Ca/(K_Ca_H*Ca))**0.5
     out[15] = 1-(f_Ca+f_Al+f_Mg+f_Na+f_K+f_H)
     return 0
 
@@ -92,11 +92,11 @@ def biogeochem_equations(
 
 def cec_calcium_residual(f_Ca, Al, conv_Al, Ca, Mg, Na, K, H,
                          K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H):
-    return 1-(f_Ca+(Al/conv_Al)*((f_Ca**3/(K_Ca_Al*Ca**3))**(1/2))
+    return 1-(f_Ca+(Al/conv_Al)*((f_Ca**3/(K_Ca_Al*Ca**3))**0.5)
               +Mg*(f_Ca/(K_Ca_Mg*Ca))
-              +Na*((f_Ca/(K_Ca_Na*Ca))**(1/2))
-              +K*((f_Ca/(K_Ca_K*Ca))**(1/2))
-              +H*((f_Ca/(K_Ca_H*Ca))**(1/2)))
+              +Na*((f_Ca/(K_Ca_Na*Ca))**0.5)
+              +K*((f_Ca/(K_Ca_K*Ca))**0.5)
+              +H*((f_Ca/(K_Ca_H*Ca))**0.5))
 
 
 def cec_calcium_equation(p, Al, conv_Al, Ca, Mg, Na, K, H,
@@ -130,12 +130,12 @@ def total_to_cec_residual(p, H, n, Zr, s, CEC_tot, conv_Al,
     out[3] = Ca*n*Zr*s*1000+f_Ca/2*CEC_tot-Ca_tot
     out[4] = Na*n*Zr*s*1000+f_Na*CEC_tot-Na_tot
     out[5] = K*n*Zr*s*1000+f_K*CEC_tot-K_tot
-    out[6] = f_Al - (Al/conv_Al)*(f_Ca**3/(K_Ca_Al*Ca**3))**(1/2)
-    out[7] = f_H - H*(f_Ca/(K_Ca_H*Ca))**(1/2)
+    out[6] = f_Al - (Al/conv_Al)*(f_Ca**3/(K_Ca_Al*Ca**3))**0.5
+    out[7] = f_H - H*(f_Ca/(K_Ca_H*Ca))**0.5
     out[8] = f_H + f_Al - f_acid
     out[9] = f_Mg - Mg*(f_Ca/(K_Ca_Mg*Ca))
-    out[10] = f_Na - Na*(f_Ca/(K_Ca_Na*Ca))**(1/2)
-    out[11] = f_K - K*(f_Ca/(K_Ca_K*Ca))**(1/2)
+    out[10] = f_Na - Na*(f_Ca/(K_Ca_Na*Ca))**0.5
+    out[11] = f_K - K*(f_Ca/(K_Ca_K*Ca))**0.5
     out[12] = 1-(f_Ca+f_Al+f_Mg+f_Na+f_K+f_H)
     return 0
 
@@ -163,8 +163,8 @@ def kelland_residual(p, Al_w, Al, H, Ca, Ca_tot,
     f_Ca = p[4]
     out[0] = Al_w*n*Zr*s*1000+(f_Al/3)*CEC_tot*conv_Al-Al_tot
     out[1] = Ca*n*Zr*s*1000+f_Ca/2*CEC_tot+CaCO3-Ca_tot
-    out[2] = f_Al - (Al/conv_Al)*(f_Ca**3/(K_Ca_Al*Ca**3))**(1/2)
-    out[3] = f_H - H*(f_Ca/(K_Ca_H*Ca))**(1/2)
+    out[2] = f_Al - (Al/conv_Al)*(f_Ca**3/(K_Ca_Al*Ca**3))**0.5
+    out[3] = f_H - H*(f_Ca/(K_Ca_H*Ca))**0.5
     out[4] = 1-(f_Ca+f_Al+f_Mg+f_Na+f_K+f_H)
     return 0
 

@@ -22,9 +22,11 @@ __pycache__/
 __marimo__/
 
 # Generated native-extension artifacts
-smew/*_fast.c
-smew/*_fast.h
-smew/*_fast*.so
+smew/_native/_equations*.so
+smew/_native/_equations*.pyd
+smew/_native/_minpack*.so
+smew/_native/_minpack*.pyd
+smew/_native/_minpack.c
 
 # --- Temporary files ---
 *.tmp

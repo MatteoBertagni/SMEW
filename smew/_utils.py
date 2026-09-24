@@ -3,13 +3,19 @@
 
 
 def require_backend(backend):
-    """Validate backend selection until compiled execution is available."""
+    """Validate execution choice and check that the native solver is installed."""
     if backend not in ("python", "compiled"):
         raise ValueError(
             f"Unknown backend {backend!r}; choose 'python' or 'compiled'."
         )
     if backend == "compiled":
-        raise RuntimeError(
-            "The compiled backend has not been implemented yet. "
-            "Use backend='python' for now."
-        )
+        try:
+            from smew._native import _minpack
+        except ImportError as exc:
+            raise RuntimeError(
+                "The compiled backend is unavailable. Install a native wheel, "
+                "build the extensions with 'make install-native', or select "
+                "backend='python'."
+            ) from exc
+        return _minpack
+    return None

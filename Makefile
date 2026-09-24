@@ -20,6 +20,7 @@ install-python:
 
 clean:
 	rm -rf -- build dist smew.egg-info
+	rm -f -- smew/_native/_equations*.so smew/_native/_equations*.pyd smew/_native/_minpack*.so smew/_native/_minpack*.pyd smew/_native/_minpack.c
 
 test:
 	$(PYTHON) -m pytest -n auto --maxprocesses=3 --dist=loadgroup tests $(PYTEST_ARGS)

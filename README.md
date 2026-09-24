@@ -18,17 +18,21 @@ Install with:
 pip install smew
 ```
 
-Simulation calls accept a keyword-only `backend` option. For now, `"python"`
-is the default and uses SciPy's `fsolve` with the Python equations:
+Simulation calls accept a keyword-only `backend` option. `"python"` remains
+the default and uses SciPy's `fsolve` with the Python equations. `"compiled"`
+uses the bundled cminpack solver and Cython-compiled equations:
 
 ```python
 result = smew.biogeochem_balance(**inputs, backend="python")
+result = smew.biogeochem_balance(**inputs, backend="compiled")
 ```
 
-`backend="compiled"` is reserved for the planned Cython/cminpack implementation
-and currently raises an error. The same option is available on
-`biogeochem_balance2psd` and the initialization functions that solve nonlinear
-systems (`conc_to_f_CEC`, `total_to_f_CEC_and_conc`, and `Kelland`).
+The timestep loop and other process calculations are still Python in both
+modes; Numba integration is a later step, without a cache-specific native
+interface for now. The initialization functions that
+solve nonlinear systems (`conc_to_f_CEC`, `total_to_f_CEC_and_conc`, and
+`Kelland`) also support both backends. `biogeochem_balance2psd` remains
+Python-only and rejects `backend="compiled"`.
 
 # Folders
 
@@ -61,14 +65,14 @@ Use `make example` to open the marimo example with plots generated on demand.
 See [tests/README.md](tests/README.md) for setup and reference updates.
 
 `make build` (or `make build-native`) creates a source archive and wheel with
-the private Cython equations extension. `make install-native` rebuilds it in
-the active editable installation after equation changes. Use
+the private Cython equations and cminpack solver extensions.
+`make install-native` rebuilds them in the active editable installation after
+equation changes. Use
 `make install-python` for a source installation without a C compiler, or
 `make build-python` to package that variant. `make clean` removes generated
 build directories and distributions. The Python source remains
 available as `smew.equations`; restart the Python process after a native
-rebuild. The compiled simulation backend still awaits its solver adapter and
-remains unavailable at this stage.
+rebuild.
 
 ## License
 

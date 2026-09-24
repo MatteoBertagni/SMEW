@@ -20,7 +20,10 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                        mixalf_in=1.0,
                        *, backend="python"
                       ):
-    require_backend(backend)
+    native = require_backend(backend)
+    if native is not None:
+        scalar_workspace = native.Workspace(1)
+        main_workspace = native.Workspace(16)
 
     if keyword_ssa == "nonlinear" and (pore_d_in is None or pore_pdf_in is None):
         raise ValueError(
@@ -205,11 +208,19 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     CO2_w_rain = k_H*CO2_atm # [mol/l] Henry's law
     
     for i in range(0, len(s)):
-        def equations(p):
-            # H_rain[i] = p
-            return water_equations(p, Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i])
-        
-        H_rain[i] = fsolve(equations, 10**-6*conv_mol)[0] # [mol/l]
+        if native is None:
+            # Use the Pure Python equation with fsolve
+            def equations(p):
+                # H_rain[i] = p
+                return water_equations(p, Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i])
+            H_rain[i] = fsolve(equations, 10**-6*conv_mol)[0]
+        else:
+            # Use the compiled equation with cminpack
+            H_rain[i] = native.solve_water(
+                10**-6*conv_mol,
+                (Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i]),
+                workspace=scalar_workspace,
+            )[0][0]
         DIC_rain[i]=CO2_w_rain[i]+k1[i]*CO2_w_rain[i]/H_rain[i]+k2[i]*k1[i]*CO2_w_rain[i]/(H_rain[i]**2)
     
 #------------------------------------------------------------------------------            
@@ -416,15 +427,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             Si_tot[i] = Si_tot[i-1]+(I_Si+np.sum(min_st[:,5]*EW[:,i-1])-(L[i-1]+T[i-1])*1000*Si[i-1]-UP_Si[i-1])*dt
             An_tot[i] = An_tot[i-1]+(I_An - (L[i-1]+T[i-1])*An[i-1]*1000)*dt # [mol_c]
             Alk_tot[i] = 2*Mg_tot[i]+2*Ca_tot[i]+Na_tot[i]+K_tot[i]-An_tot[i] # [mol_c]
-            IC_tot[i] = IC_tot[i-1]+I[i]*1000*DIC_rain[i]-ADV[i]+(W_CaCO3[i-1]+W_MgCO3[i-1]+r_het[i-1]+r_aut[i-1]-Fs[i-1]-L[i-1]*1000*DIC[i-1])*dt 
-                       
-            #implicit system
-            def equations(p):
-                Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = p
-                return biogeochem_equations(
-                    p, Alk_tot[i], n, Zr, s[i], IC_tot[i], k1[i], k2[i], k_H[i], k_w[i], CEC_tot, conv_Al, Al_tot[i],
-                    K1, K2, K3, K4, Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
-                )
+            IC_tot[i] = IC_tot[i-1]+I[i]*1000*DIC_rain[i]-ADV[i]+(W_CaCO3[i-1]+W_MgCO3[i-1]+r_het[i-1]+r_aut[i-1]-Fs[i-1]-L[i-1]*1000*DIC[i-1])*dt
                        
             #initial guess
             Alk0 = (Alk_tot[i]-R_alk[i-1])/(n*Zr*s[i]*1000)
@@ -437,25 +440,58 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             Ca0 = (Ca_tot[i]-f_Ca[i-1]/2*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*Ca[i-1]/s[i]
             K0 =  (K_tot[i]-f_K[i-1]*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*K[i-1]/s[i]
             H0 = H[i-1]
-            def eqH(p):
+
+            if native is None:
+                def eqH(p):
                     # H0 = p
                     return h_equations(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
-            H0_2 =fsolve(eqH, H[i-1])[0]
+                H0_2 = fsolve(eqH, H[i-1])[0]
+            else:
+                H0_2 = native.solve_hydrogen(
+                    H[i-1], (k1[i], k2[i], CO2_w0, k_w[i], Alk0),
+                    workspace=scalar_workspace,
+                )[0][0]
             
             #solution 1
             x0 = np.array((Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]))
-            sol = fsolve(equations,x0, xtol=1e-12)                                           
-            errors[:,i] = equations(sol) #residuals
+            if native is None:
+                #implicit system
+                def equations(p):
+                    Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = p
+                    return biogeochem_equations(
+                        p, Alk_tot[i], n, Zr, s[i], IC_tot[i], k1[i], k2[i], k_H[i], k_w[i], CEC_tot, conv_Al, Al_tot[i],
+                        K1, K2, K3, K4, Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
+                    )
+                sol = fsolve(equations, x0, xtol=1e-12)
+                errors[:, i] = equations(sol)
+            else:
+                parameters = (
+                    Alk_tot[i], n, Zr, s[i], IC_tot[i], k1[i], k2[i], k_H[i],
+                    k_w[i], CEC_tot, conv_Al, Al_tot[i], K1, K2, K3, K4,
+                    Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al,
+                    K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H,
+                )
+                sol, errors[:, i], _, _ = native.solve_biogeochem(
+                    x0, parameters, xtol=1e-12, workspace=main_workspace,
+                )
             
             #solution 2
             res_threshold = 1e-1
             if np.any(abs(errors[:,i]) > res_threshold):
                 x0 = np.array((Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]))
-                sol = fsolve(equations, x0, xtol=1e-14)
-                errors[:,i] = equations(sol)
+                if native is None:
+                    sol = fsolve(equations, x0, xtol=1e-14)
+                    errors[:, i] = equations(sol)
+                else:
+                    sol, errors[:, i], _, _ = native.solve_biogeochem(
+                        x0, parameters, xtol=1e-14,
+                        workspace=main_workspace,
+                    )
                 if np.any(abs(errors[:,i]) > res_threshold):
                     print(i)
                     raise ValueError("Solution not converging")          
+
+            Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = sol
 
             #pH and C
             pH[i] = -np.log10(H[i]/conv_mol) # [-]

@@ -1,3 +1,4 @@
 graft third_party/cminpack
 include smew/equations.pxd
+include smew/_native/_minpack.pyx
 prune build
