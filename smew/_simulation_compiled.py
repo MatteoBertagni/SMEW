@@ -43,25 +43,29 @@ _native_solve.argtypes = (
 )
 
 
+def _solve_with_cminpack(system, state, parameters, residual, work, xtol):
+    """Solve through the native entry point, updating caller-owned arrays."""
+    status = _native_solve(
+        system, state.size, parameters.ctypes.data, parameters.size,
+        state.ctypes.data, residual.ctypes.data, xtol,
+        200 * (state.size + 1), work.ctypes.data, work.size,
+    )
+    if status == -1:
+        raise RuntimeError("Native residual evaluation failed")
+    if status <= 0:
+        raise ValueError("Native solver received invalid buffers or settings")
+    return status
+
 
 @overload(_solve_system)
-def _native_solver_overload(system, state, parameters, residual, work, xtol):
-    def solve(system, state, parameters, residual, work, xtol):
-        status = _native_solve(
-            system, state.size, parameters.ctypes.data, parameters.size,
-            state.ctypes.data, residual.ctypes.data, xtol,
-            200 * (state.size + 1), work.ctypes.data, work.size,
-        )
-        if status == -1:
-            raise RuntimeError("Native residual evaluation failed")
-        if status <= 0:
-            raise ValueError("Native solver received invalid buffers or settings")
-        return status
-    return solve
+def _use_cminpack_when_compiling(system, state, parameters, residual, work, xtol):
+    # Numba substitutes this implementation; ordinary Python keeps SciPy.
+    return _solve_with_cminpack
 
 
-# Compile the same functions used by the Python backend. The ctypes binding
-# is process-local, so disk caching is deliberately disabled.
+# Create compiled callables from the shared model and initialisation functions;
+# Numba compiles them on first use. Disk caching stays disabled because the
+# ctypes binding is process-local.
 compiled_balance = njit(nogil=True, error_model="numpy", cache=False)(
     _biogeochem_balance,
 )
