@@ -7,6 +7,7 @@ Created on Mon Dec 16 14:34:44 2019
 import numpy as np
 import smew
 from smew._utils import require_backend, _solve_system, _warn_solver_status
+from smew._utils import CEC_CALCIUM_SYSTEM, TOTAL_TO_CEC_SYSTEM, KELLAND_SYSTEM
 
 #------------------------------------------------------------------------------
  # conc to CEC fractions
@@ -45,7 +46,7 @@ def _conc_to_f_CEC(conc_in, pH_in, soil, conv_mol, conv_Al):
                            K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H))
     residual = np.empty(1)
     work = np.empty(8)
-    status = _solve_system(3, f_Ca, parameters, residual, work, 1.49012e-8)
+    status = _solve_system(CEC_CALCIUM_SYSTEM, f_Ca, parameters, residual, work, 1.49012e-8)
     f_Al = (Al/conv_Al)*((f_Ca**3/(K_Ca_Al*Ca**3))**(1/2))
     f_Mg = Mg*(f_Ca/(K_Ca_Mg*Ca))
     f_Na = Na*((f_Ca/(K_Ca_Na*Ca))**(1/2))
@@ -140,7 +141,7 @@ def _total_to_f_CEC_and_conc(total_in, pH_in, f_acid, s, soil, n, Zr, CEC_tot, c
     ))
     residual = np.empty(13)
     work = np.empty(13 * 13 + 13 * (13 + 1) // 2 + 6 * 13)
-    status = _solve_system(4, x0, parameters, residual, work, 1e-14)
+    status = _solve_system(TOTAL_TO_CEC_SYSTEM, x0, parameters, residual, work, 1e-14)
     Al_w, Al, Al_tot, Mg, Ca, Na, K, f_Mg, f_Na, f_K, f_Ca, f_Al, f_H = x0
 
     #K_Ca_Al = (Al/conv_Al/f_Al)**2*(f_Ca/Ca)**3
@@ -233,7 +234,7 @@ def _Kelland(total_in, pH_in, conc_in, s, soil, n, Zr, CEC_tot, conv_mol, conv_A
     ))
     residual = np.empty(5)
     work = np.empty(5 * 5 + 5 * (5 + 1) // 2 + 6 * 5)
-    status = _solve_system(5, x0, parameters, residual, work, 1e-14)
+    status = _solve_system(KELLAND_SYSTEM, x0, parameters, residual, work, 1e-14)
     Al_tot, CaCO3,  f_Al, f_H, f_Ca = x0
 
     #estimating soil-dependent K_CEC

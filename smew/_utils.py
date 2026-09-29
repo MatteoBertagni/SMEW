@@ -11,6 +11,15 @@ from smew.equations import (
 )
 
 
+# Shared equation identifiers; the native adapter reads these at import.
+WATER_SYSTEM = 0
+HYDROGEN_SYSTEM = 1
+BIOGEOCHEM_SYSTEM = 2
+CEC_CALCIUM_SYSTEM = 3
+TOTAL_TO_CEC_SYSTEM = 4
+KELLAND_SYSTEM = 5
+
+
 def require_backend(backend):
     """Validate execution choice and check that the native solver is installed."""
     if backend not in ("python", "compiled"):
@@ -32,17 +41,17 @@ def require_backend(backend):
 
 def _solve_system(system, state, parameters, residual, work, xtol):
     """SciPy solver adapter; Numba replaces this call with the native binding."""
-    if system == 0:
+    if system == WATER_SYSTEM:
         equations = water_equations
-    elif system == 1:
+    elif system == HYDROGEN_SYSTEM:
         equations = h_equations
-    elif system == 2:
+    elif system == BIOGEOCHEM_SYSTEM:
         equations = biogeochem_equations
-    elif system == 3:
+    elif system == CEC_CALCIUM_SYSTEM:
         equations = cec_calcium_equation
-    elif system == 4:
+    elif system == TOTAL_TO_CEC_SYSTEM:
         equations = total_to_cec_equations
-    elif system == 5:
+    elif system == KELLAND_SYSTEM:
         equations = kelland_equations
     else:
         raise ValueError("Unknown equation system")

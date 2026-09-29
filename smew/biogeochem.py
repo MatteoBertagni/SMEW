@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 import smew
 from smew._utils import require_backend, _solve_system
+from smew._utils import WATER_SYSTEM, HYDROGEN_SYSTEM, BIOGEOCHEM_SYSTEM
 
 
 def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add, 
@@ -289,7 +290,7 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
         scalar_parameters[2] = k2[i]
         scalar_parameters[3] = CO2_w_rain[i]
         scalar_parameters[4] = k_w[i]
-        status = _solve_system(0, scalar_guess, scalar_parameters,
+        status = _solve_system(WATER_SYSTEM, scalar_guess, scalar_parameters,
                                scalar_residual, scalar_work, 1.49012e-8)  # 1.49012e-8 is the default fsolve xtol
         solver_status_counts[status] += 1
         H_rain[i] = scalar_guess[0]
@@ -520,7 +521,7 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
             scalar_parameters[2] = CO2_w0
             scalar_parameters[3] = k_w[i]
             scalar_parameters[4] = Alk0
-            status = _solve_system(1, scalar_guess, scalar_parameters,
+            status = _solve_system(HYDROGEN_SYSTEM, scalar_guess, scalar_parameters,
                                    scalar_residual, scalar_work, 1.49012e-8)
             solver_status_counts[status] += 1
             H0_2 = scalar_guess[0]
@@ -533,7 +534,7 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
                 Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al,
                 K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H,
             ))
-            status = _solve_system(2, x0, parameters, main_residual, main_work, 1e-12)
+            status = _solve_system(BIOGEOCHEM_SYSTEM, x0, parameters, main_residual, main_work, 1e-12)
             solver_status_counts[status] += 1
             sol = x0
             errors[:, i] = main_residual
@@ -542,7 +543,7 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
             res_threshold = 1e-1
             if np.any(np.abs(errors[:,i]) > res_threshold):
                 x0 = np.array((Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]))
-                status = _solve_system(2, x0, parameters, main_residual, main_work, 1e-14)
+                status = _solve_system(BIOGEOCHEM_SYSTEM, x0, parameters, main_residual, main_work, 1e-14)
                 solver_status_counts[status] += 1
                 sol = x0
                 errors[:, i] = main_residual

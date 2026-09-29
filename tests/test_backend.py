@@ -146,7 +146,7 @@ def test_compiled_and_python_initialization_can_run_successively(
     )
     with monkeypatch.context() as patch:
         patch.setattr("smew._utils.fsolve", _reject_python_solver)
-        patch.setattr(native, "solve_cec_calcium", _reject_python_solver)
+        patch.setattr(native, "solve", _reject_python_solver)
         compiled, _ = smew.conc_to_f_CEC(
             concentrations, pH_in, soil, conv_mol, 1.0, backend="compiled",
         )
@@ -182,7 +182,7 @@ def test_compiled_initialization_uses_both_vector_systems(monkeypatch):
     python = smew.total_to_f_CEC_and_conc(*args, backend="python")
     with monkeypatch.context() as patch:
         patch.setattr("smew._utils.fsolve", _reject_python_solver)
-        patch.setattr(native, "solve_total_to_cec", _reject_python_solver)
+        patch.setattr(native, "solve", _reject_python_solver)
         compiled = smew.total_to_f_CEC_and_conc(*args, backend="compiled")
     for left, right in zip(python, compiled):
         np.testing.assert_allclose(right, left, rtol=1e-9, atol=1e-12)
@@ -193,7 +193,7 @@ def test_compiled_initialization_uses_both_vector_systems(monkeypatch):
     python = smew.Kelland(*args, backend="python")
     with monkeypatch.context() as patch:
         patch.setattr("smew._utils.fsolve", _reject_python_solver)
-        patch.setattr(native, "solve_kelland", _reject_python_solver)
+        patch.setattr(native, "solve", _reject_python_solver)
         compiled = smew.Kelland(*args, backend="compiled")
     for left, right in zip(python, compiled):
         np.testing.assert_allclose(right, left, rtol=1e-9, atol=1e-12)
