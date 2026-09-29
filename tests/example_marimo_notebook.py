@@ -39,6 +39,12 @@ def _(mo):
 
 @app.cell
 def _():
+    backend = "python"  # Select "compiled" to use Numba and cminpack.
+    return (backend,)
+
+
+@app.cell
+def _():
     duration_days = 365
     timestep_minutes = 10
     return duration_days, timestep_minutes
@@ -337,6 +343,7 @@ def _(
 @app.cell
 def _(
     application_day,
+    backend,
     balance_background_inputs,
     conv_al,
     conv_mol,
@@ -408,6 +415,7 @@ def _(
         keyword_ssa=wet_surface_model, pore_d_in=pore_diameters,
         pore_pdf_in=pore_pdf, rho_rock_in=rock_density_g_m3,
         mixalf_in=pore_particle_mixing,
+        backend=backend,
     )
     return (chemistry,)
 

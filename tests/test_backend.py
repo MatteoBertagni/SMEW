@@ -208,18 +208,15 @@ def test_compiled_initialization_uses_both_vector_systems(monkeypatch):
         assert dispatcher.nopython_signatures
 
 
-def test_compiled_simulation_uses_numba_timestep_loop(monkeypatch):
+def test_compiled_simulation_uses_numba_timestep_loop():
     pytest.importorskip("smew._native._minpack")
     from tests.example_marimo_notebook import app
 
-    original = smew.biogeochem_balance
     _, python_definitions = app.run(defs={"duration_days": 2, "timestep_minutes": 60})
 
-    def compiled_balance(**inputs):
-        return original(**inputs, backend="compiled")
-
-    monkeypatch.setattr(smew, "biogeochem_balance", compiled_balance)
-    _, definitions = app.run(defs={"duration_days": 2, "timestep_minutes": 60})
+    _, definitions = app.run(defs={
+        "duration_days": 2, "timestep_minutes": 60, "backend": "compiled",
+    })
     assert definitions["results"]["pH"].size == 48
     assert np.isfinite(definitions["results"]["pH"]).all()
     from smew import _simulation_compiled
@@ -262,10 +259,10 @@ def test_compiled_timestep_branches_match_python(monkeypatch, variant):
             if variant == "nonlinear_frozen":
                 inputs["temp_soil"] = inputs["temp_soil"].copy()
                 inputs["temp_soil"][24:] = -2.0
-            return original(**inputs, backend=backend)
+            return original(**inputs)
 
         monkeypatch.setattr(smew, "biogeochem_balance", balance)
-        _, definitions = app.run(defs=settings)
+        _, definitions = app.run(defs={**settings, "backend": backend})
         return definitions["chemistry"]
 
     python = run("python")

@@ -11,11 +11,14 @@ make test
 Pytest runs three configurations of the [marimo example](../tests/example_marimo_notebook.py):
 the defaults, constant moisture, and no added rock. Each covers **365 days at a
 ten-minute timestep** (52,560 samples). Fixed weekly rainfall makes the runs
-repeatable. Assertions compare every selected timestep with its reference and
+repeatable. Each scenario runs with both `backend="python"` and
+`backend="compiled"`, using the same references and tolerances. Compiled regression
+tests fail if the native extensions are unavailable; they are not skipped.
+Assertions compare every selected timestep with its reference and
 check finite values and physical ranges separately. Solver warnings stay visible.
 `make test` selects the number of workers automatically and caps it at the three
 scenarios, so a two-core runner uses two workers. Tests are grouped by scenario,
-ensuring each expensive model configuration executes once. Use `make test-serial`
+ensuring each expensive model configuration executes once per backend. Use `make test-serial`
 to run the tests one by one for debugging or memory-constrained machines.
 
 ```bash
