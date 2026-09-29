@@ -67,6 +67,67 @@ cdef int _callback(void *userdata, int n, const double *state,
     return 0
 
 
+cdef public int smew_solve(int system, int n, const double *parameters,
+                              int parameter_count, double *state,
+                              double *residual, double xtol, int maxfev,
+                              double *work, int work_len) noexcept nogil:
+    """Raw-buffer entry point for the Numba timestep loop.
+
+    Return MINPACK's status, -1 for an invalid residual, or -2 for an invalid
+    layout/settings. Each call owns its parameter and work buffers.
+    """
+    cdef Problem problem
+    cdef int expected_n, expected_parameters, nfev = 0, status
+    cdef int lr
+    cdef double *diag
+    cdef double *fjac
+    cdef double *r
+    cdef double *qtf
+    cdef double *wa1
+    cdef double *wa2
+    cdef double *wa3
+    cdef double *wa4
+    if system == 0 or system == 1:
+        expected_n, expected_parameters = 1, 5
+    elif system == 2:
+        expected_n, expected_parameters = 16, 25
+    elif system == 3:
+        expected_n, expected_parameters = 1, 12
+    elif system == 4:
+        expected_n, expected_parameters = 13, 20
+    elif system == 5:
+        expected_n, expected_parameters = 5, 15
+    else:
+        return -2
+    lr = n * (n + 1) // 2
+    if (n != expected_n or parameter_count != expected_parameters or
+            state == NULL or residual == NULL or parameters == NULL or
+            work == NULL or xtol < 0 or maxfev <= 0 or
+            work_len < n * n + lr + 6 * n):
+        return -2
+    diag = work
+    fjac = diag + n
+    r = fjac + n * n
+    qtf = r + lr
+    wa1 = qtf + n
+    wa2 = wa1 + n
+    wa3 = wa2 + n
+    wa4 = wa3 + n
+    problem.system = system
+    problem.parameters = parameters
+    problem.callback_failed = 0
+    status = hybrd(
+        _callback, &problem, n, state, residual, xtol, maxfev,
+        n - 1, n - 1, DBL_EPSILON, diag, 1, 100.0, 0, &nfev,
+        fjac, n, r, lr, qtf, wa1, wa2, wa3, wa4,
+    )
+    if problem.callback_failed:
+        return -1
+    if _callback(&problem, n, state, residual, 1) != 0:
+        return -1
+    return status
+
+
 class Workspace:
     """Caller-owned cminpack scratch arrays for repeated solves of one size."""
 

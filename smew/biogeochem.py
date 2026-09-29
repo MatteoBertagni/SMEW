@@ -4,14 +4,13 @@
 Created on Mon Dec 16 14:34:44 2019
 """
 
+import warnings
+
 import numpy as np
 import smew
-from scipy.optimize import fsolve
-#minimize, least_squares, newton_krylov, broyden1, root, broyden2
-from smew.equations import water_equations, h_equations, biogeochem_equations
-from smew._utils import require_backend
+from smew._utils import require_backend, _solve_system
 
-   
+
 def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add, 
                        keyword_ssa='linear', # options: 'constant', 'linear', 'nonlinear'
                        pore_d_in=None,
@@ -20,17 +19,84 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                        mixalf_in=1.0,
                        *, backend="python"
                       ):
-    native = require_backend(backend)
-    if native is not None:
-        scalar_workspace = native.Workspace(1)
-        main_workspace = native.Workspace(16)
-
+    """Run the shared model as Python/SciPy or Numba/Cython/cminpack."""
+    require_backend(backend)
+    # Forward the public arguments to the model; backend is handled here only.
+    arguments = {
+        "n": n,
+        "s": s,
+        "L": L,
+        "T": T,
+        "I": I,
+        "v": v,
+        "k_v": k_v,
+        "RAI": RAI,
+        "root_d": root_d,
+        "Zr": Zr,
+        "r_het": r_het,
+        "r_aut": r_aut,
+        "D": D,
+        "temp_soil": temp_soil,
+        "pH_in": pH_in,
+        "conc_in": conc_in,
+        "f_CEC_in": f_CEC_in,
+        "K_CEC": K_CEC,
+        "CEC_tot": CEC_tot,
+        "Si_in": Si_in,
+        "CaCO3_in": CaCO3_in,
+        "MgCO3_in": MgCO3_in,
+        "M_rock_in": M_rock_in,
+        "t_app": t_app,
+        "mineral": mineral,
+        "rock_f_in": rock_f_in,
+        "d_in": d_in,
+        "psd_perc_in": psd_perc_in,
+        "SSA_in": SSA_in,
+        "diss_f": diss_f,
+        "dt": dt,
+        "conv_Al": conv_Al,
+        "conv_mol": conv_mol,
+        "keyword_add": keyword_add,
+        "keyword_ssa": keyword_ssa,
+        "pore_d_in": pore_d_in,
+        "pore_pdf_in": pore_pdf_in,
+        "rho_rock_in": rho_rock_in,
+        "mixalf_in": mixalf_in,
+    }
     if keyword_ssa == "nonlinear" and (pore_d_in is None or pore_pdf_in is None):
         raise ValueError(
-        "For keyword_ssa='nonlinear', provide both pore_d_in and pore_pdf_in. "
-        "They can be estimated with: "
-        "pore_d_in, pore_pdf_in = smew.soil_pore_pdf(soil)."
-    )
+            "For keyword_ssa='nonlinear', provide both pore_d_in and pore_pdf_in. "
+            "They can be estimated with: pore_d_in, pore_pdf_in = smew.soil_pore_pdf(soil)."
+        )
+    # Standardise array inputs as contiguous float64 arrays, using empty arrays for None.
+    for name in ("s", "L", "T", "I", "v", "r_het", "r_aut", "D", "temp_soil",
+                 "conc_in", "f_CEC_in", "K_CEC", "rock_f_in", "d_in", "psd_perc_in",
+                 "pore_d_in", "pore_pdf_in"):
+        value = arguments[name]
+        arguments[name] = np.ascontiguousarray(
+            () if value is None else value, dtype=np.float64,
+        )
+    # Standardise mineral to a tuple.
+    arguments["mineral"] = tuple(mineral) if mineral is not None and len(mineral) else ("",)
+    model = _biogeochem_balance
+    if backend == "compiled":
+        from smew._simulation_compiled import compiled_balance
+        model = compiled_balance
+    result = dict(model(**arguments))
+    for status in range(2, 6):
+        if result["solver_status_counts"][status]:
+            warnings.warn(f"MINPACK stopped with status {status}", RuntimeWarning, stacklevel=2)
+    return result
+
+
+def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add,
+                       keyword_ssa='linear', # options: 'constant', 'linear', 'nonlinear'
+                       pore_d_in=None,
+                       pore_pdf_in=None,
+                       rho_rock_in=None,
+                       mixalf_in=1.0,
+                      ):
+    """Shared scientific model, executed directly or compiled by Numba."""
             
     # Preallocating the variables
     pH = np.zeros(len(s))
@@ -111,39 +177,38 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
 
     wet_f = np.zeros(len(s))
      
-    if M_rock_in > 0:
-        number_min = len(mineral)
-        rho_min = np.zeros(number_min)
-        MM_min = np.zeros(number_min)
-        E_H = np.zeros(number_min) 
-        E_w = np.zeros(number_min)
-        E_OH = np.zeros(number_min)
-        n_H = np.zeros(number_min)
-        n_OH = np.zeros(number_min)
-        K_sp = np.zeros(number_min)
-        min_st = np.zeros((number_min, 6))
-        k_diss_H = np.zeros(number_min)
-        k_diss_w = np.zeros(number_min)
-        k_diss_OH = np.zeros(number_min)
+    number_min = len(mineral) if M_rock_in > 0 else 1
+    rho_min = np.zeros(number_min)
+    MM_min = np.zeros(number_min)
+    E_H = np.zeros(number_min)
+    E_w = np.zeros(number_min)
+    E_OH = np.zeros(number_min)
+    n_H = np.zeros(number_min)
+    n_OH = np.zeros(number_min)
+    K_sp = np.zeros(number_min)
+    min_st = np.zeros((number_min, 6))
+    k_diss_H = np.zeros(number_min)
+    k_diss_w = np.zeros(number_min)
+    k_diss_OH = np.zeros(number_min)
 
-        k_H_T = np.zeros((number_min, len(s)))
-        k_w_T = np.zeros((number_min, len(s)))
-        k_OH_T = np.zeros((number_min, len(s)))
-        Omega =  np.zeros((number_min, len(s)))
-        M_min = np.zeros((number_min, len(s)))
-        rock_f = np.zeros((number_min, len(s)))
-        Wr = np.zeros((number_min, len(s)))
-        EW = np.zeros((number_min, len(s)))
-        
-        n_d_cl = len(d_in)
-        if n_d_cl > 1:
-            d = np.zeros((n_d_cl, len(s)))
-            delta_d = np.zeros((n_d_cl, len(s)))
-            lamb = np.zeros((n_d_cl, len(s)))
-            SSA = np.zeros((n_d_cl, len(s)))
-            psd = np.zeros((n_d_cl, len(s)))
-            psd_rock_num = np.zeros((n_d_cl, len(s)))
-        
+    k_H_T = np.zeros((number_min, len(s)))
+    k_w_T = np.zeros((number_min, len(s)))
+    k_OH_T = np.zeros((number_min, len(s)))
+    Omega =  np.zeros((number_min, len(s)))
+    M_min = np.zeros((number_min, len(s)))
+    rock_f = np.zeros((number_min, len(s)))
+    Wr = np.zeros((number_min, len(s)))
+    EW = np.zeros((number_min, len(s)))
+
+    n_d_cl = len(d_in) if M_rock_in > 0 else 1
+    if n_d_cl > 1:
+        d = np.zeros((n_d_cl, len(s)))
+        delta_d = np.zeros((n_d_cl, len(s)))
+        lamb = np.zeros((n_d_cl, len(s)))
+        SSA = np.zeros((n_d_cl, len(s)))
+        psd = np.zeros((n_d_cl, len(s)))
+        psd_rock_num = np.zeros((n_d_cl, len(s)))
+
     errors = np.zeros((16, len(s)))
     
 #------------------------------------------------------------------------------
@@ -185,7 +250,9 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     #mineral constants
     if M_rock_in > 0: 
         for j in range(0,number_min):
-            MM_min[j], k_diss_H[j], k_diss_w[j], k_diss_OH[j], n_H[j], n_OH[j], E_H[j], E_w[j], E_OH[j], min_st[j,:], K_sp[j] = smew.min_const(mineral[j], conv_mol)
+            MM_min[j], k_diss_H[j], k_diss_w[j], k_diss_OH[j], n_H[j], n_OH[j], E_H[j], E_w[j], E_OH[j], stoichiometry, K_sp[j] = smew.min_const(mineral[j], conv_mol)
+            for element in range(6):
+                min_st[j,element] = stoichiometry[element]
             #temperature scaling
             k_H_T[j,:] = k_diss_H[j]*np.exp(-E_H[j]*1000/(8.314/conv_mol)*(1/T_K[:]-1/(25+273.15)))
             k_w_T[j,:] = k_diss_w[j]*np.exp(-E_w[j]*1000/(8.314/conv_mol)*(1/T_K[:]-1/(25+273.15)))
@@ -206,23 +273,28 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     
     Alk_rain = 0 #alk
     CO2_w_rain = k_H*CO2_atm # [mol/l] Henry's law
-    
-    for i in range(0, len(s)):
-        if native is None:
-            # Use the Pure Python equation with fsolve
-            def equations(p):
-                # H_rain[i] = p
-                return water_equations(p, Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i])
-            H_rain[i] = fsolve(equations, 10**-6*conv_mol)[0]
-        else:
-            # Use the compiled equation with cminpack
-            H_rain[i] = native.solve_water(
-                10**-6*conv_mol,
-                (Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i]),
-                workspace=scalar_workspace,
-            )[0][0]
+
+    # Assign variable once to be reused for solver inputs and outputs
+    scalar_guess = np.empty(1)
+    scalar_parameters = np.empty(5)
+    scalar_residual = np.empty(1)
+    scalar_work = np.empty(8)
+    main_residual = np.empty(16)
+    main_work = np.empty(488)
+    solver_status_counts = np.zeros(6, dtype=np.int64)
+    for i in range(len(s)):
+        scalar_guess[0] = 10**-6*conv_mol
+        scalar_parameters[0] = Alk_rain
+        scalar_parameters[1] = k1[i]
+        scalar_parameters[2] = k2[i]
+        scalar_parameters[3] = CO2_w_rain[i]
+        scalar_parameters[4] = k_w[i]
+        status = _solve_system(0, scalar_guess, scalar_parameters,
+                               scalar_residual, scalar_work, 1.49012e-8)  # 1.49012e-8 is the default fsolve xtol
+        solver_status_counts[status] += 1
+        H_rain[i] = scalar_guess[0]
         DIC_rain[i]=CO2_w_rain[i]+k1[i]*CO2_w_rain[i]/H_rain[i]+k2[i]*k1[i]*CO2_w_rain[i]/(H_rain[i]**2)
-    
+
 #------------------------------------------------------------------------------            
     # INITIAL CONDITIONS
     
@@ -314,6 +386,9 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         W_CaCO3[0], W_MgCO3[0] = smew.carb_W(CaCO3[0], MgCO3[0], Omega_CaCO3[0], Omega_MgCO3[0], s[0], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3) # [mol-conv/ m2 d]
         
     #Silicate weathering
+    # We define them here as they are returned
+    tt_app = 0
+    M_iner = 0.0
     if M_rock_in > 0:
         
         #application timestep
@@ -327,7 +402,8 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         
         #diameter classes
         d[:,tt_app] = d_in #[m]
-        delta_d[:,tt_app] = np.insert(np.diff(d[:,tt_app]),0,d[0,tt_app])
+        delta_d[0,tt_app] = d[0,tt_app]
+        delta_d[1:,tt_app] = d[1:,tt_app] - d[:-1,tt_app]
         
         #particle size distribution by mass and number
         psd[:,tt_app] = psd_perc_in*M_rock[tt_app]/delta_d[:,tt_app] #[g/m]
@@ -365,15 +441,12 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
 
     frozen_zero = (UP_Ca, UP_Mg, UP_K, UP_Si, W_CaCO3, W_MgCO3, ADV, root_ex, wet_f)
     
-    if M_rock_in > 0:
-        frozen_rock_state = (d, delta_d, lamb, SSA, psd, psd_rock_num, M_min, rock_f, Omega)
+    # declared even if M_rock_in == 0 as returned
+    frozen_rock_state = (d, delta_d, lamb, SSA, psd, psd_rock_num, M_min, rock_f, Omega)
     
 #------------------------------------------------------------------------------
     #SYSTEM RESOLUTION
-        
-    printcounter = 0
-    numb_print = 0
-    
+
     for i in range(1, len(s)): 
 
             # Frozen soil: aqueous chemistry and reactions pause, only gas-phase CO2 diffusion
@@ -382,14 +455,14 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                 for arr in frozen_state:
                     arr[i] = arr[i - 1]
 
-                
+
                 # Gas-phase CO2 relaxation toward atmospheric CO2
                 air_vol = n * Zr * (1.0 - s[i]) * 1000.0  # [L_air m-2]
                 k_diff = (D[i] / Z_CO2 * 1000.0) / air_vol  # [d-1]
                 CO2_air[i] = CO2_atm + (CO2_air[i - 1] - CO2_atm) * np.exp(-k_diff * dt)
                 Fs[i] = air_vol * (CO2_air[i - 1] - CO2_air[i]) / dt
                 IC_tot[i] = (DIC[i] * s[i] + CO2_air[i] * (1.0 - s[i])) * (n * Zr * 1000.0)
-                
+
                 # stop biological, hydrological, and reaction fluxes
                 for arr in frozen_zero:
                     arr[i] = 0.0
@@ -398,7 +471,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                     if i > tt_app:
                         M_rock[i] = M_rock[i - 1]
                         SA[i] = SA[i - 1]
-                
+
                     for arr in frozen_rock_state:
                         arr[:, i] = arr[:, i - 1]
 
@@ -413,11 +486,11 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                 ADV[i] = n*Zr*1000*(s[i]-s[i-1])*CO2_atm # [mol] 
             elif s[i]>s[i-1]:
                 ADV[i] = n*Zr*1000*(s[i]-s[i-1])*CO2_air[i-1]
-            
+
             #active uptake [Ca, Mg, K, Si] 
             UP_act = smew.up_act(v[i], (v[i]-v[i-1]), xi, dt, T[i-1], Ca[i-1], Mg[i-1], K[i-1], Si[i-1], Dw[i-1], Zr, k_v, RAI, root_d)
             UP_Ca[i-1], UP_Mg[i-1], UP_K[i-1], UP_Si[i-1] = UP_act # [mol-conv/d] 
-                                  
+
             #explicit mass balances # [mol]
             Ca_tot[i] = Ca_tot[i-1]+(I_Ca+np.sum(min_st[:,0]*EW[:,i-1])+W_CaCO3[i-1]-(L[i-1]+T[i-1])*1000*Ca[i-1]-UP_Ca[i-1])*dt 
             Mg_tot[i] = Mg_tot[i-1]+(I_Mg+np.sum(min_st[:,1]*EW[:,i-1])+W_MgCO3[i-1]-(L[i-1]+T[i-1])*1000*Mg[i-1]-UP_Mg[i-1])*dt
@@ -428,7 +501,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             An_tot[i] = An_tot[i-1]+(I_An - (L[i-1]+T[i-1])*An[i-1]*1000)*dt # [mol_c]
             Alk_tot[i] = 2*Mg_tot[i]+2*Ca_tot[i]+Na_tot[i]+K_tot[i]-An_tot[i] # [mol_c]
             IC_tot[i] = IC_tot[i-1]+I[i]*1000*DIC_rain[i]-ADV[i]+(W_CaCO3[i-1]+W_MgCO3[i-1]+r_het[i-1]+r_aut[i-1]-Fs[i-1]-L[i-1]*1000*DIC[i-1])*dt
-                       
+
             #initial guess
             Alk0 = (Alk_tot[i]-R_alk[i-1])/(n*Zr*s[i]*1000)
             CO2_w0 = IC_tot[i]/(n*Zr*1000)*1/(s[i]*(1+k1[i]/H[i-1]+k2[i]*k1[i]/(H[i-1]**2))+(1-s[i])/k_H[i]) 
@@ -441,53 +514,39 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             K0 =  (K_tot[i]-f_K[i-1]*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*K[i-1]/s[i]
             H0 = H[i-1]
 
-            if native is None:
-                def eqH(p):
-                    # H0 = p
-                    return h_equations(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
-                H0_2 = fsolve(eqH, H[i-1])[0]
-            else:
-                H0_2 = native.solve_hydrogen(
-                    H[i-1], (k1[i], k2[i], CO2_w0, k_w[i], Alk0),
-                    workspace=scalar_workspace,
-                )[0][0]
-            
+            scalar_guess[0] = H[i-1]
+            scalar_parameters[0] = k1[i]
+            scalar_parameters[1] = k2[i]
+            scalar_parameters[2] = CO2_w0
+            scalar_parameters[3] = k_w[i]
+            scalar_parameters[4] = Alk0
+            status = _solve_system(1, scalar_guess, scalar_parameters,
+                                   scalar_residual, scalar_work, 1.49012e-8)
+            solver_status_counts[status] += 1
+            H0_2 = scalar_guess[0]
+
             #solution 1
             x0 = np.array((Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]))
-            if native is None:
-                #implicit system
-                def equations(p):
-                    Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = p
-                    return biogeochem_equations(
-                        p, Alk_tot[i], n, Zr, s[i], IC_tot[i], k1[i], k2[i], k_H[i], k_w[i], CEC_tot, conv_Al, Al_tot[i],
-                        K1, K2, K3, K4, Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H
-                    )
-                sol = fsolve(equations, x0, xtol=1e-12)
-                errors[:, i] = equations(sol)
-            else:
-                parameters = (
-                    Alk_tot[i], n, Zr, s[i], IC_tot[i], k1[i], k2[i], k_H[i],
-                    k_w[i], CEC_tot, conv_Al, Al_tot[i], K1, K2, K3, K4,
-                    Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al,
-                    K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H,
-                )
-                sol, errors[:, i], _, _ = native.solve_biogeochem(
-                    x0, parameters, xtol=1e-12, workspace=main_workspace,
-                )
-            
+            parameters = np.array((
+                Alk_tot[i], n, Zr, s[i], IC_tot[i], k1[i], k2[i], k_H[i],
+                k_w[i], CEC_tot, conv_Al, Al_tot[i], K1, K2, K3, K4,
+                Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al,
+                K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H,
+            ))
+            status = _solve_system(2, x0, parameters, main_residual, main_work, 1e-12)
+            solver_status_counts[status] += 1
+            sol = x0
+            errors[:, i] = main_residual
+
             #solution 2
             res_threshold = 1e-1
-            if np.any(abs(errors[:,i]) > res_threshold):
+            if np.any(np.abs(errors[:,i]) > res_threshold):
                 x0 = np.array((Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]))
-                if native is None:
-                    sol = fsolve(equations, x0, xtol=1e-14)
-                    errors[:, i] = equations(sol)
-                else:
-                    sol, errors[:, i], _, _ = native.solve_biogeochem(
-                        x0, parameters, xtol=1e-14,
-                        workspace=main_workspace,
-                    )
-                if np.any(abs(errors[:,i]) > res_threshold):
+                status = _solve_system(2, x0, parameters, main_residual, main_work, 1e-14)
+                solver_status_counts[status] += 1
+                sol = x0
+                errors[:, i] = main_residual
+                if np.any(np.abs(errors[:,i]) > res_threshold):
                     print(i)
                     raise ValueError("Solution not converging")          
 
@@ -499,62 +558,205 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             HCO3[i] = k1[i]*CO2_w[i]/H[i] 
             CO3[i] = k2[i]*k1[i]*CO2_w[i]/(H[i]**2)
             DIC[i] = CO2_w[i]+HCO3[i]+CO3[i]
-              
+
             #Al speciation
             AlOH[i] = (H[i]**3*K1/(H[i]**4+H[i]**3*K1+H[i]**2*K1*K2+H[i]*K1*K2*K3+K1*K2*K3*K4))*Al_w[i] #[mol/l]
             AlOH2[i] = (H[i]**2*K1*K2/(H[i]**4+H[i]**3*K1+H[i]**2*K1*K2+H[i]*K1*K2*K3+K1*K2*K3*K4))*Al_w[i]
             AlOH3[i] = (H[i]*K1*K2*K3/(H[i]**4+H[i]**3*K1+H[i]**2*K1*K2+H[i]*K1*K2*K3+K1*K2*K3*K4))*Al_w[i]
             AlOH4[i] = Al_w[i]-(Al[i]+AlOH[i]+AlOH2[i]+AlOH3[i])
-            
+
             #concentrations
             Si[i] = Si_tot[i]/(n*Zr*s[i]*1000) # [mol-conv/l]
             An[i] = An_tot[i]/(n*Zr*s[i]*1000) # [mol_c-conv/l]
-                                                 
+
             #CO2 diff flux 
             Fs[i] = D[i]/(Z_CO2)*(CO2_air[i]-CO2_atm)*1000 # [mol/d]    
-            
+
             #Carbonate minerals
             CaCO3[i] = CaCO3[i-1] - W_CaCO3[i-1]*dt # [mol-conv]
             MgCO3[i] = MgCO3[i-1] - W_MgCO3[i-1]*dt
-            
+
             #Carbonate weathering
             Omega_CaCO3[i] = Ca[i]*CO3[i]/K_CaCO3 # [-]
             Omega_MgCO3[i] = Mg[i]*CO3[i]/K_MgCO3
             W_CaCO3[i], W_MgCO3[i] = smew.carb_W(CaCO3[i], MgCO3[i], Omega_CaCO3[i], Omega_MgCO3[i], s[i], Zr, r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3)
-                     
+
             #Silicate weathering
             if M_rock_in > 0:
-                
+
                 #saturation and weathering rate
                 for j in range(0, number_min):
                     Omega[j,i] = smew.sil_Omega(mineral[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp[j], conv_mol,conv_Al) #[-]           
                     Wr[j,i]= smew.sil_Wr(mineral[j], Omega[j,i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol)
-                
+
                 #post application only
                 if i> tt_app:
-                    
+
                     #mineral fractions in rock
                     M_min[:,i] = M_min[:,i-1]-EW[:,i-1]*MM_min[:]*dt # [g]
                     M_min[:, i] = np.maximum(M_min[:, i], 0)
                     M_rock[i] = np.sum(M_min[:,i]) + M_iner # [g]
                     if M_rock[i]>0:
                         rock_f[:,i] = M_min[:,i]/M_rock[i] # [-]
-                        
+
                     #diameter variation
                     d_shrink = np.sum(rock_f[:,i-1]*Wr[:,i-1]*MM_min[:]/rho_rock)*dt # [m]
                     d[:,i] = d[:,i-1] - 2*d_shrink*lamb[:,i-1] # [m]
                     d[:,i][d[:,i] < 0] = 0
-                    delta_d[:,i] = np.insert(np.diff(d[:,i]),0,d[0,i]) # [m]                
+                    delta_d[0,i] = d[0,i]
+                    delta_d[1:,i] = d[1:,i] - d[:-1,i] # [m]
                     lamb[:,i], SSA[:,i], psd[:,i], SA[i] = smew.psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
                     psd_rock_num[:,i] = smew.psd_number_from_mass(psd[:,i], d[:,i], rho_rock)
 
                 #wetness scaling of the surface area
                 wet_f[i] = smew.wetness_SA(s[i],keyword_ssa, pore_d_in, pore_pdf_in, d[:,i], psd_rock_num[:, i], mixalf_in, d[-1,i])
-            
+
                 #weathering fluxes         
                 EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i]*wet_f[i] # [mol/d]
-                    
 
-    data = {k: v for k, v in locals().items()}
 
-    return data
+
+    # Named pairs support mixed output types in Numba; the wrapper builds the dictionary.
+    return (
+        ("pH", pH),
+        ("H", H),
+        ("f_H", f_H),
+        ("Ca_tot", Ca_tot),
+        ("Ca", Ca),
+        ("f_Ca", f_Ca),
+        ("UP_Ca", UP_Ca),
+        ("Omega_CaCO3", Omega_CaCO3),
+        ("CaCO3", CaCO3),
+        ("W_CaCO3", W_CaCO3),
+        ("Mg_tot", Mg_tot),
+        ("Mg", Mg),
+        ("f_Mg", f_Mg),
+        ("UP_Mg", UP_Mg),
+        ("Omega_MgCO3", Omega_MgCO3),
+        ("MgCO3", MgCO3),
+        ("W_MgCO3", W_MgCO3),
+        ("K_tot", K_tot),
+        ("K", K),
+        ("f_K", f_K),
+        ("UP_K", UP_K),
+        ("Na_tot", Na_tot),
+        ("Na", Na),
+        ("f_Na", f_Na),
+        ("Si", Si),
+        ("Si_tot", Si_tot),
+        ("UP_Si", UP_Si),
+        ("root_ex", root_ex),
+        ("An", An),
+        ("An_tot", An_tot),
+        ("R_alk", R_alk),
+        ("Alk_tot", Alk_tot),
+        ("Alk", Alk),
+        ("CO2_air", CO2_air),
+        ("IC_tot", IC_tot),
+        ("CO2_w", CO2_w),
+        ("HCO3", HCO3),
+        ("CO3", CO3),
+        ("DIC", DIC),
+        ("Fs", Fs),
+        ("ADV", ADV),
+        ("H_rain", H_rain),
+        ("DIC_rain", DIC_rain),
+        ("Al", Al),
+        ("f_Al", f_Al),
+        ("AlOH", AlOH),
+        ("AlOH2", AlOH2),
+        ("AlOH3", AlOH3),
+        ("AlOH4", AlOH4),
+        ("Al_w", Al_w),
+        ("Al_tot", Al_tot),
+        ("M_rock", M_rock),
+        ("SA", SA),
+        ("EW", EW),
+        ("min_st", min_st),
+        ("d", d),
+        ("delta_d", delta_d),
+        ("lamb", lamb),
+        ("SSA", SSA),
+        ("psd", psd),
+        ("psd_rock_num", psd_rock_num),
+        ("wet_f", wet_f),
+        ("number_min", number_min),
+        ("rho_min", rho_min),
+        ("MM_min", MM_min),
+        ("E_H", E_H),
+        ("E_w", E_w),
+        ("E_OH", E_OH),
+        ("n_H", n_H),
+        ("n_OH", n_OH),
+        ("K_sp", K_sp),
+        ("k_diss_H", k_diss_H),
+        ("k_diss_w", k_diss_w),
+        ("k_diss_OH", k_diss_OH),
+        ("k_H_T", k_H_T),
+        ("k_w_T", k_w_T),
+        ("k_OH_T", k_OH_T),
+        ("Omega", Omega),
+        ("M_min", M_min),
+        ("rock_f", rock_f),
+        ("Wr", Wr),
+        ("n_d_cl", n_d_cl),
+        ("errors", errors),
+        ("CO2_atm", CO2_atm),
+        ("T_K", T_K),
+        ("frozen", frozen),
+        ("D_0", D_0),
+        ("D", D),
+        ("Dw_0", Dw_0),
+        ("Dw", Dw),
+        ("MM_Mg", MM_Mg),
+        ("MM_Ca", MM_Ca),
+        ("MM_Na", MM_Na),
+        ("MM_K", MM_K),
+        ("MM_Si", MM_Si),
+        ("MM_C", MM_C),
+        ("MM_Anions", MM_Anions),
+        ("MM_Al", MM_Al),
+        ("K1", K1),
+        ("K2", K2),
+        ("K3", K3),
+        ("K4", K4),
+        ("k1", k1),
+        ("k2", k2),
+        ("k_w", k_w),
+        ("k_H", k_H),
+        ("K_Ca_Mg", K_Ca_Mg),
+        ("K_Ca_K", K_Ca_K),
+        ("K_Ca_Na", K_Ca_Na),
+        ("K_Ca_Al", K_Ca_Al),
+        ("K_Ca_H", K_Ca_H),
+        ("v_f_Ca", v_f_Ca),
+        ("v_f_Mg", v_f_Mg),
+        ("v_f_K", v_f_K),
+        ("v_f_Si", v_f_Si),
+        ("dry_perc", dry_perc),
+        ("xi", xi),
+        ("K_CaCO3", K_CaCO3),
+        ("K_MgCO3", K_MgCO3),
+        ("r_CaCO3", r_CaCO3),
+        ("r_MgCO3", r_MgCO3),
+        ("tau_CaCO3", tau_CaCO3),
+        ("tau_MgCO3", tau_MgCO3),
+        ("rho_rock", rho_rock),
+        ("b", b),
+        ("a", a),
+        ("Alk_rain", Alk_rain),
+        ("CO2_w_rain", CO2_w_rain),
+        ("solver_status_counts", solver_status_counts),
+        ("Z_CO2", Z_CO2),
+        ("I_An", I_An),
+        ("I_Ca", I_Ca),
+        ("I_Mg", I_Mg),
+        ("I_Na", I_Na),
+        ("I_K", I_K),
+        ("I_Si", I_Si),
+        ("tt_app", tt_app),
+        ("M_iner", M_iner),
+        ("frozen_state", frozen_state),
+        ("frozen_zero", frozen_zero),
+        ("frozen_rock_state", frozen_rock_state),
+    )

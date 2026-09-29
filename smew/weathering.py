@@ -5,7 +5,6 @@ Created on Mon Dec 16 14:34:44 2019
 """
 
 import numpy as np
-from scipy.integrate import cumulative_trapezoid
     
 #------------------------------------------------------------------------------
  # psd evolution (based on Beerling et al., 2020)
@@ -127,9 +126,18 @@ def wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf=1.0, lmax=None):
     rock_grid, rock_area_cdf = normalized_cumulative_area(d_eff, rock_area_density)
 
     # Evaluate cumulative wet surface area continuously at rw
-    wet_f = np.interp( rw, rock_grid, rock_area_cdf, left=0.0, right=1.0)
+    if rw < rock_grid[0]:
+        wet_f = 0.0
+    elif rw > rock_grid[-1]:
+        wet_f = 1.0
+    else:
+        wet_f = np.interp(rw, rock_grid, rock_area_cdf)
 
-    return float(np.clip(wet_f, 0.0, 1.0))
+    if wet_f < 0.0:
+        wet_f = 0.0
+    elif wet_f > 1.0:
+        wet_f = 1.0
+    return float(wet_f)
  
 #------------------------------------------------------------------------------
 
@@ -143,22 +151,35 @@ def normalized_cumulative_area(x, y):
     cumulative rock surface area in Equation 3 of Anand et al. WRR (2026).
     """
     
-    x = np.asarray(x, dtype=float)
-    y = np.asarray(y, dtype=float)
+    x = np.asarray(x, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64)
 
     # Ensure increasing x and remove repeated x values
     order = np.argsort(x)
     x = x[order]
     y = y[order]
 
-    x_unique, unique_idx = np.unique(x, return_index=True)
-    y_unique = y[unique_idx]
+    # Keep the first density for repeated grid points, as np.unique with
+    # return_index=True did. This loop also works in the Numba timestep path.
+    count = 0
+    for i in range(x.size):
+        if i == 0 or x[i] != x[i - 1]:
+            count += 1
+    x_unique = np.empty(count)
+    y_unique = np.empty(count)
+    pos = 0
+    for i in range(x.size):
+        if i == 0 or x[i] != x[i - 1]:
+            x_unique[pos] = x[i]
+            y_unique[pos] = max(y[i], 0.0)
+            pos += 1
 
-    # The distributions should not have negative density
-    y_unique = np.maximum(y_unique, 0.0)
-
-    cumulative = cumulative_trapezoid( y_unique, x_unique, initial=0.0)
-
+    # Numba compatible equivalent to: cumulative = cumulative_trapezoid( y_unique, x_unique, initial=0.0)
+    cumulative = np.zeros(count)
+    for i in range(1, count):
+        cumulative[i] = cumulative[i - 1] + (
+            y_unique[i - 1] + y_unique[i]
+        ) * (x_unique[i] - x_unique[i - 1]) / 2
     total = cumulative[-1]
 
     if total <= 0:

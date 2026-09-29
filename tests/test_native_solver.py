@@ -1,5 +1,7 @@
 """Native solver interface checks independent of whole-model baselines."""
 
+import ctypes
+
 import numpy as np
 import pytest
 
@@ -16,6 +18,26 @@ def test_native_water_solver_reports_status_and_final_residual():
     assert status == 1
     assert evaluations > 0
     np.testing.assert_array_equal(initial, [1e-6])
+    np.testing.assert_allclose(residual, water_equations(state, *parameters), atol=1e-16)
+
+
+def test_numba_solver_entry_uses_raw_buffers_and_checks_layout():
+    solver = ctypes.CDLL(_minpack.__file__).smew_solve
+    solver.restype = ctypes.c_int
+    solver.argtypes = (
+        ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int,
+        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double, ctypes.c_int,
+        ctypes.c_void_p, ctypes.c_int,
+    )
+    parameters = np.array((0.0, 1e-6, 1e-8, 1e-3, 1e-14))
+    state = np.array((1e-6,))
+    residual = np.empty(1)
+    work = np.empty(8)
+    args = (parameters.ctypes.data, 5, state.ctypes.data,
+            residual.ctypes.data, 1.4901161193847656e-8, 400,
+            work.ctypes.data, work.size)
+    assert solver(0, 2, *args) == -2
+    assert solver(0, 1, *args) == 1
     np.testing.assert_allclose(residual, water_equations(state, *parameters), atol=1e-16)
 
 
