@@ -101,7 +101,12 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
     # All solves share buffers sized for the largest system (16 unknowns).
     solver_work = np.empty(16 * 16 + 16 * (16 + 1) // 2 + 6 * 16)
     solver_residual = np.empty(16)
-    scalar_residual = solver_residual[:1]  # View of the same storage.
+    solver_state = np.empty(16)
+    solver_parameters = np.empty(25)
+    # Scalar solves use views of the same buffers, without further allocation.
+    scalar_residual = solver_residual[:1]
+    scalar_guess = solver_state[:1]
+    scalar_parameters = solver_parameters[:5]
             
     # Preallocating the variables
     pH = np.zeros(len(s))
@@ -279,9 +284,6 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
     Alk_rain = 0 #alk
     CO2_w_rain = k_H*CO2_atm # [mol/l] Henry's law
 
-    # Assign variable once to be reused for solver inputs and outputs
-    scalar_guess = np.empty(1)
-    scalar_parameters = np.empty(5)
     solver_status_counts = np.zeros(6, dtype=np.int64)
     for i in range(len(s)):
         scalar_guess[0] = 10**-6*conv_mol
@@ -526,32 +528,37 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
             solver_status_counts[status] += 1
             H0_2 = scalar_guess[0]
 
-            #solution 1
-            x0 = np.array((Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]))
-            parameters = np.array((
+            #solution 1: fill the shared buffers after the scalar solve
+            solver_state[:] = (
+                Alk0, CO2_w0, H0, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
+                f_Al[i-1], f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1],
+            )
+            solver_parameters[:] = (
                 Alk_tot[i], n, Zr, s[i], IC_tot[i], k1[i], k2[i], k_H[i],
                 k_w[i], CEC_tot, conv_Al, Al_tot[i], K1, K2, K3, K4,
                 Mg_tot[i], Ca_tot[i], Na_tot[i], K_tot[i], K_Ca_Al,
                 K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H,
-            ))
-            status = _solve_system(BIOGEOCHEM_SYSTEM, x0, parameters, solver_residual, solver_work, 1e-12)
+            )
+            status = _solve_system(BIOGEOCHEM_SYSTEM, solver_state, solver_parameters, solver_residual, solver_work, 1e-12)
             solver_status_counts[status] += 1
-            sol = x0
             errors[:, i] = solver_residual
 
             #solution 2
             res_threshold = 1e-1
             if np.any(np.abs(errors[:,i]) > res_threshold):
-                x0 = np.array((Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0, f_Al[i-1],f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1]))
-                status = _solve_system(BIOGEOCHEM_SYSTEM, x0, parameters, solver_residual, solver_work, 1e-14)
+                # Restore every initial guess; the first solve overwrote the state.
+                solver_state[:] = (
+                    Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
+                    f_Al[i-1], f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1],
+                )
+                status = _solve_system(BIOGEOCHEM_SYSTEM, solver_state, solver_parameters, solver_residual, solver_work, 1e-14)
                 solver_status_counts[status] += 1
-                sol = x0
                 errors[:, i] = solver_residual
                 if np.any(np.abs(errors[:,i]) > res_threshold):
                     print(i)
                     raise ValueError("Solution not converging")          
 
-            Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = sol
+            Alk[i], CO2_w[i], H[i], R_alk[i], Al_w[i], Al[i], Mg[i], Ca[i], Na[i], K[i], f_Al[i], f_Mg[i], f_Na[i], f_K[i], f_H[i], f_Ca[i] = solver_state
 
             #pH and C
             pH[i] = -np.log10(H[i]/conv_mol) # [-]
