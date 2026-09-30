@@ -1,6 +1,8 @@
 # Native declarations for the arithmetic maintained in equations.py.
 # Scalar arguments are double precision; vector state/output use C pointers.
 # The solver validates vector lengths before entering these functions.
+# Edit calculations in equations.py; update types here for new local variables.
+# Keep function arguments in the same order as equations.py and its callers.
 
 import cython
 
@@ -47,7 +49,7 @@ cdef int biogeochem_residual(
     double Mg_tot, double Ca_tot, double Na_tot, double K_tot,
     double K_Ca_Al, double K_Ca_Mg, double K_Ca_Na,
     double K_Ca_K, double K_Ca_H,
-    double *out
+    double *out,
 ) noexcept nogil
 
 
@@ -65,7 +67,7 @@ cdef double cec_calcium_residual(
     double K_Ca_Mg,
     double K_Ca_Na,
     double K_Ca_K,
-    double K_Ca_H
+    double K_Ca_H,
 ) noexcept nogil
 
 
@@ -75,7 +77,7 @@ cdef double cec_calcium_residual(
     Al_w=cython.double, Al=cython.double, Al_tot=cython.double,
     Mg=cython.double, Ca=cython.double, Na=cython.double, K=cython.double,
     f_Mg=cython.double, f_Na=cython.double, f_K=cython.double, f_Ca=cython.double,
-    f_Al=cython.double, f_H=cython.double
+    f_Al=cython.double, f_H=cython.double,
 )
 cdef int total_to_cec_residual(
     const double *p,
@@ -85,7 +87,7 @@ cdef int total_to_cec_residual(
     double Ca_tot, double Mg_tot, double K_tot, double Na_tot,
     double f_acid,
     double K_Ca_Al, double K_Ca_Mg, double K_Ca_Na,
-    double K_Ca_K, double K_Ca_H, double *out
+    double K_Ca_K, double K_Ca_H, double *out,
 ) noexcept nogil
 
 
@@ -96,7 +98,7 @@ cdef int total_to_cec_residual(
     CaCO3=cython.double,
     f_Al=cython.double,
     f_H=cython.double,
-    f_Ca=cython.double
+    f_Ca=cython.double,
 )
 cdef int kelland_residual(
     const double *p,
@@ -115,5 +117,5 @@ cdef int kelland_residual(
     double conv_Al,
     double K_Ca_Al,
     double K_Ca_H,
-    double *out
+    double *out,
 ) noexcept nogil
