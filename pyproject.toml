@@ -1,5 +1,5 @@
 [build-system]
-requires      = ["setuptools>=65", "wheel", "Cython>=3,<4"]
+requires      = ["setuptools>=77", "wheel", "Cython>=3.2,<4"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,7 @@ version = "1.2.0"
 description = "Soil Model for Enhanced Weathering (SMEW): a dynamic, depth-averaged ecohydrological and biogeochemical model for enhanced weathering dynamics in the upper soil layers."
 readme = "README.md"
 authors = [{ name = "Matteo Bertagni", email = "matteo.bertagni@polito.it" }]
-license = " AGPL-3.0-only"
+license = "AGPL-3.0-only"
 license-files = [
     "LICENSE.txt",
     "third_party/cminpack/CopyrightMINPACK.txt",
@@ -26,14 +26,16 @@ dependencies = [
     "scipy",
     "dill",
     "matplotlib",
-    "numba"
+    # Numba 0.62 is the last series providing Intel macOS wheels.
+    "numba>=0.62,<0.63; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "numba>=0.62; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
 dev = [
     "build>=1,<2",
-    "setuptools>=65",
+    "setuptools>=77",
     "wheel",
     "marimo>=0.19.7,<1",
     "pytest>=8,<10",
@@ -46,6 +48,26 @@ addopts = "-ra"
 
 [tool.setuptools]
 packages = ["smew", "smew._native", "pyeto"]
+# Sources belong in the sdist; never sweep local binaries into a Python-only wheel.
+include-package-data = false
+
+[tool.cibuildwheel]
+build = "cp3{11,12,13,14}-*"
+skip = ["*-musllinux_*", "cp314-macosx_x86_64"]
+environment = { SMEW_BUILD_NATIVE = "1", SMEW_CPU_TARGET = "portable" }
+test-requires = ["pytest>=8,<10", "marimo>=0.19.7,<1"]
+test-sources = ["tests"]
+test-command = [
+    "python tests/check_wheel.py",
+    "python -m pytest --import-mode=importlib tests/test_native_equations.py tests/test_native_solver.py tests/test_backend.py",
+]
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+
+[tool.cibuildwheel.macos]
+environment = { SMEW_BUILD_NATIVE = "1", SMEW_CPU_TARGET = "portable", MACOSX_DEPLOYMENT_TARGET = "11.0" }
 
 [project.urls]
 Homepage = "https://pypi.org/project/smew"

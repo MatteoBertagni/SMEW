@@ -18,6 +18,18 @@ Install with:
 pip install smew
 ```
 
+Release wheels contain the compiled Cython equations and bundled cminpack solver;
+installing a matching wheel requires no C compiler. Wheels are built for CPython
+3.11–3.14 on Linux x86-64 and ARM64 (glibc 2.28+), macOS Apple Silicon
+(macOS 11+), and Windows x86-64. Intel macOS wheels support CPython 3.11–3.13
+and use Numba 0.62, the last series with upstream Intel macOS binaries
+([Numba release notes](https://numba.readthedocs.io/en/stable/release/0.62.0-notes.html)).
+Dependencies may impose newer OS requirements.
+Alpine/musl, Windows ARM64, and free-threaded Python are not currently wheel targets.
+If no matching wheel exists, pip attempts to build the source distribution and
+requires a C compiler. To require a SMEW wheel instead, use
+`python -m pip install --only-binary=smew smew`.
+
 Simulation calls accept a keyword-only `backend` option. `"python"` remains
 the default and uses SciPy's `fsolve` with the Python equations. `"compiled"`
 uses a Numba timestep loop, the bundled cminpack solver, and Cython-compiled equations:
@@ -36,6 +48,25 @@ solve nonlinear systems (`conc_to_f_CEC`, `total_to_f_CEC_and_conc`, and
 `Kelland`) follow the same pattern: one shared calculation, compiled by Numba
 with direct cminpack calls when `backend="compiled"`. `biogeochem_balance2psd` remains
 Python-only and rejects `backend="compiled"`.
+
+### Optional CPU-tuned source installation
+
+To tune the compiled extensions for your CPU, build from source with a C compiler.
+On Linux/macOS with GCC or Clang:
+
+```bash
+SMEW_CPU_TARGET=native python -m pip install --no-binary=smew --no-cache-dir smew
+```
+
+On Windows with MSVC and an AVX2-capable CPU (PowerShell):
+
+```powershell
+$env:SMEW_CPU_TARGET = "avx2"
+python -m pip install --no-binary=smew --no-cache-dir smew
+Remove-Item Env:SMEW_CPU_TARGET
+```
+
+Add `--force-reinstall --no-deps` to rebuild an already installed version.
 
 # Folders
 
@@ -76,6 +107,28 @@ equation changes. Use
 build directories and distributions. The Python source remains
 available as `smew.equations`; restart the Python process after a native
 rebuild.
+
+`SMEW_BUILD_NATIVE=0` disables the C extensions; `SMEW_CPU_TARGET` independently
+controls their CPU tuning. For a tuned editable build, run
+`SMEW_CPU_TARGET=native make install-native`. Build dependencies, including
+Cython, are installed by pip in an isolated build environment.
+
+### Release packaging
+
+The **Build and publish distributions** GitHub Actions workflow builds one
+source archive and uses cibuildwheel to build all platform wheels from that
+archive. Every wheel is installed and tested outside the source tree, including
+Numba-to-cminpack calls and short Python/compiled simulation comparisons. Native
+extensions and license notices must be present; missing extensions fail the job.
+Source archives include the Cython and cminpack sources and the wheel test suite,
+but exclude local binaries, Numba caches, and large regression baseline files.
+
+Pull requests and manual workflow runs produce downloadable artifacts without
+publishing. Publishing a GitHub release triggers the same builds, and uploads the
+source archive and wheels to PyPI only after every platform passes. The existing
+PyPI trusted publisher must authorize this repository and `python-publish.yml`.
+Set a new version in `pyproject.toml` before releasing; PyPI versions cannot be
+overwritten. The separate Tests workflow retains the full model regressions.
 
 ## License
 

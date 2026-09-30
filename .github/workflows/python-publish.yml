@@ -1,15 +1,8 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# GitHub recommends pinning actions to a commit SHA.
-# To get a newer version, you will need to update the SHA.
-# You can also reference a tag or branch, but the action may change without warning.
-
-name: Upload Python Package
+name: Build and publish distributions
 
 on:
+  pull_request:
+  workflow_dispatch:
   release:
     types: [published]
 
@@ -17,43 +10,93 @@ permissions:
   contents: read
 
 jobs:
-  release-build:
-    runs-on: ubuntu-latest
-
+  sdist:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
-
-      - name: Build release distributions
+          python-version: "3.12"
+      - name: Build source distribution
+        env:
+          SMEW_BUILD_NATIVE: "0"
         run: |
-          # NOTE: put your own distribution build steps here.
-          python -m pip install build
-          python -m build
-
-      - name: Upload distributions
-        uses: actions/upload-artifact@v4
+          python -m pip install "build>=1,<2" "twine>=6,<7"
+          python -m build --sdist
+          python -m twine check --strict dist/*
+      - uses: actions/upload-artifact@v4
         with:
-          name: release-dists
-          path: dist/
+          name: release-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  wheels:
+    needs: sdist
+    name: Wheels (${{ matrix.os }}, ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+          - os: macos-15-intel
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+          - os: windows-2022
+            arch: AMD64
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-sdist
+          path: dist
+      - name: Locate source distribution
+        id: sdist
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+          archives = list(Path("dist").glob("*.tar.gz"))
+          assert len(archives) == 1, archives
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print(f"path={archives[0].as_posix()}", file=output)
+      - name: Build and test installed wheels from the source distribution
+        uses: pypa/cibuildwheel@v4.2.1
+        with:
+          package-dir: ${{ steps.sdist.outputs.path }}
+          output-dir: wheelhouse
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-wheels-${{ matrix.os }}-${{ matrix.arch }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
 
   pypi-publish:
-    runs-on: ubuntu-latest
-
-    needs:
-      - release-build
-
+    if: github.event_name == 'release'
+    needs: [sdist, wheels]
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
-
     steps:
-      - name: Retrieve release distributions
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: release-dists
-          path: dist/
-
+          pattern: release-*
+          merge-multiple: true
+          path: dist
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate distribution metadata
+        run: |
+          python -m pip install "twine>=6,<7"
+          python -m twine check --strict dist/*
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

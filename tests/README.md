@@ -8,6 +8,25 @@ python3 -m venv .venv
 make test
 ```
 
+## Installed wheel checks
+
+The packaging workflow installs each wheel in a fresh environment and copies
+the tests to a temporary directory outside the checkout. It runs:
+
+```bash
+python tests/check_wheel.py
+python -m pytest --import-mode=importlib tests/test_native_equations.py tests/test_native_solver.py tests/test_backend.py
+```
+
+`check_wheel.py` requires both extensions, their Numba binding, and the license
+notices to be installed from the wheel. It rejects editable installations. The
+pytest checks exercise native equations, solver buffers, compiled initialization,
+and short simulations against the Python backend. This subset needs pytest and
+marimo, but not the full-year baseline files. Source archives include this test
+subset's supporting files; full regressions require a repository checkout.
+
+## Full model regressions
+
 Pytest runs three configurations of the [marimo example](../tests/example_marimo_notebook.py):
 the defaults, constant moisture, and no added rock. Each covers **365 days at a
 ten-minute timestep** (52,560 samples). Fixed weekly rainfall makes the runs
