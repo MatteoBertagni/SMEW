@@ -69,6 +69,11 @@ manylinux-aarch64-image = "manylinux_2_28"
 [tool.cibuildwheel.macos]
 environment = { SMEW_BUILD_NATIVE = "1", SMEW_CPU_TARGET = "portable", MACOSX_DEPLOYMENT_TARGET = "11.0" }
 
+[tool.cibuildwheel.windows]
+# Keep version bounds quoted: cmd.exe treats bare < and > as redirections.
+test-requires = []
+before-test = 'python -m pip install "pytest>=8,<10" "marimo>=0.19.7,<1"'
+
 [project.urls]
 Homepage = "https://pypi.org/project/smew"
 Repository = "https://github.com/MatteoBertagni/SMEW"
