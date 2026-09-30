@@ -16,6 +16,7 @@ import numpy as np
 # After edits, rebuild with `make install-native` and check with `make test`.
 
 
+# Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
 def water_residual(H_rain, Alk_rain, k1, k2, CO2_w_rain, k_w):
     return Alk_rain - (
         k1 * CO2_w_rain / H_rain
@@ -25,11 +26,13 @@ def water_residual(H_rain, Alk_rain, k1, k2, CO2_w_rain, k_w):
     )
 
 
+# SciPy only: unpack p[0] and return the scalar residual to fsolve.
 def water_equations(p, Alk_rain, k1, k2, CO2_w_rain, k_w):
     """Rainwater alkalinity residual; ``p`` contains H"""
     return water_residual(p[0], Alk_rain, k1, k2, CO2_w_rain, k_w)
 
 
+# Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
 def h_residual(H0, k1, k2, CO2_w0, k_w, Alk0):
     return (
         k1 * CO2_w0 / H0
@@ -39,11 +42,13 @@ def h_residual(H0, k1, k2, CO2_w0, k_w, Alk0):
     ) - Alk0
 
 
+# SciPy only: unpack p[0] and return the scalar residual to fsolve.
 def h_equations(p, k1, k2, CO2_w0, k_w, Alk0):
     """Alternative hydrogen guess residual; ``p`` contains H"""
     return h_residual(p[0], k1, k2, CO2_w0, k_w, Alk0)
 
 
+# Fill out with 16 residuals; used by the SciPy wrapper and compiled cminpack callback.
 def biogeochem_residual(
     p,
     Alk_tot,
@@ -116,6 +121,7 @@ def biogeochem_residual(
     return 0
 
 
+# SciPy only: allocate out and return the 16 residuals as a tuple to fsolve.
 def biogeochem_equations(
     p,
     Alk_tot,
@@ -177,6 +183,7 @@ def biogeochem_equations(
     return tuple(out)
 
 
+# Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
 def cec_calcium_residual(
     f_Ca,
     Al,
@@ -202,6 +209,7 @@ def cec_calcium_residual(
     )
 
 
+# SciPy only: unpack p[0] and return the scalar residual to fsolve.
 def cec_calcium_equation(
     p,
     Al,
@@ -235,29 +243,30 @@ def cec_calcium_equation(
     )
 
 
+# Fill out with 13 residuals; used by the SciPy wrapper and compiled cminpack callback.
 def total_to_cec_residual(
     p,
     H,
     n,
-        Zr,
-        s,
-        CEC_tot,
-        conv_Al,
-        K1,
-        K2,
-        K3,
-        K4,
-        Ca_tot,
-        Mg_tot,
-        K_tot,
-        Na_tot,
-        f_acid,
-        K_Ca_Al,
-        K_Ca_Mg,
-        K_Ca_Na,
-        K_Ca_K,
-        K_Ca_H,
-        out,
+    Zr,
+    s,
+    CEC_tot,
+    conv_Al,
+    K1,
+    K2,
+    K3,
+    K4,
+    Ca_tot,
+    Mg_tot,
+    K_tot,
+    Na_tot,
+    f_acid,
+    K_Ca_Al,
+    K_Ca_Mg,
+    K_Ca_Na,
+    K_Ca_K,
+    K_Ca_H,
+    out,
 ):
     """Residuals for the 13 initial concentrations and CEC fractions."""
     Al_w = p[0]
@@ -289,6 +298,7 @@ def total_to_cec_residual(
     return 0
 
 
+# SciPy only: allocate out and return the 13 residuals as a tuple to fsolve.
 def total_to_cec_equations(
     p,
     H,
@@ -340,6 +350,7 @@ def total_to_cec_equations(
     return tuple(out)
 
 
+# Fill out with 5 residuals; used by the SciPy wrapper and compiled cminpack callback.
 def kelland_residual(
     p,
     Al_w,
@@ -373,6 +384,7 @@ def kelland_residual(
     return 0
 
 
+# SciPy only: allocate out and return the 5 residuals as a tuple to fsolve.
 def kelland_equations(
     p,
     Al_w,
