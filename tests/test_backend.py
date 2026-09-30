@@ -10,6 +10,12 @@ import pytest
 import smew
 
 
+# SciPy/MINPACK and Numba/cminpack can accumulate slightly different roundoff.
+# CI has shown ~1.15e-10 relative differences in the two-day simulation, so use
+# the same relative tolerance as initialization, with headroom across platforms.
+SIMULATION_RTOL = 1e-9
+
+
 ENTRY_POINTS = (
     smew.biogeochem_balance,
     smew.biogeochem_balance2psd,
@@ -231,7 +237,7 @@ def test_compiled_simulation_uses_numba_timestep_loop():
     for name in ("pH", "Ca", "Mg", "Alk", "IC_tot", "M_rock", "wet_f"):
         np.testing.assert_allclose(
             definitions["chemistry"][name], python_definitions["chemistry"][name],
-            rtol=1e-10, atol=1e-9,
+            rtol=SIMULATION_RTOL, atol=1e-9, err_msg=f"backend mismatch: {name}",
         )
 
 
@@ -271,5 +277,6 @@ def test_compiled_timestep_branches_match_python(monkeypatch, variant):
         assert compiled["frozen"].sum() == 24
     for name in ("pH", "Ca", "IC_tot", "SA", "wet_f"):
         np.testing.assert_allclose(
-            compiled[name], python[name], rtol=1e-10, atol=1e-9,
+            compiled[name], python[name], rtol=SIMULATION_RTOL, atol=1e-9,
+            err_msg=f"backend mismatch ({variant}): {name}",
         )

@@ -43,6 +43,11 @@ may be negative. Temperature and pH ranges are envelopes for these examples.
 New scenarios belong under `[scenarios]`; new selected variables need a
 `[variables]` rule and an entry in the notebook's `results`.
 
+The short simulations in `test_backend.py` compare Python and compiled outputs
+directly with `rtol=1e-9` and `atol=1e-9`. This allows small accumulated numerical
+differences between SciPy/MINPACK and Numba/cminpack across platforms; a relative
+tolerance of `1e-10` proved too tight in CI.
+
 ## Updating references
 
 `make test` never writes references (baselines); missing references fail.
