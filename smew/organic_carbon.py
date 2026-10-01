@@ -73,8 +73,11 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
             "from steady-state balance.")
 
     # ADD estimate for qs-equilibrium (in absence of data)
+    # Use a numeric local rather than reassigning optional ADD, which Numba cannot type.
     if ADD is None and SOC[0] is not None:
-        ADD = r * Zr * k_dec * mean_f_dec * SOC[0]  # [gOC/(m2*d)]
+        add_rate = r * Zr * k_dec * mean_f_dec * SOC[0]  # [gOC/(m2*d)]
+    else:
+        add_rate = ADD
 
     # SOC estimate for qs-equilibrium (in absence of data)
     if SOC_in is None and ADD is not None:
@@ -83,7 +86,7 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
     # OC equation
     DEC[0] = k_dec*f_T[0]*f_s[0]*SOC[0]
     for i in range(1, len(s)):
-        SOC[i] = SOC[i-1]+(ADD/Zr-r*DEC[i-1])*dt               
+        SOC[i] = SOC[i-1]+(add_rate/Zr-r*DEC[i-1])*dt               
         DEC[i] = k_dec*f_T[i]*f_s[i]*SOC[i] # [gOC/(m3*d)]
         
     #CO2 respiration 
