@@ -95,7 +95,7 @@ def rain_stoc(lamda, alfa, t_end, dt):
     t_event = 1 #initialization
     for i in range(0, nb_ev):
         t_event = int(t_event+tau[i]/dt)
-        if t_event<=len(rain):
+        if t_event < len(rain):
             rain[t_event] = h[i]
         else:
             break
