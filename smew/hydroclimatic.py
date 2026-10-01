@@ -128,7 +128,7 @@ def rain_stoc_season(lamda, alfa, t_end, dt):
             t_event = 1 #initialization
             for ii in range(0, nb_ev):
                 t_event = int(t_event+tau[ii]/dt)
-                if t_event<(days[i]/dt):
+                if t_event < len(rain_month):
                     rain_month[t_event] = h[ii]
             if i == 0 and j == 0:
                 rain = rain_month
