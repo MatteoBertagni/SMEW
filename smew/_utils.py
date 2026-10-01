@@ -11,7 +11,8 @@ from smew.equations import (
 )
 
 
-# Shared equation identifiers; the native adapter reads these at import.
+# Integer tags passed to the native dispatcher to select the corresponding C residual
+# function pointer inside the compiled cminpack wrapper.
 WATER_SYSTEM = 0
 HYDROGEN_SYSTEM = 1
 BIOGEOCHEM_SYSTEM = 2
@@ -39,6 +40,8 @@ def require_backend(backend):
     return None
 
 
+# Execution contract: operates as the pure-Python fallback using SciPy's fsolve.
+# When running under the compiled backend, this implementation is replaced by Numba's @overload.
 def _solve_system(system, state, parameters, residual, work, xtol):
     """SciPy solver adapter; Numba replaces this call with the native binding."""
     if system == WATER_SYSTEM:

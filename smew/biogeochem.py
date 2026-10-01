@@ -70,6 +70,8 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
             "They can be estimated with: pore_d_in, pore_pdf_in = smew.soil_pore_pdf(soil)."
         )
     # Standardise array inputs as contiguous float64 arrays, using empty arrays for None.
+    # Flatten inputs to C-contiguous float64 arrays so Numba can pass raw memory
+    # pointers (const double*) directly to Cython/cminpack without layout conversion.
     for name in ("s", "L", "T", "I", "v", "r_het", "r_aut", "D", "temp_soil",
                  "conc_in", "f_CEC_in", "K_CEC", "rock_f_in", "d_in", "psd_perc_in",
                  "pore_d_in", "pore_pdf_in"):
@@ -98,7 +100,9 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
                        mixalf_in=1.0,
                       ):
     """Shared scientific model, executed directly or compiled by Numba."""
-    # All solves share buffers sized for the largest system (16 unknowns).
+    # Pre-allocate scratchpads once outside the time loop to prevent GC overhead.
+    # Work buffer size satisfies MINPACK's n*(3*n + 13)/2 requirement for the 16-variable system.
+    # Scalar solves reuse views of these buffers without triggering heap allocation.
     solver_work = np.empty(16 * 16 + 16 * (16 + 1) // 2 + 6 * 16)
     solver_residual = np.empty(16)
     solver_state = np.empty(16)
@@ -284,6 +288,8 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
     Alk_rain = 0 #alk
     CO2_w_rain = k_H*CO2_atm # [mol/l] Henry's law
 
+    # Tally MINPACK exit flags (1 = success, 2-5 = convergence limits/stagnation)
+    # so warnings can be aggregated outside the performance-critical loop.
     solver_status_counts = np.zeros(6, dtype=np.int64)
     for i in range(len(s)):
         scalar_guess[0] = 10**-6*conv_mol
@@ -546,7 +552,8 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
             #solution 2
             res_threshold = 1e-1
             if np.any(np.abs(errors[:,i]) > res_threshold):
-                # Restore every initial guess; the first solve overwrote the state.
+                # The solver modifies solver_state in place; re-populate the original guesses
+                # before attempting the fallback solve with tighter tolerance.
                 solver_state[:] = (
                     Alk0, CO2_w0, H0_2, R_alk0, Al_w0, Al0, Mg0, Ca0, Na0, K0,
                     f_Al[i-1], f_Mg[i-1], f_Na[i-1], f_K[i-1], f_H[i-1], f_Ca[i-1],
@@ -622,9 +629,8 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
                 #weathering fluxes         
                 EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i]*wet_f[i] # [mol/d]
 
-
-
-    # Named pairs support mixed output types in Numba; the wrapper builds the dictionary.
+    # Numba cannot construct dynamic heterogeneous dicts; return statically typed
+    # tuples of (name, array) pairs, unpacked by the Python wrapper into a dict.
     return (
         ("pH", pH),
         ("H", H),

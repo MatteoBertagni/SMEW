@@ -12,7 +12,8 @@ from smew.biogeochem import _biogeochem_balance
 from smew.ic import _conc_to_f_CEC, _total_to_f_CEC_and_conc, _Kelland
 from smew._utils import _solve_system
 
-# Registration keeps these functions ordinary Python functions in Python mode.
+# Registers module-level arithmetic with Numba's nopython pipeline without modifying
+# the functions, keeping them fully usable as standard Python functions in interpreted mode.
 for helper in (
     constants.CO2_atm, constants.D_0, constants.Dw_0, constants.MM,
     constants.K_Al, constants.K_C, constants.K_GT_CEC, constants.plant_nutr_f,
@@ -27,6 +28,9 @@ for helper in (
 # The import above connects the solver to the compiled equations. Here we access
 # its C function so Numba can call it directly, keeping the library handle available.
 _library = ctypes.CDLL(_minpack.__file__)
+
+# Binds the compiled C/cminpack solver (`smew_solve`) so Numba can issue direct C-level
+# function pointer calls using array memory addresses (`.ctypes.data`) without GIL locks.
 _native_solve = _library.smew_solve
 _native_solve.restype = ctypes.c_int  # Solver status code
 _native_solve.argtypes = (
@@ -57,15 +61,16 @@ def _solve_with_cminpack(system, state, parameters, residual, work, xtol):
     return status
 
 
+# Numba compiler hook: intercepts any call to `_solve_system` during JIT compilation and
+# redirects execution to `_solve_with_cminpack`, bypassing SciPy's fsolve entirely.
 @overload(_solve_system)
 def _use_cminpack_when_compiling(system, state, parameters, residual, work, xtol):
     # Numba substitutes this implementation; ordinary Python keeps SciPy.
     return _solve_with_cminpack
 
 
-# Create compiled callables from the shared model and initialisation functions;
-# Numba compiles them on first use. Disk caching stays disabled because the
-# ctypes binding is process-local.
+# Compiles simulation pipelines with nogil=True for native thread parallelization.
+# Disk cache is disabled (`cache=False`) because ctypes memory pointers are process-local.
 compiled_balance = njit(nogil=True, error_model="numpy", cache=False)(
     _biogeochem_balance,
 )
