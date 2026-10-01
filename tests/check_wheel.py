@@ -12,7 +12,7 @@ import json
 import smew
 import pyeto
 from smew._native import _equations, _minpack
-from smew._simulation_compiled import _native_solve
+from smew._native._numba import _native_solve
 
 
 installed = distribution("smew")

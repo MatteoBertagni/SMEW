@@ -30,8 +30,8 @@ subset's supporting files; full regressions require a repository checkout.
 Pytest runs three configurations of the [marimo example](../tests/example_marimo_notebook.py):
 the defaults, constant moisture, and no added rock. Each covers **365 days at a
 ten-minute timestep** (52,560 samples). Fixed weekly rainfall makes the runs
-repeatable. Each scenario runs with both `backend="python"` and
-`backend="compiled"`, using the same references and tolerances. Compiled regression
+repeatable. `make test` runs the suite in separate processes with `NUMBA_DISABLE_JIT=1`
+and `NUMBA_DISABLE_JIT=0`, using the same references and tolerances. Compiled regression
 tests fail if the native extensions are unavailable; they are not skipped.
 Assertions compare every selected timestep with its reference and
 check finite values and physical ranges separately. Solver warnings stay visible.
@@ -62,8 +62,10 @@ may be negative. Temperature and pH ranges are envelopes for these examples.
 New scenarios belong under `[scenarios]`; new selected variables need a
 `[variables]` rule and an entry in the notebook's `results`.
 
-The short simulations in `test_backend.py` compare Python and compiled outputs
-directly with `rtol=1e-9` and `atol=1e-9`. This allows small accumulated numerical
+The numerical probes in `test_backend.py` start fresh Python and Numba processes
+and compare helpers, initialization, and short simulations with `rtol=1e-9` and
+`atol=1e-9` (float32 seasonal vegetation uses `rtol=1e-6`). The probes run once
+from the compiled test suite and exercise both startup modes. This allows small accumulated numerical
 differences between SciPy/MINPACK and Numba/cminpack across platforms; a relative
 tolerance of `1e-10` proved too tight in CI.
 

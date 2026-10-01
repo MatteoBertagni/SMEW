@@ -6,6 +6,7 @@ Created on Mon Dec 16 14:34:44 2019
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numba import njit
 
 #-----------------------------------------------------------------------------------
 #fig CEC 
@@ -97,6 +98,7 @@ plt.show()
 # moving average
 #-----------------------------------------------------------------------------------
 
+@njit(nogil=True, error_model="numpy")
 def mov_avg(data, window_size):
     data_avg = np.zeros(len(data))
     

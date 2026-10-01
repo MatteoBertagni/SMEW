@@ -5,10 +5,12 @@ Created on Mon Dec 16 14:34:44 2019
 """
 
 import numpy as np
+from numba import njit
     
 #------------------------------------------------------------------------------
  # psd evolution (based on Beerling et al., 2020)
 
+@njit(nogil=True, error_model="numpy")
 def psd_evol(d, delta_d, d_0, delta_d0, psd_0, n_d_cl, a, b, rho_rock):  
 
     lamb = np.zeros(n_d_cl)
@@ -28,6 +30,7 @@ def psd_evol(d, delta_d, d_0, delta_d0, psd_0, n_d_cl, a, b, rho_rock):
 
 # from psd by mass to psd by number
 
+@njit(nogil=True, error_model="numpy")
 def psd_number_from_mass(mass_distribution_rock, diameter_rock, density_rock):
     volume_rock = np.pi * diameter_rock**3 / 6
     number_distribution = mass_distribution_rock / (density_rock * volume_rock)
@@ -37,6 +40,7 @@ def psd_number_from_mass(mass_distribution_rock, diameter_rock, density_rock):
 
 # Wetness factor for the rock surface area in the soil [0-1]
 
+@njit(nogil=True, error_model="numpy")
 def wetness_SA(s, keyword_ssa, pore_d, pore_pdf, d, psd_rock, mixalf, lmax):
 
     # no scaling of the surface area with moisture (e.g., Beerling et al., 2020, Nature)
@@ -55,6 +59,7 @@ def wetness_SA(s, keyword_ssa, pore_d, pore_pdf, d, psd_rock, mixalf, lmax):
 
 #------------------------------------------------------------------------------
 
+@njit(nogil=True, error_model="numpy")
 def wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf=1.0, lmax=None):
     """
     Calculate the nonlinear scaling of the surface area with moisture
@@ -141,6 +146,7 @@ def wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf=1.0, lmax=None):
  
 #------------------------------------------------------------------------------
 
+@njit(nogil=True, error_model="numpy")
 def normalized_cumulative_area(x, y):
     """
     Construct a normalized cumulative distribution by numerically
@@ -192,6 +198,7 @@ def normalized_cumulative_area(x, y):
 # Carbonate weathering [mol-conv/d]
 #In soil, precipitates form as discontinuous coatings on the surfaces of soil pores, so the precipitation surface area and geometry are indeterminate. https://nora.nerc.ac.uk/id/eprint/511084/1/Kirk%20et%20al%202015%20Geochmica%20et%20Cosmochimica%20Acta.pdf
    
+@njit(nogil=True, error_model="numpy")
 def carb_W(CaCO3, MgCO3, Omega_CaCO3, Omega_MgCO3, s, Zr, r_CaCO3, r_MgCO3, tau_CaCO3, tau_MgCO3):
         
     #CaCO3
@@ -212,6 +219,7 @@ def carb_W(CaCO3, MgCO3, Omega_CaCO3, Omega_MgCO3, s, Zr, r_CaCO3, r_MgCO3, tau_
 
  # Silicate weathering rate (based on Palandri et al., 2004)
 
+@njit(nogil=True, error_model="numpy")
 def sil_Wr(mineral, Omega, H, k_H_T, k_w_T, k_OH_T, n_H, n_OH, diss_f, conv_mol):
     
     #weathering rate [mol-conv/ m2 d]
@@ -222,6 +230,7 @@ def sil_Wr(mineral, Omega, H, k_H_T, k_w_T, k_OH_T, n_H, n_OH, diss_f, conv_mol)
 #------------------------------------------------------------------------------
  # Silicate saturation index (Omega)
     
+@njit(nogil=True, error_model="numpy")
 def sil_Omega(mineral, Ca, Mg, K, Na, Al, AlOH4, Si, H, K_sp, conv_mol, conv_Al):
         
     if mineral == 'albite':

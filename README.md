@@ -30,24 +30,42 @@ If no matching wheel exists, pip attempts to build the source distribution and
 requires a C compiler. To require a SMEW wheel instead, use
 `python -m pip install --only-binary=smew smew`.
 
-Simulation calls accept a keyword-only `backend` option. `"compiled"` is
-the default and uses a Numba timestep loop, the bundled cminpack solver, and
-Cython-compiled equations. `"python"` uses SciPy's `fsolve` with the Python equations:
+Numerical calculations use ordinary Numba `@njit` decorators, including
+vegetation, temperature, rainfall, moisture, organic carbon, soil pores,
+weathering, initialization, and both biogeochemistry models. Compilation happens
+on the first call. `ET0` and plotting functions remain Python.
 
-```python
-result = smew.biogeochem_balance(**inputs)  # Compiled by default.
-result = smew.biogeochem_balance(**inputs, backend="python")
+Run the same code as Python by setting Numba's standard switch **before importing
+SMEW** (restart an existing notebook kernel):
+
+```bash
+python simulation.py                       # Numba enabled
+NUMBA_DISABLE_JIT=1 python simulation.py    # Python, with SciPy solvers
 ```
 
-Both backends execute the same model function in `smew/biogeochem.py` and
-share the process helpers. Numba replaces only the solver adapter with a
-native cminpack call. The model is compiled on first use in each process; it does
-not use Numba's disk cache. The Python backend does not import Numba or the
-SMEW native extensions. The initialization functions that
-solve nonlinear systems (`conc_to_f_CEC`, `total_to_f_CEC_and_conc`, and
-`Kelland`) follow the same pattern: one shared calculation, compiled by Numba
-with direct cminpack calls by default (`backend="compiled"`). `biogeochem_balance2psd` remains
-Python-only, defaults to `backend="python"`, and rejects `backend="compiled"`.
+Or set it at the beginning of a fresh Python session:
+
+```python
+import os
+os.environ["NUMBA_DISABLE_JIT"] = "1"
+import smew
+
+v = smew.veg(v_in, T_v, k_v, t0_v, temp_soil, dt)
+result = smew.biogeochem_balance(**inputs)
+```
+
+Numba-enabled nonlinear solves use the bundled cminpack solver and Cython 
+equations; disabled JIT uses SciPy's `fsolve` and the Python equations. 
+The native solver is loaded only when a compiled solve is needed, 
+so the other numerical calculations can compile without it.
+Small Python entry-point wrappers handle array conversion, solver
+warnings, and result dictionaries. The two-application model returns named
+numerical results.
+
+Stochastic rainfall uses NumPy's exponential sampler. Numba maintains its own
+random state, so Python and compiled rainfall runs need not produce identical
+samples. Numba's disk cache is disabled because the solver uses process-local
+function pointers.
 
 ### Optional CPU-tuned source installation
 

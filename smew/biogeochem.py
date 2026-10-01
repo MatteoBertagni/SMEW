@@ -7,8 +7,9 @@ Created on Mon Dec 16 14:34:44 2019
 import warnings
 
 import numpy as np
+from numba import njit
 import smew
-from smew._utils import require_backend, _solve_system
+from smew._utils import _solve_system
 from smew._utils import WATER_SYSTEM, HYDROGEN_SYSTEM, BIOGEOCHEM_SYSTEM
 
 
@@ -18,11 +19,8 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                        pore_pdf_in=None,
                        rho_rock_in=None,
                        mixalf_in=1.0,
-                       *, backend="compiled"
                       ):
-    """Run the shared model as Python/SciPy or Numba/Cython/cminpack."""
-    require_backend(backend)
-    # Forward the public arguments to the model; backend is handled here only.
+    """Normalize inputs and run the model; NUMBA_DISABLE_JIT selects Python mode."""
     arguments = {
         "n": n,
         "s": s,
@@ -81,17 +79,14 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         )
     # Standardise mineral to a tuple.
     arguments["mineral"] = tuple(mineral) if mineral is not None and len(mineral) else ("",)
-    model = _biogeochem_balance
-    if backend == "compiled":
-        from smew._simulation_compiled import compiled_balance
-        model = compiled_balance
-    result = dict(model(**arguments))
+    result = dict(_biogeochem_balance(**arguments))
     for status in range(2, 6):
         if result["solver_status_counts"][status]:
             warnings.warn(f"MINPACK stopped with status {status}", RuntimeWarning, stacklevel=2)
     return result
 
 
+@njit(nogil=True, error_model="numpy")
 def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add,
                        keyword_ssa='linear', # options: 'constant', 'linear', 'nonlinear'
                        pore_d_in=None,

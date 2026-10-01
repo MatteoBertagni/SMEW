@@ -5,6 +5,7 @@
 import warnings
 
 from scipy.optimize import fsolve
+from numba.extending import overload
 from smew.equations import (
     water_equations, h_equations, biogeochem_equations,
     cec_calcium_equation, total_to_cec_equations, kelland_equations,
@@ -19,25 +20,6 @@ BIOGEOCHEM_SYSTEM = 2
 CEC_CALCIUM_SYSTEM = 3
 TOTAL_TO_CEC_SYSTEM = 4
 KELLAND_SYSTEM = 5
-
-
-def require_backend(backend):
-    """Validate execution choice and check that the native solver is installed."""
-    if backend not in ("python", "compiled"):
-        raise ValueError(
-            f"Unknown backend {backend!r}; choose 'python' or 'compiled'."
-        )
-    if backend == "compiled":
-        try:
-            from smew._native import _minpack
-        except ImportError as exc:
-            raise RuntimeError(
-                "The compiled backend is unavailable. Install a native wheel, "
-                "build the extensions with 'make install-native', or select "
-                "backend='python'."
-            ) from exc
-        return _minpack
-    return None
 
 
 # Execution contract: operates as the pure-Python fallback using SciPy's fsolve.
@@ -69,3 +51,10 @@ def _warn_solver_status(status):
         warnings.warn(
             f"MINPACK stopped with status {status}", RuntimeWarning, stacklevel=3,
         )
+
+
+@overload(_solve_system)
+def _compiled_solve_system(system, state, parameters, residual, work, xtol):
+    # Loaded during JIT compilation; disabled JIT keeps the SciPy implementation.
+    from smew._native._numba import _solve_with_cminpack
+    return _solve_with_cminpack

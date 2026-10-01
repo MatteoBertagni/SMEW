@@ -10,6 +10,7 @@ this file directly; compiled runs require a Cython rebuild after edits.
 """
 
 import numpy as np
+from numba import njit
 
 # p contains trial values; out receives residuals in place.
 # Keep state indices and buffer sizes consistent with callers when adding unknowns.
@@ -17,6 +18,7 @@ import numpy as np
 
 
 # Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
+@njit(nogil=True, error_model="numpy")
 def water_residual(H_rain, Alk_rain, k1, k2, CO2_w_rain, k_w):
     return Alk_rain - (
         k1 * CO2_w_rain / H_rain
@@ -27,12 +29,14 @@ def water_residual(H_rain, Alk_rain, k1, k2, CO2_w_rain, k_w):
 
 
 # SciPy only: unpack p[0] and return the scalar residual to fsolve.
+@njit(nogil=True, error_model="numpy")
 def water_equations(p, Alk_rain, k1, k2, CO2_w_rain, k_w):
     """Rainwater alkalinity residual; ``p`` contains H"""
     return water_residual(p[0], Alk_rain, k1, k2, CO2_w_rain, k_w)
 
 
 # Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
+@njit(nogil=True, error_model="numpy")
 def h_residual(H0, k1, k2, CO2_w0, k_w, Alk0):
     return (
         k1 * CO2_w0 / H0
@@ -43,12 +47,14 @@ def h_residual(H0, k1, k2, CO2_w0, k_w, Alk0):
 
 
 # SciPy only: unpack p[0] and return the scalar residual to fsolve.
+@njit(nogil=True, error_model="numpy")
 def h_equations(p, k1, k2, CO2_w0, k_w, Alk0):
     """Alternative hydrogen guess residual; ``p`` contains H"""
     return h_residual(p[0], k1, k2, CO2_w0, k_w, Alk0)
 
 
 # Fill out with 16 residuals; used by the SciPy wrapper and compiled cminpack callback.
+@njit(nogil=True, error_model="numpy")
 def biogeochem_residual(
     p,
     Alk_tot,
@@ -122,6 +128,7 @@ def biogeochem_residual(
 
 
 # SciPy only: allocate out and return the 16 residuals as a tuple to fsolve.
+@njit(nogil=True, error_model="numpy")
 def biogeochem_equations(
     p,
     Alk_tot,
@@ -180,10 +187,16 @@ def biogeochem_equations(
         K_Ca_H,
         out,
     )
-    return tuple(out)
+    return (
+        out[0], out[1], out[2], out[3],
+        out[4], out[5], out[6], out[7],
+        out[8], out[9], out[10], out[11],
+        out[12], out[13], out[14], out[15],
+    )
 
 
 # Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
+@njit(nogil=True, error_model="numpy")
 def cec_calcium_residual(
     f_Ca,
     Al,
@@ -210,6 +223,7 @@ def cec_calcium_residual(
 
 
 # SciPy only: unpack p[0] and return the scalar residual to fsolve.
+@njit(nogil=True, error_model="numpy")
 def cec_calcium_equation(
     p,
     Al,
@@ -244,6 +258,7 @@ def cec_calcium_equation(
 
 
 # Fill out with 13 residuals; used by the SciPy wrapper and compiled cminpack callback.
+@njit(nogil=True, error_model="numpy")
 def total_to_cec_residual(
     p,
     H,
@@ -300,6 +315,7 @@ def total_to_cec_residual(
 
 
 # SciPy only: allocate out and return the 13 residuals as a tuple to fsolve.
+@njit(nogil=True, error_model="numpy")
 def total_to_cec_equations(
     p,
     H,
@@ -348,10 +364,16 @@ def total_to_cec_equations(
         K_Ca_H,
         out
     )
-    return tuple(out)
+    return (
+        out[0], out[1], out[2], out[3],
+        out[4], out[5], out[6], out[7],
+        out[8], out[9], out[10], out[11],
+        out[12],
+    )
 
 
 # Fill out with 5 residuals; used by the SciPy wrapper and compiled cminpack callback.
+@njit(nogil=True, error_model="numpy")
 def kelland_residual(
     p,
     Al_w,
@@ -386,6 +408,7 @@ def kelland_residual(
 
 
 # SciPy only: allocate out and return the 5 residuals as a tuple to fsolve.
+@njit(nogil=True, error_model="numpy")
 def kelland_equations(
     p,
     Al_w,
@@ -424,4 +447,7 @@ def kelland_equations(
         K_Ca_H,
         out
     )
-    return tuple(out)
+    return (
+        out[0], out[1], out[2], out[3],
+        out[4],
+    )

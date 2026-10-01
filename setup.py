@@ -72,9 +72,17 @@ def native_extensions():
     python_only = {"biogeochem_equations", "total_to_cec_equations", "kelland_equations"}
     lines = source.splitlines(keepends=True)
     for node in ast.parse(source).body:
-        if isinstance(node, ast.FunctionDef) and node.name in python_only:
+        if isinstance(node, ast.ImportFrom) and node.module == "numba":
             for line in range(node.lineno - 1, node.end_lineno):
                 lines[line] = "\n"
+        if isinstance(node, ast.FunctionDef):
+            # Cython compiles these equations itself; omit their Numba decorators.
+            for decorator in node.decorator_list:
+                for line in range(decorator.lineno - 1, decorator.end_lineno):
+                    lines[line] = "\n"
+            if node.name in python_only:
+                for line in range(node.lineno - 1, node.end_lineno):
+                    lines[line] = "\n"
     (generated / "_equations.py").write_text("".join(lines), encoding="utf-8")
     copyfile(ROOT / "smew" / "equations.pxd", generated / "_equations.pxd")
 

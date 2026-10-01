@@ -12,12 +12,12 @@ with CHECKS_PATH.open("rb") as _file:
     CHECKS = tomllib.load(_file)
 
 
-def run_scenario(name, *, backend="python"):
+def run_scenario(name):
     """Run one configuration without a browser or plot interaction."""
     from tests.example_marimo_notebook import app
 
     overrides = CHECKS["scenarios"][name].get("overrides", {})
-    _, definitions = app.run(defs={**overrides, "backend": backend})
+    _, definitions = app.run(defs=overrides)
     return definitions
 
 

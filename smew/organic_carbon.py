@@ -4,9 +4,11 @@
 Created on Mon Dec 16 12:19:42 2019
 """
 import numpy as np
+from numba import njit
 import smew
-from statistics import mean
 
+
+@njit(nogil=True, error_model="numpy")
 def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, temp_soil,dt,conv_mol, tau_OC=None):
       
     # Preallocating the variables
@@ -39,8 +41,6 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
 
     if np.any(temp_active > 0.0):
         f_T = temp_active / np.mean(temp_active[temp_active > 0.0])
-    else:
-        f_T = 0.0
        
     #CO2 gas-diffusion baricenter
     if Zr <= 0.3:

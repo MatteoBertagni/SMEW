@@ -5,11 +5,13 @@ Created on Mon Dec 16 14:34:44 2019
 """
 
 import numpy as np
+from numba import njit
 
 
 #------------------------------------------------------------------------------
  # atmospheric CO2
     
+@njit(nogil=True, error_model="numpy")
 def CO2_atm(conv_mol):
     
     CO2_atm = 412E-6/22.41*conv_mol # [mol-conv/l] 
@@ -19,6 +21,7 @@ def CO2_atm(conv_mol):
 #------------------------------------------------------------------------------
  # soil CO2 diffusivity 
     
+@njit(nogil=True, error_model="numpy")
 def D_0():
     
     D_0 = 1.6E-5*3600*24 #free-air diffusion [m2/d]
@@ -28,6 +31,7 @@ def D_0():
 #------------------------------------------------------------------------------
  # solute diffusivity in soil water
     
+@njit(nogil=True, error_model="numpy")
 def Dw_0():
     
     Dw_0 = 1e-9*3600*24 # [m2/d]
@@ -37,6 +41,7 @@ def Dw_0():
 #------------------------------------------------------------------------------
  # % of nutrients in plant dry matter (ideally plant dependent)
     
+@njit(nogil=True, error_model="numpy")
 def plant_nutr_f():
     
     #current values are from Kelland's (2020) measurement for sorghum
@@ -53,6 +58,7 @@ def plant_nutr_f():
 
 #------------------------------------------------------------------------------
 
+@njit(nogil=True, error_model="numpy")
 def soil_hydraulic_const(soil):
     """
     Campbell/Clapp-Hornberger hydraulic parameters.
@@ -150,6 +156,7 @@ def soil_hydraulic_const(soil):
 #------------------------------------------------------------------------------
 # soil hydraulic constants and moisture thresholds
 
+@njit(nogil=True, error_model="numpy")
 def soil_const(soil, psi_h_mpa=-10.0, psi_w_mpa=-3.0, psi_i_mpa=-0.03):
     """
 Parameters
@@ -186,6 +193,7 @@ s_h, s_w, s_i : float
 
  # EW mineral constants 
 
+@njit(nogil=True, error_model="numpy")
 def min_const(mineral, conv_mol):
     
     # Most values are from Palandri (2004) unless otherwise specified
@@ -402,6 +410,7 @@ def min_const(mineral, conv_mol):
  # Carbonate weathering constants  
     
 
+@njit(nogil=True, error_model="numpy")
 def carb_weath_const(conv_mol):
     
     # Carbonate solubility products
@@ -424,6 +433,7 @@ def carb_weath_const(conv_mol):
 #------------------------------------------------------------------------------
  # CEC constants (Gaines-Thomas) 
 
+@njit(nogil=True, error_model="numpy")
 def K_GT_CEC(soil, conv_mol):
             
     # Current values are from a meta-analysis of Dutch soils (0-30 cm, https://edepot.wur.nl/31605)
@@ -469,6 +479,7 @@ def K_GT_CEC(soil, conv_mol):
 #------------------------------------------------------------------------------
  # Aluminium speciation (pag. 398 Weil and Brady)
 
+@njit(nogil=True, error_model="numpy")
 def K_Al(conv_mol):
               
     pK1 = 5 
@@ -488,6 +499,7 @@ def K_Al(conv_mol):
 #------------------------------------------------------------------------------
  # carbonate speciation [Stumm and Morgan, 1996]
 
+@njit(nogil=True, error_model="numpy")
 def K_C(T_K,conv_mol):
     
     T_ref = 25+273.15 # [K]: temperature standard conditions
@@ -510,6 +522,7 @@ def K_C(T_K,conv_mol):
 #------------------------------------------------------------------------------
  # molar masses [g/mol]
 
+@njit(nogil=True, error_model="numpy")
 def MM(conv_mol):
     
     MM_Mg = 24/conv_mol 

@@ -26,6 +26,9 @@ def _(mo):
     and ten-minute timestep. It uses **fixed weekly rainfall** so that repeated
     runs can be compared.
 
+    Numerical functions use Numba. To run them as Python, start marimo with
+    `NUMBA_DISABLE_JIT=1` set in the environment before importing SMEW.
+
     Read the explanations and change the inputs below to explore the model.
     Units are shown next to each input. The calculation runs automatically;
     the **Generate plots** button at the end draws the results on demand.
@@ -35,12 +38,6 @@ def _(mo):
     Moisture is the fraction of the soil pore volume filled with water.
     """)
     return
-
-
-@app.cell
-def _():
-    backend = "compiled"  # Select "python" to use SciPy and Python equations.
-    return (backend,)
 
 
 @app.cell
@@ -343,7 +340,6 @@ def _(
 @app.cell
 def _(
     application_day,
-    backend,
     balance_background_inputs,
     conv_al,
     conv_mol,
@@ -415,7 +411,6 @@ def _(
         keyword_ssa=wet_surface_model, pore_d_in=pore_diameters,
         pore_pdf_in=pore_pdf, rho_rock_in=rock_density_g_m3,
         mixalf_in=pore_particle_mixing,
-        backend=backend,
     )
     return (chemistry,)
 

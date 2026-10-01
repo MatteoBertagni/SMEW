@@ -15,13 +15,8 @@ def scenario_name(request):
 
 
 @pytest.fixture(scope="session")
-def notebook_run(scenario_name, backend):
-    return run_scenario(scenario_name, backend=backend)
-
-
-@pytest.fixture(scope="session", params=("python", "compiled"))
-def backend(request):
-    return request.param
+def notebook_run(scenario_name):
+    return run_scenario(scenario_name)
 
 
 @pytest.fixture(scope="session")

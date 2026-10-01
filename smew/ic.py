@@ -5,27 +5,24 @@ Created on Mon Dec 16 14:34:44 2019
 """
 
 import numpy as np
+from numba import njit
 import smew
-from smew._utils import require_backend, _solve_system, _warn_solver_status
+from smew._utils import _solve_system, _warn_solver_status
 from smew._utils import CEC_CALCIUM_SYSTEM, TOTAL_TO_CEC_SYSTEM, KELLAND_SYSTEM
 
 
 #------------------------------------------------------------------------------
  # conc to CEC fractions
 
-def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al, *, backend="compiled"):
+def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al):
     """Calculate CEC fractions with Python/SciPy or Numba/cminpack."""
-    require_backend(backend)
-    calculation = _conc_to_f_CEC
-    if backend == "compiled":
-        from smew._simulation_compiled import compiled_conc_to_f_CEC
-        calculation = compiled_conc_to_f_CEC
     # Ensure inputs are contiguous float64 arrays for Numba compilation and C double* compatibility.
-    result, status = calculation(np.asarray(conc_in, dtype=np.float64), pH_in, soil, conv_mol, conv_Al)
+    result, status = _conc_to_f_CEC(np.asarray(conc_in, dtype=np.float64), pH_in, soil, conv_mol, conv_Al)
     _warn_solver_status(status)
     return result
 
 
+@njit(nogil=True, error_model="numpy")
 def _conc_to_f_CEC(conc_in, pH_in, soil, conv_mol, conv_Al):
     #constants 
     K_CEC = smew.K_GT_CEC(soil,conv_mol)  #CEC Gaines-Thomas
@@ -60,6 +57,7 @@ def _conc_to_f_CEC(conc_in, pH_in, soil, conv_mol, conv_Al):
 #------------------------------------------------------------------------------
  # CEC fractions to conc 
 
+@njit(nogil=True, error_model="numpy")
 def f_CEC_to_conc(f_CEC_in, pH_in, soil, conv_mol,conv_Al):
     #pH
     H = 10.0**(-pH_in) * conv_mol
@@ -102,17 +100,10 @@ def total_to_f_CEC_and_conc(
     CEC_tot,
     conv_mol,
     conv_Al,
-    *,
-    backend="compiled",
 ):
-    """Infer concentrations and CEC fractions with the selected backend."""
-    require_backend(backend)
-    calculation = _total_to_f_CEC_and_conc
-    if backend == "compiled":
-        from smew._simulation_compiled import compiled_total_to_f_CEC_and_conc
-        calculation = compiled_total_to_f_CEC_and_conc
+    """Infer concentrations and CEC fractions using the process-wide JIT setting."""
     # Ensure inputs are contiguous float64 arrays for Numba compilation and C double* compatibility.
-    result, status = calculation(
+    result, status = _total_to_f_CEC_and_conc(
         np.asarray(total_in, dtype=np.float64), pH_in, f_acid,
         np.asarray(s, dtype=np.float64), soil, n, Zr, CEC_tot, conv_mol, conv_Al,
     )
@@ -120,6 +111,7 @@ def total_to_f_CEC_and_conc(
     return result
 
 
+@njit(nogil=True, error_model="numpy")
 def _total_to_f_CEC_and_conc(
     total_in,
     pH_in,
@@ -187,6 +179,7 @@ def _total_to_f_CEC_and_conc(
 #------------------------------------------------------------------------------
  # Calibration of K constants on coupled f_CEC and conc measurements
 
+@njit(nogil=True, error_model="numpy")
 def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
     #pH
     H = 10.0**(-pH_in) * conv_mol
@@ -210,21 +203,16 @@ def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
 
     K_CEC = [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H]
 
-    return(K_CEC)
+    return K_CEC
 
 
 #------------------------------------------------------------------------------
  # Input: Total (Ca, Mg, K, Na) and Al_w
 
-def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al, *, backend="compiled"):
-    """Solve the Kelland initial conditions with the selected backend."""
-    require_backend(backend)
-    calculation = _Kelland
-    if backend == "compiled":
-        from smew._simulation_compiled import compiled_Kelland
-        calculation = compiled_Kelland
+def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
+    """Solve the Kelland initial conditions using the process-wide JIT setting."""
     # Ensure inputs are contiguous float64 arrays for Numba compilation and C double* compatibility.
-    result, status = calculation(
+    result, status = _Kelland(
         np.asarray(total_in, dtype=np.float64), pH_in,
         np.asarray(conc_in, dtype=np.float64), np.asarray(s, dtype=np.float64),
         soil, n, Zr, CEC_tot, conv_mol, conv_Al,
@@ -233,6 +221,7 @@ def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al, *,
     return result
 
 
+@njit(nogil=True, error_model="numpy")
 def _Kelland(total_in, pH_in, conc_in, s, soil, n, Zr, CEC_tot, conv_mol, conv_Al):
     #constants 
     K_CEC = smew.K_GT_CEC(soil, conv_mol)  #CEC Gaines-Thomas
@@ -288,6 +277,7 @@ def _Kelland(total_in, pH_in, conc_in, s, soil, n, Zr, CEC_tot, conv_mol, conv_A
 #------------------------------------------------------------------------------
  # Amann et al., fractions and Mg conc 
 
+@njit(nogil=True, error_model="numpy")
 def Amann(f_CEC_in, pH_in, Mg_in, soil, conv_mol,conv_Al):
     #pH
     H = 10.0**(-pH_in)*conv_mol
