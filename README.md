@@ -30,13 +30,13 @@ If no matching wheel exists, pip attempts to build the source distribution and
 requires a C compiler. To require a SMEW wheel instead, use
 `python -m pip install --only-binary=smew smew`.
 
-Simulation calls accept a keyword-only `backend` option. `"python"` remains
-the default and uses SciPy's `fsolve` with the Python equations. `"compiled"`
-uses a Numba timestep loop, the bundled cminpack solver, and Cython-compiled equations:
+Simulation calls accept a keyword-only `backend` option. `"compiled"` is
+the default and uses a Numba timestep loop, the bundled cminpack solver, and
+Cython-compiled equations. `"python"` uses SciPy's `fsolve` with the Python equations:
 
 ```python
+result = smew.biogeochem_balance(**inputs)  # Compiled by default.
 result = smew.biogeochem_balance(**inputs, backend="python")
-result = smew.biogeochem_balance(**inputs, backend="compiled")
 ```
 
 Both backends execute the same model function in `smew/biogeochem.py` and
@@ -46,8 +46,8 @@ not use Numba's disk cache. The Python backend does not import Numba or the
 SMEW native extensions. The initialization functions that
 solve nonlinear systems (`conc_to_f_CEC`, `total_to_f_CEC_and_conc`, and
 `Kelland`) follow the same pattern: one shared calculation, compiled by Numba
-with direct cminpack calls when `backend="compiled"`. `biogeochem_balance2psd` remains
-Python-only and rejects `backend="compiled"`.
+with direct cminpack calls by default (`backend="compiled"`). `biogeochem_balance2psd` remains
+Python-only, defaults to `backend="python"`, and rejects `backend="compiled"`.
 
 ### Optional CPU-tuned source installation
 

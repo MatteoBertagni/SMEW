@@ -39,7 +39,7 @@ def _(mo):
 
 @app.cell
 def _():
-    backend = "python"  # Select "compiled" to use Numba and cminpack.
+    backend = "compiled"  # Select "python" to use SciPy and Python equations.
     return (backend,)
 
 

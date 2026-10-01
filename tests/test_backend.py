@@ -34,10 +34,11 @@ def test_algebraic_initialization_has_no_backend_option(entry_point):
 
 
 @pytest.mark.parametrize("entry_point", ENTRY_POINTS)
-def test_backend_is_keyword_only_and_defaults_to_python(entry_point):
+def test_backend_is_keyword_only_and_defaults_to_supported_backend(entry_point):
     parameter = inspect.signature(entry_point).parameters["backend"]
     assert parameter.kind is inspect.Parameter.KEYWORD_ONLY
-    assert parameter.default == "python"
+    expected = "python" if entry_point is smew.biogeochem_balance2psd else "compiled"
+    assert parameter.default == expected
 
 
 @pytest.mark.parametrize("entry_point", ENTRY_POINTS)
@@ -68,13 +69,13 @@ def test_explicit_python_backend_runs_initialization():
     concentrations, _ = smew.f_CEC_to_conc(
         fractions, 6.0, "loam", 1.0, 1.0,
     )
-    default, _ = smew.conc_to_f_CEC(
-        concentrations, 6.0, "loam", 1.0, 1.0,
+    repeated, _ = smew.conc_to_f_CEC(
+        concentrations, 6.0, "loam", 1.0, 1.0, backend="python",
     )
     explicit, _ = smew.conc_to_f_CEC(
         concentrations, 6.0, "loam", 1.0, 1.0, backend="python",
     )
-    np.testing.assert_array_equal(explicit, default)
+    np.testing.assert_array_equal(explicit, repeated)
 
 
 def test_python_simulation_needs_no_native_or_numba_imports():

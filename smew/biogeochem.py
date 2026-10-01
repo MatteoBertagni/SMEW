@@ -18,7 +18,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                        pore_pdf_in=None,
                        rho_rock_in=None,
                        mixalf_in=1.0,
-                       *, backend="python"
+                       *, backend="compiled"
                       ):
     """Run the shared model as Python/SciPy or Numba/Cython/cminpack."""
     require_backend(backend)

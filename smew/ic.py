@@ -13,7 +13,7 @@ from smew._utils import CEC_CALCIUM_SYSTEM, TOTAL_TO_CEC_SYSTEM, KELLAND_SYSTEM
 #------------------------------------------------------------------------------
  # conc to CEC fractions
 
-def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al, *, backend="python"):
+def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al, *, backend="compiled"):
     """Calculate CEC fractions with Python/SciPy or Numba/cminpack."""
     require_backend(backend)
     calculation = _conc_to_f_CEC
@@ -103,7 +103,7 @@ def total_to_f_CEC_and_conc(
     conv_mol,
     conv_Al,
     *,
-    backend="python",
+    backend="compiled",
 ):
     """Infer concentrations and CEC fractions with the selected backend."""
     require_backend(backend)
@@ -216,7 +216,7 @@ def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
 #------------------------------------------------------------------------------
  # Input: Total (Ca, Mg, K, Na) and Al_w
 
-def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al, *, backend="python"):
+def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al, *, backend="compiled"):
     """Solve the Kelland initial conditions with the selected backend."""
     require_backend(backend)
     calculation = _Kelland
