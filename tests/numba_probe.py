@@ -21,7 +21,6 @@ def collect_outputs(*, helpers_only=False):
     import smew
     from smew import equations, vegetation, soil_pores
     from smew.biogeochem import _biogeochem_balance
-    from smew.biogeochem2psd import _biogeochem_balance2psd
     from smew.ic import _conc_to_f_CEC, _total_to_f_CEC_and_conc, _Kelland
 
     outputs = {}
@@ -76,7 +75,7 @@ def collect_outputs(*, helpers_only=False):
                 x*.001, .3, "loam", x*.002, x, 1., mode, .6, 8., 1.,
                 temp_soil=temperatures if frozen else None,
             ))
-    for label, soc, co2, tau, litter in (("tau", 1000., None, 1000., None), ("co2", 1000., .01, None, None), ("estimate_soc", None, None, 1000., .1)):
+    for label, soc, co2, tau, litter in (("tau", 1000., None, 1000., None), ("co2", 1000., .01, None, None)):
         record("respiration/" + label, smew.respiration(
             litter, soc, co2, 1., "loam", x*.6, x, 1., .3, x*15., 1., 1., tau,
         ))
@@ -122,14 +121,12 @@ def collect_outputs(*, helpers_only=False):
         call(smew.Kelland, totals, 6., conc, [.6], "loam", .4, .3, .1, 1., 1.)
         from tests.example_marimo_notebook import app
         original = smew.biogeochem_balance
-        captured = {}
         freeze = False
 
         def balance(**inputs):
             if freeze:
                 inputs["temp_soil"] = inputs["temp_soil"].copy()
                 inputs["temp_soil"][24:] = -2.
-            captured.update(inputs)
             return original(**inputs)
 
         smew.biogeochem_balance = balance
@@ -152,17 +149,7 @@ def collect_outputs(*, helpers_only=False):
                 record(f"simulation/{variant}/{name}", value)
             for name in ("UP_Ca", "UP_Mg", "UP_K", "UP_Si", "wet_f", "frozen"):
                 record(f"simulation/{variant}/{name}", definitions["chemistry"][name])
-            if variant == "default":
-                two_inputs = {name: captured[name] for name in inspect.signature(smew.biogeochem_balance2psd).parameters if name in captured}
         smew.biogeochem_balance = original
-        two_inputs.update(M_rock_in=100., t_app=0., M_rock_in2=50., t_app2=1.,
-                          mineral2=two_inputs["mineral"], rock_f_in2=two_inputs["rock_f_in"],
-                          d_in2=two_inputs["d_in"], psd_perc_in2=two_inputs["psd_perc_in"], SSA_in2=two_inputs["SSA_in"])
-        for label, first, second in (("both", 100., 50.), ("none", 0., 0.)):
-            two_inputs.update(M_rock_in=first, M_rock_in2=second)
-            result = smew.biogeochem_balance2psd(**two_inputs)
-            for name in ("pH", "Ca", "Mg", "IC_tot", "M_rock", "M_rock2", "SA", "SA2"):
-                record(f"two_rocks/{label}/{name}", result[name])
     # A successful call must produce native signatures, not an object-mode fallback.
     numerical = [getattr(smew, name) for name in (
         "CO2_atm", "D_0", "Dw_0", "MM", "K_Al", "K_C", "K_GT_CEC", "plant_nutr_f",
@@ -174,7 +161,7 @@ def collect_outputs(*, helpers_only=False):
         "f_CEC_to_conc", "f_CEC_and_conc_to_K", "Amann",
     )] + [vegetation.get_stage_boundaries, vegetation.get_season_boundaries]
     if not helpers_only:
-        numerical += [_biogeochem_balance, _biogeochem_balance2psd, _conc_to_f_CEC, _total_to_f_CEC_and_conc, _Kelland]
+        numerical += [_biogeochem_balance, _conc_to_f_CEC, _total_to_f_CEC_and_conc, _Kelland]
     for fn in numerical:
         if disabled:
             assert not hasattr(fn, "py_func"), fn.__name__

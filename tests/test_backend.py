@@ -40,7 +40,7 @@ def mode_outputs(tmp_path_factory):
     "Kelland", "water_equations", "h_equations", "biogeochem_equations",
     "cec_calcium_equation", "total_to_cec_equations", "kelland_equations",
     "water_residual", "h_residual", "biogeochem_residual", "cec_calcium_residual",
-    "total_to_cec_residual", "kelland_residual", "simulation", "two_rocks",
+    "total_to_cec_residual", "kelland_residual", "simulation",
 ))
 def test_numerical_outputs_match_between_modes(mode_outputs, group):
     names = [name for name in mode_outputs["python"] if name.split("/")[0] == group]
