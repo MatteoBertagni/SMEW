@@ -131,7 +131,11 @@ def veg_seasonal(
     for emergence, growth, harvest in zip(starts_growing, ends_growing, ends_season):
         v[emergence] = k_v * f_v_in  # emergence from soil
         T_v = growth - emergence  # typical growth time
-        for i in range(emergence + 1, harvest + 1):
+        # ``harvest`` is the exclusive end of a season. If the final season
+        # continues to the end of the input, there is no following harvest
+        # step, so stop growth at the last available sample.
+        growth_end = min(harvest, len(growing_stage) - 1)
+        for i in range(emergence + 1, growth_end + 1):
             v[i] = v[i-1] + (6/(T_v*k_v))*v[i-1]*(k_v-v[i-1])
         # check if harvest is included in the time axis (for the last harvest)
         if harvest + 1 < len(growing_stage):
