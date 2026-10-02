@@ -4,7 +4,8 @@ TODO: build proper sphinx doc
 
 `ErrorCode` values are globally unique and grouped by component: 1000–1999
 for biogeochemistry, 2000–2999 for respiration, and 3000–3999 for initialization
-solvers. Zero means success. Published codes must not be renumbered or reused.
+solvers, and 4000–4999 for weathering. Zero means success. Published codes
+must not be renumbered or reused.
 Compare enum members in code rather than parsing error messages.
 
 The public error API is `smew.ErrorCode`, `smew.SMEWError`, and
@@ -13,9 +14,8 @@ complete debug message inside the compiled calculation.
 
 ## Python and Dask
 
-Python entry points validate essential inputs before calling compiled code.
-Each component has one `*_INVALID_INPUT` code; its message describes the input
-problem and relevant names or shapes. Numerical failures raise `SMEWError`
+Python entry points convert array inputs and call the compiled calculation.
+Numerical failures raise `SMEWError`
 subclasses after compiled code returns normally. Existing `except ValueError`
 and `except RuntimeError` handlers still catch the corresponding failures.
 
@@ -40,7 +40,7 @@ For example:
 
 `previous_pH` describes the preceding completed timestep. `trial_H` is from the
 failed solver attempt, not an accepted state. Timestep indices are zero-based;
-aggregate and input failures omit timestep information. Native solver flags
+aggregate failures omit timestep information. Native solver flags
 appear in the message separately from the SMEW error code. Residual norms are
 omitted when buffers may be unwritten and reported as `nan` for nonfinite
 residuals.
@@ -77,10 +77,8 @@ results are `(name, value)` pairs, converted to a dictionary by its Python
 wrapper. Other entry points preserve their numerical result tuples/lists.
 Partial trajectories are not returned on failure.
 
-The compiled entry points assume inputs have already been validated by their
-caller. They report numerical failures during computation and do not repeat
-the Python input checks. When integrating with another compiled model, validate
-inputs before entering that model and preserve these requirements:
+Both Python and compiled entry points assume valid model inputs. The error
+contract covers numerical failures during computation. Input requirements are:
 
 - Array arguments are one-dimensional contiguous `float64` arrays.
 - Biogeochemistry time series are nonempty and have the same length. Initial
@@ -97,7 +95,7 @@ inputs before entering that model and preserve these requirements:
   equal length, with a supported soil name.
 - Initialization solvers use 5 concentrations, 4 totals where applicable,
   nonempty moisture arrays where applicable, and a soil supported by the CEC
-  constants (`smew.constants.CEC_SOIL_TYPES`).
+  constants (`smew.K_GT_CEC`).
 
 Violations of these input requirements are outside the compiled error contract;
 they may cause compilation errors, invalid results, or out-of-bounds access.

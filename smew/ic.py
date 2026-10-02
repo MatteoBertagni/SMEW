@@ -4,11 +4,16 @@
 Created on Mon Dec 16 14:34:44 2019
 """
 
+import warnings
+
 import numpy as np
 from numba import njit
 import smew
-from smew._utils import _solve_system, _warn_solver_status
+from smew._utils import _solve_system
 from smew._utils import CEC_CALCIUM_SYSTEM, TOTAL_TO_CEC_SYSTEM, KELLAND_SYSTEM
+from smew.errors import (
+    ErrorCode, _float_text, _solver_error, raise_for_error,
+)
 
 
 #------------------------------------------------------------------------------
@@ -17,13 +22,16 @@ from smew._utils import CEC_CALCIUM_SYSTEM, TOTAL_TO_CEC_SYSTEM, KELLAND_SYSTEM
 def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al):
     """Calculate CEC fractions with Python/SciPy or Numba/cminpack."""
     # Ensure inputs are contiguous float64 arrays for Numba compilation and C double* compatibility.
-    result, status = _conc_to_f_CEC(np.asarray(conc_in, dtype=np.float64), pH_in, soil, conv_mol, conv_Al)
-    _warn_solver_status(status)
+    result, error_code, error_message = _conc_to_f_CEC(np.ascontiguousarray(conc_in, dtype=np.float64), pH_in, soil, conv_mol, conv_Al)
+    raise_for_error(error_code, error_message)
+    if error_message:
+        warnings.warn(error_message, RuntimeWarning, stacklevel=2)
     return result
 
 
 @njit(nogil=True, error_model="numpy")
 def _conc_to_f_CEC(conc_in, pH_in, soil, conv_mol, conv_Al):
+    """Return (results or None, error_code, error_message); conc_in has 5 values, soil is supported."""
     #constants 
     K_CEC = smew.K_GT_CEC(soil,conv_mol)  #CEC Gaines-Thomas
     K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
@@ -43,6 +51,15 @@ def _conc_to_f_CEC(conc_in, pH_in, soil, conv_mol, conv_Al):
     # Sized according to MINPACK hybrd scratchpad requirements: n*(3*n + 13)/2.
     work = np.empty(8)
     status = _solve_system(CEC_CALCIUM_SYSTEM, f_Ca, parameters, residual, work, 1.49012e-8)
+    if status <= 0:
+        return _solver_error(
+            status, residual, ErrorCode.CEC_RESIDUAL, ErrorCode.CEC_SOLVER_INPUT,
+            'ic.conc_to_f_CEC'
+            + '; pH=' + _float_text(pH_in)
+            + ', Ca=' + _float_text(Ca)
+            + ', Al=' + _float_text(Al)
+            + ', trial_f_Ca=' + _float_text(f_Ca[0]),
+        )
     f_Al = (Al/conv_Al) * (f_Ca**3 / (K_Ca_Al * Ca**3))**0.5
     f_Mg = Mg * (f_Ca / (K_Ca_Mg*Ca))
     f_Na = Na * (f_Ca / (K_Ca_Na*Ca))**0.5
@@ -51,7 +68,7 @@ def _conc_to_f_CEC(conc_in, pH_in, soil, conv_mol, conv_Al):
 
     f_CEC_in = [f_Ca, f_Mg, f_K, f_Na, f_Al, f_H]
 
-    return (f_CEC_in, K_CEC), status
+    return (f_CEC_in, K_CEC), 0, ("MINPACK stopped with status " + str(status) if status != 1 else "")
 
 
 #------------------------------------------------------------------------------
@@ -103,11 +120,13 @@ def total_to_f_CEC_and_conc(
 ):
     """Infer concentrations and CEC fractions using the process-wide JIT setting."""
     # Ensure inputs are contiguous float64 arrays for Numba compilation and C double* compatibility.
-    result, status = _total_to_f_CEC_and_conc(
-        np.asarray(total_in, dtype=np.float64), pH_in, f_acid,
-        np.asarray(s, dtype=np.float64), soil, n, Zr, CEC_tot, conv_mol, conv_Al,
+    result, error_code, error_message = _total_to_f_CEC_and_conc(
+        np.ascontiguousarray(total_in, dtype=np.float64), pH_in, f_acid,
+        np.ascontiguousarray(s, dtype=np.float64), soil, n, Zr, CEC_tot, conv_mol, conv_Al,
     )
-    _warn_solver_status(status)
+    raise_for_error(error_code, error_message)
+    if error_message:
+        warnings.warn(error_message, RuntimeWarning, stacklevel=2)
     return result
 
 
@@ -124,6 +143,7 @@ def _total_to_f_CEC_and_conc(
     conv_mol,
     conv_Al,
 ):
+    """Return (results or None, error_code, error_message) for valid inputs; see docs/errors.md."""
     #constants 
     K_CEC = smew.K_GT_CEC(soil, conv_mol)  #CEC Gaines-Thomas
     K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
@@ -164,6 +184,15 @@ def _total_to_f_CEC_and_conc(
     # 13 * 13 + 13 * (13 + 1) // 2 + 6 * 13 = 338
     work = np.empty(338)
     status = _solve_system(TOTAL_TO_CEC_SYSTEM, x0, parameters, residual, work, 1e-14)
+    if status <= 0:
+        return _solver_error(
+            status, residual, ErrorCode.TOTAL_CEC_RESIDUAL, ErrorCode.TOTAL_CEC_SOLVER_INPUT,
+            'ic.total_to_f_CEC_and_conc'
+            + '; pH=' + _float_text(pH_in)
+            + ', s=' + _float_text(s[0])
+            + ', CEC_total=' + _float_text(CEC_tot)
+            + ', trial_Ca=' + _float_text(x0[4]),
+        )
     # _solve_system writes the converged solution directly into the guess array x0.
     Al_w, Al, Al_tot, Mg, Ca, Na, K, f_Mg, f_Na, f_K, f_Ca, f_Al, f_H = x0
 
@@ -173,7 +202,7 @@ def _total_to_f_CEC_and_conc(
     conc_in = [Ca, Mg, K, Na, Al_w] 
     f_CEC_in = [f_Ca, f_Mg, f_K, f_Na, f_Al, f_H]
 
-    return (conc_in, f_CEC_in, K_CEC), status
+    return (conc_in, f_CEC_in, K_CEC), 0, ("MINPACK stopped with status " + str(status) if status != 1 else "")
 
 
 #------------------------------------------------------------------------------
@@ -212,17 +241,20 @@ def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
 def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
     """Solve the Kelland initial conditions using the process-wide JIT setting."""
     # Ensure inputs are contiguous float64 arrays for Numba compilation and C double* compatibility.
-    result, status = _Kelland(
-        np.asarray(total_in, dtype=np.float64), pH_in,
-        np.asarray(conc_in, dtype=np.float64), np.asarray(s, dtype=np.float64),
+    result, error_code, error_message = _Kelland(
+        np.ascontiguousarray(total_in, dtype=np.float64), pH_in,
+        np.ascontiguousarray(conc_in, dtype=np.float64), np.ascontiguousarray(s, dtype=np.float64),
         soil, n, Zr, CEC_tot, conv_mol, conv_Al,
     )
-    _warn_solver_status(status)
+    raise_for_error(error_code, error_message)
+    if error_message:
+        warnings.warn(error_message, RuntimeWarning, stacklevel=2)
     return result
 
 
 @njit(nogil=True, error_model="numpy")
 def _Kelland(total_in, pH_in, conc_in, s, soil, n, Zr, CEC_tot, conv_mol, conv_Al):
+    """Return (results or None, error_code, error_message) for valid inputs; see docs/errors.md."""
     #constants 
     K_CEC = smew.K_GT_CEC(soil, conv_mol)  #CEC Gaines-Thomas
     K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
@@ -259,6 +291,15 @@ def _Kelland(total_in, pH_in, conc_in, s, soil, n, Zr, CEC_tot, conv_mol, conv_A
     # 5 * 5 + 5 * (5 + 1) // 2 + 6 * 5 = 70
     work = np.empty(70)
     status = _solve_system(KELLAND_SYSTEM, x0, parameters, residual, work, 1e-14)
+    if status <= 0:
+        return _solver_error(
+            status, residual, ErrorCode.KELLAND_RESIDUAL, ErrorCode.KELLAND_SOLVER_INPUT,
+            'ic.Kelland'
+            + '; pH=' + _float_text(pH_in)
+            + ', s=' + _float_text(s[0])
+            + ', CEC_total=' + _float_text(CEC_tot)
+            + ', trial_f_Ca=' + _float_text(x0[4]),
+        )
     # _solve_system writes the converged solution directly into the guess array x0.
     Al_tot, CaCO3, f_Al, f_H, f_Ca = x0
 
@@ -271,7 +312,7 @@ def _Kelland(total_in, pH_in, conc_in, s, soil, n, Zr, CEC_tot, conv_mol, conv_A
     conc_in = [Ca, Mg, K, Na, Al_w] 
     f_CEC_in = [f_Ca, f_Mg, f_K, f_Na, f_Al, f_H]
 
-    return (conc_in, f_CEC_in, K_CEC, CaCO3), status
+    return (conc_in, f_CEC_in, K_CEC, CaCO3), 0, ("MINPACK stopped with status " + str(status) if status != 1 else "")
 
 
 #------------------------------------------------------------------------------
@@ -308,3 +349,8 @@ def Amann(f_CEC_in, pH_in, Mg_in, soil, conv_mol,conv_Al):
     K_CEC = [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H]
 
     return conc_in, K_CEC
+
+
+conc_to_f_CEC_numba = _conc_to_f_CEC
+total_to_f_CEC_and_conc_numba = _total_to_f_CEC_and_conc
+Kelland_numba = _Kelland

@@ -14,8 +14,6 @@ from numba.extending import register_jitable
 @unique
 class ErrorCode(IntEnum):
     OK = 0
-    # Biogeochemistry input validation: 1000-1099.
-    BIOGEOCHEM_INVALID_INPUT = 1001
     # Each nonlinear solve has its own codes, including the fallback attempt.
     RAIN_RESIDUAL = 1101
     RAIN_SOLVER_INPUT = 1102
@@ -27,22 +25,18 @@ class ErrorCode(IntEnum):
     CHEMISTRY_RETRY_SOLVER_INPUT = 1132
     CHEMISTRY_NO_CONVERGENCE = 1133
     BIOGEOCHEM_INSUFFICIENT_CATIONS = 1201
-    BIOGEOCHEM_INITIAL_DISTRIBUTION = 1202
-    BIOGEOCHEM_DISTRIBUTION = 1203
+    BIOGEOCHEM_MISSING_PORES = 1204
     # Organic carbon: 2000-2999.
     RESPIRATION_INITIAL_ACTIVITY = 2001
     RESPIRATION_MEAN_ACTIVITY = 2002
-    RESPIRATION_INVALID_INPUT = 2003
     # Initial condition solvers: 3000-3999.
     CEC_RESIDUAL = 3001
     CEC_SOLVER_INPUT = 3002
-    CEC_INVALID_INPUT = 3003
     TOTAL_CEC_RESIDUAL = 3011
     TOTAL_CEC_SOLVER_INPUT = 3012
-    TOTAL_CEC_INVALID_INPUT = 3013
     KELLAND_RESIDUAL = 3021
     KELLAND_SOLVER_INPUT = 3022
-    KELLAND_INVALID_INPUT = 3023
+    WEATHERING_ERROR = 4001
 
 
 @register_jitable

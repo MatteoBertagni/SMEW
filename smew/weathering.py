@@ -6,6 +6,7 @@ Created on Mon Dec 16 14:34:44 2019
 
 import numpy as np
 from numba import njit
+from smew.errors import ErrorCode
     
 #------------------------------------------------------------------------------
  # psd evolution (based on Beerling et al., 2020)
@@ -43,19 +44,30 @@ def psd_number_from_mass(mass_distribution_rock, diameter_rock, density_rock):
 @njit(nogil=True, error_model="numpy")
 def wetness_SA(s, keyword_ssa, pore_d, pore_pdf, d, psd_rock, mixalf, lmax):
 
+    wet_f, error_code, error_message = _wetness_SA(
+        s, keyword_ssa, pore_d, pore_pdf, d, psd_rock, mixalf, lmax,
+    )
+    if error_code != ErrorCode.OK:
+        raise ValueError(error_message)
+    return wet_f
+
+
+@njit(nogil=True, error_model="numpy")
+def _wetness_SA(s, keyword_ssa, pore_d, pore_pdf, d, psd_rock, mixalf, lmax):
+
     # no scaling of the surface area with moisture (e.g., Beerling et al., 2020, Nature)
     if keyword_ssa == 'constant': 
-        wet_f = 1
+        return 1.0, 0, ""
 
     # linear scaling of the surface area with moisture (e.g., Cipolla et al., 2021, WRR)
     elif keyword_ssa == 'linear': 
-        wet_f = s
+        return s, 0, ""
 
     # nonlinear scaling of the surface area with moisture (Anand et al., 2026, WRR)
     elif keyword_ssa == 'nonlinear': 
-        wet_f = wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf, lmax)
+        return _wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf, lmax)
 
-    return wet_f
+    return np.nan, ErrorCode.WEATHERING_ERROR.value, "Unknown surface area scaling model."
 
 #------------------------------------------------------------------------------
 
@@ -96,27 +108,35 @@ def wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf=1.0, lmax=None):
         and smaller values shift rock-powder particles toward larger soil pores.
     lmax : float, optional
         Maximum effective pore location. If not given, `max(d)` is used.
-
     Returns
     -------
     float
         Fraction of total rock-particle surface area that is wet [0-1].
     """
 
+    wet_f, error_code, error_message = _wet_f_Anand(
+        pore_d, pore_pdf, s, d, psd_rock, mixalf, lmax,
+    )
+    if error_code != ErrorCode.OK:
+        raise ValueError(error_message)
+    return wet_f
+
+
+@njit(nogil=True, error_model="numpy")
+def _wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf, lmax):
     if pore_d.size != pore_pdf.size:
-        raise ValueError("pore_d and pore_pdf must have the same length.")
-
+        return np.nan, ErrorCode.WEATHERING_ERROR.value, "pore_d and pore_pdf must have the same length."
     if d.size != psd_rock.size:
-        raise ValueError("d and psd_rock must have the same length.")
-
+        return np.nan, ErrorCode.WEATHERING_ERROR.value, "d and psd_rock must have the same length."
     if not 0 < mixalf <= 1:
-        raise ValueError("mixalf must be greater than 0 and no larger than 1.")
-
+        return np.nan, ErrorCode.WEATHERING_ERROR.value, "mixalf must be greater than 0 and no larger than 1."
     if lmax is None:
         lmax = np.max(d)
 
     # Convert soil moisture into largest water-filled pore
-    pore_grid, pore_cdf = normalized_cumulative_area( pore_d, pore_pdf)
+    pore_grid, pore_cdf, error_code, error_message = _normalized_cumulative_area(pore_d, pore_pdf)
+    if error_code != ErrorCode.OK:
+        return np.nan, error_code, error_message
 
     # Continuous inverse of Equation 2: F_p(rw) = s (Anand et al., 2026, WRR)
     rw = np.interp(s, pore_cdf, pore_grid)
@@ -128,7 +148,9 @@ def wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf=1.0, lmax=None):
     # Equation 3 integrand after transforming d to pore location (Anand et al., WRR, 2026)
     rock_area_density = ( d**2 * psd_rock / mixalf)
 
-    rock_grid, rock_area_cdf = normalized_cumulative_area(d_eff, rock_area_density)
+    rock_grid, rock_area_cdf, error_code, error_message = _normalized_cumulative_area(d_eff, rock_area_density)
+    if error_code != ErrorCode.OK:
+        return np.nan, error_code, error_message
 
     # Evaluate cumulative wet surface area continuously at rw
     if rw < rock_grid[0]:
@@ -142,8 +164,10 @@ def wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf=1.0, lmax=None):
         wet_f = 0.0
     elif wet_f > 1.0:
         wet_f = 1.0
-    return float(wet_f)
+    return float(wet_f), 0, ""
  
+
+
 #------------------------------------------------------------------------------
 
 @njit(nogil=True, error_model="numpy")
@@ -156,7 +180,14 @@ def normalized_cumulative_area(x, y):
     represent the pore-size CDF in Equation 2 and the normalized
     cumulative rock surface area in Equation 3 of Anand et al. WRR (2026).
     """
-    
+    grid, cumulative, error_code, error_message = _normalized_cumulative_area(x, y)
+    if error_code != ErrorCode.OK:
+        raise ValueError(error_message)
+    return grid, cumulative
+
+
+@njit(nogil=True, error_model="numpy")
+def _normalized_cumulative_area(x, y):
     x = np.asarray(x, dtype=np.float64)
     y = np.asarray(y, dtype=np.float64)
 
@@ -189,9 +220,9 @@ def normalized_cumulative_area(x, y):
     total = cumulative[-1]
 
     if total <= 0:
-        raise ValueError("The distribution has zero total area.")
+        return x_unique, cumulative, ErrorCode.WEATHERING_ERROR.value, "The distribution has zero total area."
 
-    return x_unique, cumulative / total
+    return x_unique, cumulative / total, 0, ""
     
 #------------------------------------------------------------------------------
  

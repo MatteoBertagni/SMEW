@@ -1,12 +1,46 @@
 """Exercise numerical functions in a fresh process with the selected JIT setting."""
 
 import importlib.abc
+import gc
 import inspect
 import os
 from pathlib import Path
 import sys
 
 import numpy as np
+
+
+def check_released(call, exception=None, message=None, code=None):
+    """Check live NRT allocations after warmup, including failed calls.
+
+    RSS also contains compiler code and allocator caches, so it cannot reliably
+    distinguish retained process memory from leaked simulation arrays.
+    """
+    from numba.core.runtime import rtsys
+
+    def run():
+        try:
+            call()
+        except Exception as exc:
+            if exception is None or not isinstance(exc, exception):
+                raise
+            assert message in str(exc), str(exc)
+            if code is not None:
+                assert exc.code == code, exc
+                assert isinstance(exc.message, str)
+        else:
+            assert exception is None, "Expected simulation failure"
+        gc.collect()
+
+    def live():
+        stats = rtsys.get_allocation_stats()
+        return stats.alloc - stats.free, stats.mi_alloc - stats.mi_free
+
+    run()  # Compile any new signature before taking the measurement.
+    before = live()
+    for _ in range(5):
+        run()
+        assert live() == before, (before, live())
 
 
 def collect_outputs(*, helpers_only=False):
@@ -22,6 +56,7 @@ def collect_outputs(*, helpers_only=False):
     from smew import equations, vegetation, soil_pores
     from smew.biogeochem import _biogeochem_balance
     from smew.ic import _conc_to_f_CEC, _total_to_f_CEC_and_conc, _Kelland
+    from smew.organic_carbon import _respiration
 
     outputs = {}
 
@@ -122,11 +157,13 @@ def collect_outputs(*, helpers_only=False):
         from tests.example_marimo_notebook import app
         original = smew.biogeochem_balance
         freeze = False
+        simulation_inputs = []
 
         def balance(**inputs):
             if freeze:
                 inputs["temp_soil"] = inputs["temp_soil"].copy()
                 inputs["temp_soil"][24:] = -2.
+            simulation_inputs.append(inputs)
             return original(**inputs)
 
         smew.biogeochem_balance = balance
@@ -150,16 +187,51 @@ def collect_outputs(*, helpers_only=False):
             for name in ("UP_Ca", "UP_Mg", "UP_K", "UP_Si", "wet_f", "frozen"):
                 record(f"simulation/{variant}/{name}", definitions["chemistry"][name])
         smew.biogeochem_balance = original
+        if not disabled:
+            for inputs in simulation_inputs:
+                check_released(lambda: original(**inputs))
+            inputs = simulation_inputs[0]
+            check_released(
+                lambda: original(**{**inputs, "conc_in": [0.] * 5}),
+                RuntimeError, "Residual evaluation failed",
+                smew.ErrorCode.CHEMISTRY_RESIDUAL,
+            )
+            check_released(
+                lambda: original(**{**inputs, "pH_in": 12.}),
+                ValueError, "Not enough cations",
+                smew.ErrorCode.BIOGEOCHEM_INSUFFICIENT_CATIONS,
+            )
+            check_released(
+                lambda: original(**{
+                    **inputs, "keyword_ssa": "nonlinear",
+                    "pore_d_in": np.array([1e-6, 1e-5]),
+                    "pore_pdf_in": np.zeros(2),
+                }),
+                ValueError, "zero total area",
+                smew.ErrorCode.WEATHERING_ERROR,
+            )
+            check_released(
+                lambda: smew.conc_to_f_CEC([0.] * 5, 6., "loam", 1., 1.),
+                RuntimeError, "Residual evaluation failed",
+                smew.ErrorCode.CEC_RESIDUAL,
+            )
+            for co2, tau, message in ((None, 1000., "Mean decomposition activity"),
+                                      (.01, None, "Cannot estimate k_dec")):
+                check_released(
+                    lambda: smew.respiration(None, 1000., co2, 1., "loam", x*.6,
+                                            x, 1., .3, -x, 1., 1., tau),
+                    ValueError, message,
+                )
     # A successful call must produce native signatures, not an object-mode fallback.
     numerical = [getattr(smew, name) for name in (
         "CO2_atm", "D_0", "Dw_0", "MM", "K_Al", "K_C", "K_GT_CEC", "plant_nutr_f",
         "soil_hydraulic_const", "soil_const", "min_const", "carb_weath_const", "temp",
-        "rain_stoc", "rain_stoc_season", "moisture_balance", "respiration", "soil_pore_pdf",
+        "rain_stoc", "rain_stoc_season", "moisture_balance", "soil_pore_pdf",
         "pore_pdf_ding2016", "pore_pdf_campbell", "veg", "veg_seasonal", "up_act",
         "carb_W", "sil_Omega", "sil_Wr", "psd_evol", "psd_number_from_mass",
         "normalized_cumulative_area", "wet_f_Anand", "wetness_SA", "mov_avg",
         "f_CEC_to_conc", "f_CEC_and_conc_to_K", "Amann",
-    )] + [vegetation.get_stage_boundaries, vegetation.get_season_boundaries]
+    )] + [vegetation.get_stage_boundaries, vegetation.get_season_boundaries, _respiration]
     if not helpers_only:
         numerical += [_biogeochem_balance, _conc_to_f_CEC, _total_to_f_CEC_and_conc, _Kelland]
     for fn in numerical:
@@ -171,4 +243,5 @@ def collect_outputs(*, helpers_only=False):
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("NUMBA_NRT_STATS", "1")
     np.savez(Path(sys.argv[1]), **collect_outputs(helpers_only="--helpers-only" in sys.argv[2:]))

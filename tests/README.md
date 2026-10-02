@@ -69,6 +69,18 @@ from the compiled test suite and exercise both startup modes. This allows small 
 differences between SciPy/MINPACK and Numba/cminpack across platforms; a relative
 tolerance of `1e-10` proved too tight in CI.
 
+The compiled probe also enables `NUMBA_NRT_STATS` and checks that repeated
+successful and failed calls leave the number of live Numba allocations unchanged.
+It covers native residual failures, insufficient cations, zero-area nonlinear
+distributions, and inactive-soil respiration errors. These
+checks run after compilation warmup; compiler memory and process RSS are not
+used as a proxy for leaked arrays.
+
+`test_errors.py` checks code uniqueness, generated messages, exception
+serialization, and propagation through a parent Numba
+function. Backend probes also assert the specific codes produced by failed
+simulations while checking that their arrays are released.
+
 ## Updating references
 
 `make test` never writes references (baselines); missing references fail.

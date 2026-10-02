@@ -20,7 +20,7 @@ def mode_outputs(tmp_path_factory):
         path = directory / f"{mode}.npz"
         process = subprocess.run(
             [sys.executable, "-m", "tests.numba_probe", str(path)],
-            env={**os.environ, "NUMBA_DISABLE_JIT": disabled},
+            env={**os.environ, "NUMBA_DISABLE_JIT": disabled, "NUMBA_NRT_STATS": "1"},
             capture_output=True, text=True,
         )
         assert process.returncode == 0, process.stdout + process.stderr
