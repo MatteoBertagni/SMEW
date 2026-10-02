@@ -65,6 +65,10 @@ def _wetness_SA(s, keyword_ssa, pore_d, pore_pdf, d, psd_rock, mixalf, lmax):
 
     # nonlinear scaling of the surface area with moisture (Anand et al., 2026, WRR)
     elif keyword_ssa == 'nonlinear': 
+        if pore_d is None or pore_pdf is None:
+            return np.nan, ErrorCode.WEATHERING_ERROR.value, (
+                "For keyword_ssa='nonlinear', provide both pore_d_in and pore_pdf_in."
+            )
         return _wet_f_Anand(pore_d, pore_pdf, s, d, psd_rock, mixalf, lmax)
 
     return np.nan, ErrorCode.WEATHERING_ERROR.value, "Unknown surface area scaling model."

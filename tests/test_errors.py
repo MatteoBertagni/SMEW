@@ -70,7 +70,7 @@ def test_respiration_reports_initial_state():
         smew.respiration(None, 1000., .01, 1., "loam", values*.6, values,
                          1., .3, -values, 1., 1.)
     assert caught.value.code == smew.ErrorCode.RESPIRATION_INITIAL_ACTIVITY
-    for fragment in ("step=0", "activity=0", "moisture=0.6", "temperature_C=-1", "SOC=1000"):
+    for fragment in ("step=0", "activity=0", "s=0.6", "temp_soil=-1", "SOC=1000"):
         assert fragment in caught.value.message
 
 
@@ -87,4 +87,3 @@ def test_invalid_solver_buffers_have_no_residual_measurement():
     assert code == smew.ErrorCode.RAIN_SOLVER_INPUT
     assert "solver_status=-2" in message
     assert "max_abs_residual=" not in message
-
