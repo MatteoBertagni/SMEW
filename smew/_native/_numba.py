@@ -25,15 +25,14 @@ _native_solve.argtypes = (
 
 
 def _solve_with_cminpack(system, state, parameters, residual, work, xtol):
-    """Solve through the native entry point, updating caller-owned arrays."""
+    """Return the native status, including failures, without raising in Numba.
+
+    Exceptions escaping an allocating Numba caller leak its live arrays. The
+    Python entry points raise after the compiled calculation has returned.
+    """
     status = _native_solve(
         system, state.size, parameters.ctypes.data, parameters.size,
         state.ctypes.data, residual.ctypes.data, xtol,
         200 * (state.size + 1), work.ctypes.data, work.size,
     )
-    if status == -1:
-        raise RuntimeError("Native residual evaluation failed")
-    if status <= 0:
-        raise ValueError("Native solver received invalid buffers or settings")
     return status
-

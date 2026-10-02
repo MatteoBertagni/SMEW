@@ -4,6 +4,7 @@
 
 import warnings
 
+import numpy as np
 from scipy.optimize import fsolve
 from numba.extending import overload
 from smew.equations import (
@@ -25,7 +26,11 @@ KELLAND_SYSTEM = 5
 # Execution contract: operates as the pure-Python fallback using SciPy's fsolve.
 # When running under the compiled backend, this implementation is replaced by Numba's @overload.
 def _solve_system(system, state, parameters, residual, work, xtol):
-    """SciPy solver adapter; Numba replaces this call with the native binding."""
+    """Return MINPACK status codes in both Python and Numba.
+
+    Compiled callers must return failures (status <= 0) to a Python entry point
+    rather than raise while they still own Numba-allocated arrays to prevent memory leaks.
+    """
     if system == WATER_SYSTEM:
         equations = water_equations
     elif system == HYDROGEN_SYSTEM:
@@ -40,9 +45,14 @@ def _solve_system(system, state, parameters, residual, work, xtol):
         equations = kelland_equations
     else:
         raise ValueError("Unknown equation system")
-    state[:] = fsolve(equations, state, args=tuple(parameters), xtol=xtol)
+    solution, _, status, _ = fsolve(
+        equations, state, args=tuple(parameters), xtol=xtol, full_output=True,
+    )
+    state[:] = solution
     residual[:] = equations(state, *parameters)
-    return 1  # fsolve already reports nonconvergence through its own warnings.
+    if not np.isfinite(residual).all():
+        return -1
+    return status
 
 
 def _warn_solver_status(status):

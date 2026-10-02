@@ -59,8 +59,16 @@ equations; disabled JIT uses SciPy's `fsolve` and the Python equations.
 The native solver is loaded only when a compiled solve is needed, 
 so the other numerical calculations can compile without it.
 Small Python entry-point wrappers handle array conversion, solver
-warnings, and result dictionaries. The two-application model returns named
-numerical results.
+warnings, numerical failures, and result dictionaries. In particular, failed
+compiled simulations return before Python raises the exception, so Numba can
+release their arrays. This matters when a worker runs many simulations in the
+same process to avoid memory leaks.
+Errors expose a globally unique `ErrorCode` and a debug message containing the
+failing component, timestep, and relevant numerical values. Python callers can
+catch `smew.SMEWError`; compiled callers use the public `*_numba` entry points,
+which return `(result, error_code, error_message)` without raising. See
+[model failures](docs/errors.md) for examples and supported interfaces.
+The two-application model returns named numerical results.
 
 Stochastic rainfall uses NumPy's exponential sampler. Numba maintains its own
 random state, so Python and compiled rainfall runs need not produce identical
