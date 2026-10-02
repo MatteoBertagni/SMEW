@@ -1,4 +1,4 @@
-"""Numba and Python execution selected once, at process startup."""
+"""Compare startup modes while sharing the current process's compiled code."""
 
 import os
 import subprocess
@@ -6,8 +6,10 @@ import sys
 
 import numpy as np
 import pytest
+from numba import config
 
 import smew
+from tests.numba_probe import collect_outputs
 
 pytestmark = pytest.mark.xdist_group("numba_modes")
 
@@ -17,6 +19,11 @@ def mode_outputs(tmp_path_factory):
     directory = tmp_path_factory.mktemp("numba-modes")
     outputs = {}
     for mode, disabled in (("python", "1"), ("compiled", "0")):
+        if mode == "compiled" and not config.DISABLE_JIT and config.NRT_STATS:
+            outputs[mode] = collect_outputs()
+            continue
+        # Preserve allocation checks for direct pytest runs without NRT stats,
+        # and isolate Python mode from the current process's JIT setting.
         path = directory / f"{mode}.npz"
         process = subprocess.run(
             [sys.executable, "-m", "tests.numba_probe", str(path)],

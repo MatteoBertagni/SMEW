@@ -1,4 +1,4 @@
-"""Exercise numerical functions in a fresh process with the selected JIT setting."""
+"""Collect numerical outputs using the process's selected JIT setting."""
 
 import importlib.abc
 import gc
@@ -167,26 +167,28 @@ def collect_outputs(*, helpers_only=False):
             return original(**inputs)
 
         smew.biogeochem_balance = balance
-        for variant in ("default", "no_rock", "nonlinear_frozen"):
-            settings = dict(duration_days=2, timestep_minutes=60)
-            freeze = variant == "nonlinear_frozen"
-            if variant == "no_rock":
-                settings.update(rock_mass_g_m2=0., application_day=0.)
-            elif freeze:
-                settings.update(
-                    dissolution_factor=1., mineral_mass_fractions=[1.], minerals=["forsterite"],
-                    particle_diameters_um=[50., 100., 200.], particle_mass_fractions=[.2, .5, .3],
-                    pore_model="ding2016", pore_particle_mixing=1., rock_density_g_m3=3e6,
-                    wet_surface_model="nonlinear", initial_vegetation_g_m2=1000.,
-                    vegetation_capacity_g_m2=3000, vegetation_growth_days=100,
-                    vegetation_start_day=0, root_area_index=10, root_diameter_m=.4e-3,
-                )
-            _, definitions = app.run(defs=settings)
-            for name, value in definitions["results"].items():
-                record(f"simulation/{variant}/{name}", value)
-            for name in ("UP_Ca", "UP_Mg", "UP_K", "UP_Si", "wet_f", "frozen"):
-                record(f"simulation/{variant}/{name}", definitions["chemistry"][name])
-        smew.biogeochem_balance = original
+        try:
+            for variant in ("default", "no_rock", "nonlinear_frozen"):
+                settings = dict(duration_days=2, timestep_minutes=60)
+                freeze = variant == "nonlinear_frozen"
+                if variant == "no_rock":
+                    settings.update(rock_mass_g_m2=0., application_day=0.)
+                elif freeze:
+                    settings.update(
+                        dissolution_factor=1., mineral_mass_fractions=[1.], minerals=["forsterite"],
+                        particle_diameters_um=[50., 100., 200.], particle_mass_fractions=[.2, .5, .3],
+                        pore_model="ding2016", pore_particle_mixing=1., rock_density_g_m3=3e6,
+                        wet_surface_model="nonlinear", initial_vegetation_g_m2=1000.,
+                        vegetation_capacity_g_m2=3000, vegetation_growth_days=100,
+                        vegetation_start_day=0, root_area_index=10, root_diameter_m=.4e-3,
+                    )
+                _, definitions = app.run(defs=settings)
+                for name, value in definitions["results"].items():
+                    record(f"simulation/{variant}/{name}", value)
+                for name in ("UP_Ca", "UP_Mg", "UP_K", "UP_Si", "wet_f", "frozen"):
+                    record(f"simulation/{variant}/{name}", definitions["chemistry"][name])
+        finally:
+            smew.biogeochem_balance = original
         if not disabled:
             for inputs in simulation_inputs:
                 check_released(lambda: original(**inputs))

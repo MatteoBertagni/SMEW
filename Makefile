@@ -24,11 +24,11 @@ clean:
 
 test:
 	NUMBA_DISABLE_JIT=1 $(PYTHON) -m pytest -n auto --maxprocesses=3 --dist=loadgroup tests --ignore=tests/test_backend.py $(PYTEST_ARGS)
-	NUMBA_DISABLE_JIT=0 $(PYTHON) -m pytest -n auto --maxprocesses=3 --dist=loadgroup tests $(PYTEST_ARGS)
+	NUMBA_DISABLE_JIT=0 NUMBA_NRT_STATS=1 $(PYTHON) -m pytest -n 0 tests $(PYTEST_ARGS)
 
 test-serial:
 	NUMBA_DISABLE_JIT=1 $(PYTHON) -m pytest tests --ignore=tests/test_backend.py $(PYTEST_ARGS)
-	NUMBA_DISABLE_JIT=0 $(PYTHON) -m pytest tests $(PYTEST_ARGS)
+	NUMBA_DISABLE_JIT=0 NUMBA_NRT_STATS=1 $(PYTHON) -m pytest tests $(PYTEST_ARGS)
 
 example:
 	$(PYTHON) -m marimo edit tests/example_marimo_notebook.py
