@@ -435,7 +435,7 @@ def carb_weath_const(conv_mol):
 
 @njit(nogil=True, error_model="numpy")
 def K_GT_CEC(soil, conv_mol):
-            
+
     # Current values are from a meta-analysis of Dutch soils (0-30 cm, https://edepot.wur.nl/31605)
     # Site-specific coefficient estimates can be obtained with soil-water coupled measurements
     
@@ -448,7 +448,7 @@ def K_GT_CEC(soil, conv_mol):
         #K_Ca_AlOH = 10**(-1.7)
         #K_Ca_AlOH2 = 10**(-1.7)*conv_mol
     
-    elif soil in ['loam', 'silty loam', 'silt']:
+    elif soil in ['loam', 'silt loam', 'silty loam', 'silt']:  # TODO: check which of silt or silty loam should be used
         K_Ca_Mg = 10**(0.1); #[-]
         K_Ca_K = 10**(-2)*conv_mol
         K_Ca_Na = 10**(0.38)*conv_mol
@@ -467,7 +467,12 @@ def K_GT_CEC(soil, conv_mol):
         #K_Ca_AlOH2 = 10**(-0.2)*conv_mol
     
     else:
-        raise ValueError("Unknown soil type")
+        # TODO: what about 'sandy clay loam', 'silty clay loam', 'sandy clay'
+        raise ValueError(
+            "Unknown soil type '" + soil + "' in K_GT_CEC. Supported soil types: "
+            "sand, loamy sand, sandy loam, loam, silt loam, silt, "
+            "clay loam, silty clay, clay"
+        )
         
     # K_Na_K = (K_Ca_K/K_Ca_Na)**(1/2)]
     # K_Na_Al = (K_Ca_Al/K_Ca_Na**3)**(1/2)
