@@ -89,8 +89,11 @@ contract covers numerical failures during computation. Input requirements are:
   Particle diameters are nonempty and match the particle fraction array's
   length. For no rock, use `("",)` and empty arrays for unused particle inputs.
 - The surface model is `constant`, `linear`, or `nonlinear`. Nonlinear scaling
-  requires matching, nonempty pore arrays and `0 < mixalf_in <= 1`. Pore arrays
-  may be `None` for constant/linear scaling.
+  requires matching, nonempty pore arrays and `0 < mixalf_in <= 1`. The Python
+  entry point accepts `None` for missing pores and converts it to empty arrays.
+  The compiled biogeochemistry entry point requires an explicit surface model
+  and both pore arrays, using empty `float64` arrays for constant/linear scaling
+  when pores are not provided.
 - Respiration uses nonempty moisture, vegetation, and temperature arrays of
   equal length, with a supported soil name.
 - Initialization solvers use 5 concentrations, 4 totals where applicable,

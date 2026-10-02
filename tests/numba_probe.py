@@ -76,10 +76,17 @@ def collect_outputs(*, helpers_only=False):
         "sand", "loamy sand", "sandy loam", "loam", "silt", "silt loam",
         "sandy clay loam", "silty clay loam", "clay loam", "sandy clay", "silty clay", "clay",
     )
+    # CEC coefficients are unavailable for three hydrology/pore textures.
+    cec_soil_names = tuple(
+        soil for soil in soil_names
+        if soil not in ("sandy clay loam", "silty clay loam", "sandy clay")
+    )
     for soil in soil_names:
         record("soil/" + soil, smew.soil_const(soil))
         for model in ("ding2016", "campbell"):
             record(f"pores/{soil}/{model}", smew.soil_pore_pdf(soil, model, 50))
+    for soil in cec_soil_names:
+        record("K_GT_CEC/" + soil, smew.K_GT_CEC(soil, 1.))
     call(soil_pores._gradient, np.array([1., 2., 8., 10.]), np.array([0., .2, 1., 2.]))
     for fn in (smew.D_0, smew.Dw_0, smew.plant_nutr_f):
         call(fn)
@@ -134,6 +141,8 @@ def collect_outputs(*, helpers_only=False):
     for rain in (smew.rain_stoc(.2, .01, 365., 1.), smew.rain_stoc_season(np.full(12, .2), np.full(12, .01), 365., 1.)):
         assert rain.shape == (365,) and np.isfinite(rain).all() and (rain >= 0.).all()
     fractions = np.array([.6, .2, .08, .05, .04, .03])
+    for soil in cec_soil_names:
+        record("f_CEC_to_conc/" + soil, smew.f_CEC_to_conc(fractions, 6., soil, 1., 1.))
     conc, _ = call(smew.f_CEC_to_conc, fractions, 6., "loam", 1., 1.)
     call(smew.f_CEC_and_conc_to_K, fractions, np.asarray(conc), 6., "loam", 1., 1.)
     call(smew.Amann, fractions, 6., .001, "loam", 1., 1.)
@@ -158,6 +167,7 @@ def collect_outputs(*, helpers_only=False):
         original = smew.biogeochem_balance
         freeze = False
         simulation_inputs = []
+        model_signatures = None
 
         def balance(**inputs):
             if freeze:
@@ -183,13 +193,43 @@ def collect_outputs(*, helpers_only=False):
                         vegetation_start_day=0, root_area_index=10, root_diameter_m=.4e-3,
                     )
                 _, definitions = app.run(defs=settings)
+                if not disabled:
+                    if model_signatures is None:
+                        model_signatures = tuple(_biogeochem_balance.signatures)
+                    else:
+                        assert tuple(_biogeochem_balance.signatures) == model_signatures
                 for name, value in definitions["results"].items():
                     record(f"simulation/{variant}/{name}", value)
                 for name in ("UP_Ca", "UP_Mg", "UP_K", "UP_Si", "wet_f", "frozen"):
                     record(f"simulation/{variant}/{name}", definitions["chemistry"][name])
         finally:
             smew.biogeochem_balance = original
+        # Exercise the public compiled entry point with absent and supplied pores.
+        for variant, inputs in zip(("default", "nonlinear_frozen"), simulation_inputs[::2]):
+            arguments = dict(inputs)
+            arguments["mineral"] = tuple(arguments["mineral"])
+            for name in ("s", "L", "T", "I", "v", "r_het", "r_aut", "D", "temp_soil",
+                         "conc_in", "f_CEC_in", "K_CEC", "rock_f_in", "d_in", "psd_perc_in",
+                         "pore_d_in", "pore_pdf_in"):
+                value = arguments[name]
+                arguments[name] = np.ascontiguousarray(
+                    () if value is None else value, dtype=np.float64,
+                )
+            values, code, message = smew.biogeochem_balance_numba(**arguments)
+            assert code == smew.ErrorCode.OK, message
+            values = dict(values)
+            for name in ("pH", "wet_f"):
+                np.testing.assert_array_equal(values[name], outputs[f"simulation/{variant}/{name}"])
+                record(f"simulation/{variant}/numba_{name}", values[name])
+            if variant == "default":
+                missing, code, message = smew.biogeochem_balance_numba(
+                    **{**arguments, "keyword_ssa": "nonlinear"},
+                )
+                assert missing is None
+                assert code == smew.ErrorCode.BIOGEOCHEM_MISSING_PORES
+                assert "provide both pore_d_in and pore_pdf_in" in message
         if not disabled:
+            assert tuple(_biogeochem_balance.signatures) == model_signatures
             for inputs in simulation_inputs:
                 check_released(lambda: original(**inputs))
             inputs = simulation_inputs[0]
@@ -212,6 +252,15 @@ def collect_outputs(*, helpers_only=False):
                 ValueError, "zero total area",
                 smew.ErrorCode.WEATHERING_ERROR,
             )
+            for pore_d, pore_pdf in ((None, None), (None, np.ones(2)), (np.ones(2), None)):
+                check_released(
+                    lambda: original(**{
+                        **inputs, "keyword_ssa": "nonlinear",
+                        "pore_d_in": pore_d, "pore_pdf_in": pore_pdf,
+                    }),
+                    ValueError, "provide both pore_d_in and pore_pdf_in",
+                    smew.ErrorCode.BIOGEOCHEM_MISSING_PORES,
+                )
             check_released(
                 lambda: smew.conc_to_f_CEC([0.] * 5, 6., "loam", 1., 1.),
                 RuntimeError, "Residual evaluation failed",

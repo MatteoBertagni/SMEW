@@ -66,16 +66,13 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         "rho_rock_in": rho_rock_in,
         "mixalf_in": mixalf_in,
     }
-    # Preserve missing pore inputs so the model can report the original failure.
-    # Standardise other array inputs as contiguous float64 arrays, using empty arrays for None.
+    # Standardise array inputs as contiguous float64 arrays, using empty arrays for None.
     # Flatten inputs to C-contiguous float64 arrays so Numba can pass raw memory
     # pointers (const double*) directly to Cython/cminpack without layout conversion.
     for name in ("s", "L", "T", "I", "v", "r_het", "r_aut", "D", "temp_soil",
                  "conc_in", "f_CEC_in", "K_CEC", "rock_f_in", "d_in", "psd_perc_in",
                  "pore_d_in", "pore_pdf_in"):
         value = arguments[name]
-        if name in ("pore_d_in", "pore_pdf_in") and value is None:
-            continue
         arguments[name] = np.ascontiguousarray(
             () if value is None else value, dtype=np.float64,
         )
@@ -93,20 +90,21 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
 
 @njit(nogil=True, error_model="numpy")
 def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add,
-                       keyword_ssa='linear', # options: 'constant', 'linear', 'nonlinear'
-                       pore_d_in=None,
-                       pore_pdf_in=None,
+                       keyword_ssa, # options: 'constant', 'linear', 'nonlinear'
+                       pore_d_in,
+                       pore_pdf_in,
                        rho_rock_in=None,
                        mixalf_in=1.0,
                       ):
     """Return (result pairs or None, error_code, error_message), including from another @njit.
 
     Inputs must satisfy the model requirements. Array arguments are
-    1D contiguous float64 arrays; mineral is a tuple of names. Pore arrays may be
-    None for constant/linear scaling. Numerical failures return a code and message;
-    propagate them normally and do not use partial results.
+    1D contiguous float64 arrays; mineral is a tuple of names. Supply keyword_ssa
+    and both pore arrays explicitly, using empty arrays for missing pores.
+    Numerical failures return a code and message; propagate them normally and
+    do not use partial results.
     """
-    if keyword_ssa == "nonlinear" and (pore_d_in is None or pore_pdf_in is None):
+    if keyword_ssa == "nonlinear" and (pore_d_in.size == 0 or pore_pdf_in.size == 0):
         return None, ErrorCode.BIOGEOCHEM_MISSING_PORES.value, (
             "For keyword_ssa='nonlinear', provide both pore_d_in and pore_pdf_in. "
             "They can be estimated with: pore_d_in, pore_pdf_in = smew.soil_pore_pdf(soil)."

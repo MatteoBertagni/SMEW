@@ -70,6 +70,9 @@ uses `rtol=1e-6`). Python mode runs in a fresh process; compiled mode reuses the
 pytest process when JIT and NRT statistics are enabled at startup. Other direct
 pytest invocations use a fresh compiled process to retain the allocation checks.
 A separate fresh process checks that compiled helpers need no native solver.
+The chemistry probes check that empty and nonempty pore arrays share the same
+compiled calculation. The Python entry point converts missing pores to empty
+arrays; the public compiled entry point requires arrays directly.
 The probes run once from the compiled test suite and exercise both startup
 modes. This allows small accumulated numerical differences between
 SciPy/MINPACK and Numba/cminpack across platforms; a relative tolerance of
@@ -77,8 +80,8 @@ SciPy/MINPACK and Numba/cminpack across platforms; a relative tolerance of
 
 The compiled probe uses `NUMBA_NRT_STATS` to check that repeated
 successful and failed calls leave the number of live Numba allocations unchanged.
-It covers native residual failures, insufficient cations, zero-area nonlinear
-distributions, and inactive-soil respiration errors. These
+It covers native residual failures, insufficient cations, missing nonlinear
+pore inputs, zero-area nonlinear distributions, and inactive-soil respiration errors. These
 checks run after compilation warmup; compiler memory and process RSS are not
 used as a proxy for leaked arrays.
 
