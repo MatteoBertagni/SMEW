@@ -17,7 +17,7 @@ def run_scenario(name):
     from tests.example_marimo_notebook import app
 
     overrides = CHECKS["scenarios"][name].get("overrides", {})
-    _, definitions = app.run(defs=dict(overrides))
+    _, definitions = app.run(defs=overrides)
     return definitions
 
 

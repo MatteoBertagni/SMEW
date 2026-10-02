@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from numba import njit
 from .constants import soil_hydraulic_const
 
 #------------------------------------------------------------------------------
@@ -22,15 +23,48 @@ ding2016_param = {
     "sand": dict(C=0.047, A1=0.050, h1=960.2, A2=0.346, h2=32.4),
 }
 
-ding2016_fallback = {
-    "loamy sand": "sand",
-    "sandy clay": "sandy clay loam",
-}
+# Immutable lookup values are usable directly from Numba.
+_DING2016_PARAMETERS = tuple(
+    (soil, (p["C"], p["A1"], p["h1"], p["A2"], p["h2"]))
+    for soil, p in ding2016_param.items()
+)
 
 MPA_TO_CM_H2O = 10197.16213
 
 #------------------------------------------------------------------------------
 
+@njit(nogil=True, error_model="numpy")
+def _ding2016_parameters(soil):
+    if soil == "loamy sand":
+        soil = "sand"
+    elif soil == "sandy clay":
+        soil = "sandy clay loam"
+    for name, parameters in _DING2016_PARAMETERS:
+        if name == soil:
+            return parameters
+    raise ValueError("Invalid soil type!")
+
+
+@njit(nogil=True, error_model="numpy")
+def _gradient(values, coordinates):
+    """NumPy's default 1D gradient on nonuniform coordinates."""
+    if len(values) < 2:
+        raise ValueError("At least two points are required for a pore distribution.")
+    result = np.empty(len(values))
+    result[0] = (values[1] - values[0]) / (coordinates[1] - coordinates[0])
+    result[-1] = (values[-1] - values[-2]) / (coordinates[-1] - coordinates[-2])
+    for i in range(1, len(values) - 1):
+        left = coordinates[i] - coordinates[i - 1]
+        right = coordinates[i + 1] - coordinates[i]
+        result[i] = (
+            -right / (left * (left + right)) * values[i - 1]
+            + (right - left) / (left * right) * values[i]
+            + left / (right * (left + right)) * values[i + 1]
+        )
+    return result
+
+
+@njit(nogil=True, error_model="numpy")
 def pore_pdf_ding2016(soil, n_points=500, h_min=10.0, h_max=10*MPA_TO_CM_H2O):
     
     """
@@ -56,19 +90,18 @@ def pore_pdf_ding2016(soil, n_points=500, h_min=10.0, h_max=10*MPA_TO_CM_H2O):
         Effective pore-size density [1/m].
     """
     
-    soil = ding2016_fallback.get(soil, soil)
-    p = ding2016_param[soil]
+    C, A1, h1, A2, h2 = _ding2016_parameters(soil)
 
     h = np.logspace(np.log10(h_max), np.log10(h_min), n_points)
 
-    theta = p["C"] + p["A1"] * np.exp(-h / p["h1"])+ p["A2"] * np.exp(-h / p["h2"])
+    theta = C + A1 * np.exp(-h / h1) + A2 * np.exp(-h / h2)
 
     pore_d = 2.0 * (0.149 / h) * 1e-2
 
     F = (theta - theta[0]) / (theta[-1] - theta[0])
         
     # Convention as for Anand implementation: distribution per log-diameter interval.
-    pore_pdf = np.gradient(F, np.log(pore_d))
+    pore_pdf = _gradient(F, np.log(pore_d))
     pore_pdf = np.maximum(pore_pdf, 0.0)
 
     area = np.trapezoid(pore_pdf, pore_d)
@@ -78,6 +111,7 @@ def pore_pdf_ding2016(soil, n_points=500, h_min=10.0, h_max=10*MPA_TO_CM_H2O):
  
 #------------------------------------------------------------------------------
 
+@njit(nogil=True, error_model="numpy")
 def pore_pdf_campbell(soil, n_points=500, h_max=10*MPA_TO_CM_H2O):
     
     """
@@ -112,7 +146,7 @@ def pore_pdf_campbell(soil, n_points=500, h_max=10*MPA_TO_CM_H2O):
     )
 
     # Same convention as Ding/Anand: distribution per log-diameter interval.
-    pore_pdf = np.gradient(F, np.log(pore_d))
+    pore_pdf = _gradient(F, np.log(pore_d))
 
     pore_pdf = np.maximum(pore_pdf, 0.0)
     pore_pdf = pore_pdf / np.trapezoid(pore_pdf, pore_d)
@@ -121,6 +155,7 @@ def pore_pdf_campbell(soil, n_points=500, h_max=10*MPA_TO_CM_H2O):
 
 #------------------------------------------------------------------------------
 
+@njit(nogil=True, error_model="numpy")
 def soil_pore_pdf(soil, pore_model="ding2016", n_points=500, h_min=10.0, h_max=10*MPA_TO_CM_H2O):
         
     """
