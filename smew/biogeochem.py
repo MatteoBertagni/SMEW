@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 from numba import njit
 import smew
+from smew.ic import _f_CEC_Alk_to_conc
 from smew._utils import _solve_system
 from smew.errors import (
     ErrorCode, _float_text, _solver_error, raise_for_error,
@@ -356,14 +357,22 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
     An[0] = 2*Mg[0]+2*Ca[0]+Na[0]+K[0]-Alk[0] #[mol_c/l]
 
     if An[0]<0:
-        return None, ErrorCode.BIOGEOCHEM_INSUFFICIENT_CATIONS.value, (
-            'biogeochem.initial_conditions: Not enough cations for this alkalinity'
-            + '; step=0, time_days=0'
-            + ', pH=' + _float_text(pH[0])
-            + ', An=' + _float_text(An[0])
-            + ', Alk=' + _float_text(Alk[0])
-            + ', cation_charge=' + _float_text(2*Mg[0] + 2*Ca[0] + Na[0] + K[0])
-        )
+        # TODO: add an option to either adjust the chemistry or raise an error
+        print("Not enough cations for this alkalinity, adjusting chemistry...")
+        result, error_code, error_message = _f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk[0], conv_mol,conv_Al)
+        # TODO: manage error message ; solver_status_counts[status] += 1?
+        conc_in, K_Ca_H = result
+        [Ca[0], Mg[0], K[0], Na[0], Al_w[0]] = conc_in
+        # TODO: add a check to verify this?
+        An[0] = 0
+        # return None, ErrorCode.BIOGEOCHEM_INSUFFICIENT_CATIONS.value, (
+        #     'biogeochem.initial_conditions: Not enough cations for this alkalinity'
+        #     + '; step=0, time_days=0'
+        #     + ', pH=' + _float_text(pH[0])
+        #     + ', An=' + _float_text(An[0])
+        #     + ', Alk=' + _float_text(Alk[0])
+        #     + ', cation_charge=' + _float_text(2*Mg[0] + 2*Ca[0] + Na[0] + K[0])
+        # )
 
     # aluminum speciation
     Al[0]=(H[0]**4/(H[0]**4+H[0]**3*K1+H[0]**2*K1*K2+H[0]*K1*K2*K3+K1*K2*K3*K4))*Al_w[0] #mol/l

@@ -72,6 +72,20 @@ cdef double cec_calcium_residual(
 
 
 
+cdef double f_cec_alk_to_conc_residual(
+    double Ca,
+    double f_Ca,
+    double K_Ca_Mg,
+    double f_Mg,
+    double K_Ca_Na,
+    double f_Na,
+    double K_Ca_K,
+    double f_K,
+    double Alk_in,
+) noexcept nogil
+
+
+
 # Declare local variables as C doubles for native compilation; declaration order does not matter.
 @cython.locals(
     Al_w=cython.double, Al=cython.double, Al_tot=cython.double,

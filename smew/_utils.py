@@ -8,8 +8,8 @@ import numpy as np
 from scipy.optimize import fsolve
 from numba.extending import overload
 from smew.equations import (
-    water_equations, h_equations, biogeochem_equations,
-    cec_calcium_equation, total_to_cec_equations, kelland_equations,
+    water_equations, h_equations, biogeochem_equations, cec_calcium_equation,
+    f_cec_alk_to_conc_equation, total_to_cec_equations, kelland_equations,
 )
 
 
@@ -19,8 +19,9 @@ WATER_SYSTEM = 0
 HYDROGEN_SYSTEM = 1
 BIOGEOCHEM_SYSTEM = 2
 CEC_CALCIUM_SYSTEM = 3
-TOTAL_TO_CEC_SYSTEM = 4
-KELLAND_SYSTEM = 5
+F_CEC_ALK_TO_CONC_SYSTEM = 4
+TOTAL_TO_CEC_SYSTEM = 5
+KELLAND_SYSTEM = 6
 
 
 # Execution contract: operates as the pure-Python fallback using SciPy's fsolve.
@@ -39,6 +40,8 @@ def _solve_system(system, state, parameters, residual, work, xtol):
         equations = biogeochem_equations
     elif system == CEC_CALCIUM_SYSTEM:
         equations = cec_calcium_equation
+    elif system == F_CEC_ALK_TO_CONC_SYSTEM:
+        equations = f_cec_alk_to_conc_equation
     elif system == TOTAL_TO_CEC_SYSTEM:
         equations = total_to_cec_equations
     elif system == KELLAND_SYSTEM:

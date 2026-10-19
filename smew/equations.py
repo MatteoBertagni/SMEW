@@ -257,6 +257,60 @@ def cec_calcium_equation(
     )
 
 
+# Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
+@njit(nogil=True, error_model="numpy")
+def f_cec_alk_to_conc_residual(
+    Ca,
+    f_Ca,
+    K_Ca_Mg,
+    f_Mg,
+    K_Ca_Na,
+    f_Na,
+    K_Ca_K,
+    f_K,
+    Alk_in,
+):
+    """
+    Solvability equation: 0 = 2*Mg + 2*Ca + Na + K - Alk_in
+    """
+    return (
+        2*((Ca/f_Ca)*K_Ca_Mg*f_Mg)  # 2*Mg
+        + 2*Ca
+        + ((Ca/f_Ca)*K_Ca_Na)**0.5*f_Na  # Na
+        + ((Ca/f_Ca)*K_Ca_K)**0.5*f_K  # K
+        - Alk_in
+    )
+
+
+# SciPy only: unpack p[0] and return the scalar residual to fsolve.
+@njit(nogil=True, error_model="numpy")
+def f_cec_alk_to_conc_equation(
+    p,
+    f_Ca,
+    K_Ca_Mg,
+    f_Mg,
+    K_Ca_Na,
+    f_Na,
+    K_Ca_K,
+    f_K,
+    Alk_in,
+):
+    """
+    Solvability equation 0 = 2*Mg + 2*Ca + Na + K - Alk_in for the calcium ``p[0]``.
+    """
+    return f_cec_alk_to_conc_residual(
+        p[0],  # Ca
+        f_Ca,
+        K_Ca_Mg,
+        f_Mg,
+        K_Ca_Na,
+        f_Na,
+        K_Ca_K,
+        f_K,
+        Alk_in,
+    )
+
+
 # Fill out with 13 residuals; used by the SciPy wrapper and compiled cminpack callback.
 @njit(nogil=True, error_model="numpy")
 def total_to_cec_residual(

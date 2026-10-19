@@ -10,7 +10,7 @@ import numpy as np
 from numba import njit
 import smew
 from smew._utils import _solve_system
-from smew._utils import CEC_CALCIUM_SYSTEM, TOTAL_TO_CEC_SYSTEM, KELLAND_SYSTEM
+from smew._utils import CEC_CALCIUM_SYSTEM, F_CEC_ALK_TO_CONC_SYSTEM, TOTAL_TO_CEC_SYSTEM, KELLAND_SYSTEM
 from smew.errors import (
     ErrorCode, _float_text, _solver_error, raise_for_error,
 )
@@ -101,6 +101,76 @@ def f_CEC_to_conc(f_CEC_in, pH_in, soil, conv_mol,conv_Al):
     K_CEC = [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H]
 
     return conc_in, K_CEC
+
+
+#------------------------------------------------------------------------------
+ # CEC fractions and Alk for recalibrating K_Ca_H and concentrations
+
+def f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk_in, conv_mol,conv_Al):
+    """Calculate CEC fractions with Python/SciPy or Numba/cminpack."""
+    # Ensure inputs are contiguous float64 arrays for Numba compilation and C double* compatibility.
+    result, error_code, error_message = _f_CEC_Alk_to_conc(
+        np.ascontiguousarray(f_CEC_in, dtype=np.float64),
+        np.ascontiguousarray(K_CEC, dtype=np.float64),
+        pH_in, Alk_in, conv_mol, conv_Al
+    )
+    raise_for_error(error_code, error_message)
+    if error_message:
+        warnings.warn(error_message, RuntimeWarning, stacklevel=2)
+    return result
+
+
+@njit(nogil=True, error_model="numpy")
+def _f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk_in, conv_mol,conv_Al):
+
+    #pH
+    H = 10**(-pH_in)*conv_mol
+
+    #constants
+    K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H0 = K_CEC #CEC constants
+    K1, K2, K3, K4 = smew.K_Al(conv_mol) #Al speciation
+
+    #f_CEC [-]
+    f_Ca, f_Mg, f_K, f_Na, f_Al, f_H = f_CEC_in
+
+    # Initial guess
+    Ca = (f_Ca/K_Ca_H0) * (H/f_H)**2
+    # Use numpy array to store scalar (needed to retrieve the value by reference after the solver)
+    Ca = np.array((Ca,))
+    parameters = np.array((f_Ca, K_Ca_Mg, f_Mg, K_Ca_Na, f_Na, K_Ca_K, f_K, Alk_in))
+    residual = np.empty(1)
+    # Sized according to MINPACK hybrd scratchpad requirements: n*(3*n + 13)/2.
+    work = np.empty(8)
+    status = _solve_system(F_CEC_ALK_TO_CONC_SYSTEM, Ca, parameters, residual, work, 1.49012e-8)
+    # Extract the residual
+    Ca = Ca[0]
+    if status <= 0:
+        return _solver_error(
+            status, residual, ErrorCode.F_CEC_ALK_TO_CONC_RESIDUAL, ErrorCode.F_CEC_ALK_TO_CONC_SOLVER_INPUT,
+            'ic.f_CEC_Alk_to_conc'
+            + '; Initial guess (Ca) =' + _float_text(Ca)
+            + '; pH=' + _float_text(pH_in)
+            + ', f_Ca=' + _float_text(f_Ca)
+            + ', K_Ca_Mg=' + _float_text(K_Ca_Mg)
+            + ', f_Mg=' + _float_text(f_Mg)
+            + ', K_Ca_Na=' + _float_text(K_Ca_Na)
+            + ', f_Na=' + _float_text(f_Na)
+            + ', K_Ca_K=' + _float_text(K_Ca_K)
+            + ', f_K=' + _float_text(f_K)
+            + ', Alk_in=' + _float_text(Alk_in),
+        )
+
+    #return values
+    K_Ca_H = (f_Ca/Ca)*(H/f_H)**2
+    Mg = (Ca/f_Ca)*K_Ca_Mg*f_Mg
+    K = ((Ca/f_Ca)*K_Ca_K)**(1/2)*f_K
+    Na = ((Ca/f_Ca)*K_Ca_Na)**(1/2)*f_Na
+    Al = ((Ca/f_Ca)**3*K_Ca_Al)**(1/2)*f_Al*conv_Al
+    Al_w = Al/(H**4/(H**4+H**3*K1+H**2*K1*K2+H*K1*K2*K3+K1*K2*K3*K4))  #[mol_conv/l]
+    conc_in = [Ca, Mg, K, Na, Al_w]
+
+    return (conc_in, K_Ca_H), 0, ("MINPACK stopped with status " + str(status) if status != 1 else "")
+
 
 
 #------------------------------------------------------------------------------
