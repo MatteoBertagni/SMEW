@@ -83,6 +83,25 @@ def _float_text(value):
 
 
 @register_jitable
+def _series_diagnostic(name, values, dt):
+    """Summarize a full forcing series on failure, without dumping its values."""
+    count = 0
+    first = -1
+    for index in range(values.size):
+        if not np.isfinite(values[index]):
+            count += 1
+            if first == -1:
+                first = index
+    text = name + ': mean=' + _float_text(np.mean(values))
+    text += ', nonfinite_count=' + str(count)
+    if first != -1:
+        text += ', first_nonfinite_step=' + str(first)
+        text += ', first_nonfinite_time_days=' + _float_text(first * dt)
+        text += ', first_nonfinite_value=' + _float_text(values[first])
+    return text
+
+
+@register_jitable
 def _solver_error(status, residual, residual_code, input_code, context):
     """Return a failure triple without reading unwritten solver buffers."""
     code = residual_code if status == -1 else input_code

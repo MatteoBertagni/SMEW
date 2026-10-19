@@ -12,7 +12,7 @@ import smew
 from smew.ic import _f_CEC_Alk_to_conc
 from smew._utils import _solve_system
 from smew.errors import (
-    ErrorCode, _float_text, _solver_error, raise_for_error,
+    ErrorCode, _float_text, _series_diagnostic, _solver_error, raise_for_error,
 )
 from smew._utils import WATER_SYSTEM, HYDROGEN_SYSTEM, BIOGEOCHEM_SYSTEM
 from smew.weathering import _wetness_SA
@@ -587,7 +587,13 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
                     + ', previous_pH=' + _float_text(pH[i-1])
                     + ', previous_H=' + _float_text(H[i-1])
                     + ', trial_H=' + _float_text(scalar_guess[0])
-                    + ', alkalinity_guess=' + _float_text(Alk0),
+                    + ', alkalinity_guess=' + _float_text(Alk0)
+                    + ', Alk_tot=' + _float_text(Alk_tot[i])
+                    + ', previous_R_alk=' + _float_text(R_alk[i-1])
+                    + ', water_volume=' + _float_text(n*Zr*s[i]*1000)
+                    + '; ' + _series_diagnostic('s', s, dt)
+                    + '; ' + _series_diagnostic('T', T, dt)
+                    + '; ' + _series_diagnostic('L', L, dt),
                 )
             solver_status_counts[status] += 1
             H0_2 = scalar_guess[0]
