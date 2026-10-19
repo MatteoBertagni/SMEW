@@ -359,8 +359,15 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
     if An[0]<0:
         # TODO: add an option to either adjust the chemistry or raise an error
         print("Not enough cations for this alkalinity, adjusting chemistry...")
-        result, error_code, error_message = _f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk[0], conv_mol,conv_Al)
-        # TODO: manage error message ; solver_status_counts[status] += 1?
+        result, error_code, error_message, status = _f_CEC_Alk_to_conc(
+            f_CEC_in, K_CEC, pH_in, Alk[0], conv_mol, conv_Al
+        )
+        if error_code != 0:
+            return None, error_code, (
+                'biogeochem.initial_conditions; step=0, time_days=0; '
+                + error_message
+            )
+        solver_status_counts[status] += 1
         conc_in, K_Ca_H = result
         [Ca[0], Mg[0], K[0], Na[0], Al_w[0]] = conc_in
         # TODO: add a check to verify this?

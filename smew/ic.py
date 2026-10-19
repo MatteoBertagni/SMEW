@@ -109,7 +109,7 @@ def f_CEC_to_conc(f_CEC_in, pH_in, soil, conv_mol,conv_Al):
 def f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk_in, conv_mol,conv_Al):
     """Calculate CEC fractions with Python/SciPy or Numba/cminpack."""
     # Ensure inputs are contiguous float64 arrays for Numba compilation and C double* compatibility.
-    result, error_code, error_message = _f_CEC_Alk_to_conc(
+    result, error_code, error_message, _ = _f_CEC_Alk_to_conc(
         np.ascontiguousarray(f_CEC_in, dtype=np.float64),
         np.ascontiguousarray(K_CEC, dtype=np.float64),
         pH_in, Alk_in, conv_mol, conv_Al
@@ -122,6 +122,7 @@ def f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk_in, conv_mol,conv_Al):
 
 @njit(nogil=True, error_model="numpy")
 def _f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk_in, conv_mol,conv_Al):
+    """Return (result or None, error_code, error_message, solver_status)."""
 
     #pH
     H = 10**(-pH_in)*conv_mol
@@ -145,7 +146,7 @@ def _f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk_in, conv_mol,conv_Al):
     # Extract the residual
     Ca = Ca[0]
     if status <= 0:
-        return _solver_error(
+        _, error_code, error_message = _solver_error(
             status, residual, ErrorCode.F_CEC_ALK_TO_CONC_RESIDUAL, ErrorCode.F_CEC_ALK_TO_CONC_SOLVER_INPUT,
             'ic.f_CEC_Alk_to_conc'
             + '; Initial guess (Ca) =' + _float_text(Ca)
@@ -159,6 +160,7 @@ def _f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk_in, conv_mol,conv_Al):
             + ', f_K=' + _float_text(f_K)
             + ', Alk_in=' + _float_text(Alk_in),
         )
+        return None, error_code, error_message, status
 
     #return values
     K_Ca_H = (f_Ca/Ca)*(H/f_H)**2
@@ -169,7 +171,7 @@ def _f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk_in, conv_mol,conv_Al):
     Al_w = Al/(H**4/(H**4+H**3*K1+H**2*K1*K2+H*K1*K2*K3+K1*K2*K3*K4))  #[mol_conv/l]
     conc_in = [Ca, Mg, K, Na, Al_w]
 
-    return (conc_in, K_Ca_H), 0, ("MINPACK stopped with status " + str(status) if status != 1 else "")
+    return (conc_in, K_Ca_H), 0, ("MINPACK stopped with status " + str(status) if status != 1 else ""), status
 
 
 
