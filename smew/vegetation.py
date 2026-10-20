@@ -4,6 +4,7 @@ from numba import njit
 from numba.typed import List
 import numpy as np
 from numpy.typing import NDArray
+from smew.errors import ErrorCode, _float_text, raise_for_error
 
 
 @njit(nogil=True, error_model="numpy")
@@ -102,7 +103,6 @@ def veg(v_in, T_v, k_v, t0_v, temp_soil,dt):
     return(v)
 
 
-@njit(nogil=True, error_model="numpy")
 def veg_seasonal(
         growing_stage: NDArray[np.int8],
         k_v: float,
@@ -111,37 +111,91 @@ def veg_seasonal(
     """
     Calculates the seasonal vegetation growth and harvest with a logistic growth curve based on the carrying capacity
     ``k_v`` and the growing seasons provided by ``growing_stage``.
+    This Python entry point raises after the compiled calculation returns;
+    Numba callers should use ``veg_seasonal_numba`` and propagate its error code.
 
     :param growing_stage: A 1D NumPy array representing the sequential stages of the crop season (0 for off-season, 1 -
         4 for active stages). The function uses stage 2 to define the growth period and emergence and the end of stage 4
-        for the harvesting.
-    :param k_v: The vegetation carrying capacity (maximum vegetation).
-    :param f_v_in: The initial vegetation fraction (v_in = f_v_in * k_v).
+        for the harvesting. The calendar is assumed valid: stages must not decrease
+        within a season, and stage 0 separates seasons.
+        Seasons without stage 2 produce no biomass. Growth uses the same explicit Euler
+        logistic update as ``veg``, with time measured in simulation steps.
+    :param k_v: Finite, nonnegative vegetation carrying capacity.
+        Zero capacity produces zero biomass and harvest.
+    :param f_v_in: Finite initial vegetation fraction in (0, 1) (v_in = f_v_in * k_v).
     :return: A tuple containing two 1D NumPy arrays, both matching the length of the input ``growing_stage`` mask:
         * **v**: The vegetation value/biomass amount calculated via the logistic growth curve.
         * **harvest_out**: The harvested vegetation values, recorded exactly on the time step following the end of each
         growing season (all other time steps are 0.0).
     """
+    result, code, message = _veg_seasonal(
+        np.ascontiguousarray(growing_stage), k_v, f_v_in,
+    )
+    raise_for_error(code, message)
+    return result
+
+
+@njit(nogil=True, error_model="numpy")
+def _veg_seasonal(growing_stage, k_v, f_v_in):
+    """Return ((biomass, harvest) or None, code, message).
+
+    growing_stage must be a valid one-dimensional calendar; it is not validated here.
+    Compiled parents must propagate a nonzero code and raise only after returning to Python.
+    """
+    if not np.isfinite(k_v) or k_v < 0:
+        return None, ErrorCode.VEGETATION_CAPACITY.value, (
+            "veg_seasonal: k_v must be finite and nonnegative"
+            + "; k_v=" + _float_text(k_v)
+        )
+    if not np.isfinite(f_v_in) or f_v_in <= 0 or f_v_in >= 1:
+        return None, ErrorCode.VEGETATION_INITIAL_FRACTION.value, (
+            "veg_seasonal: f_v_in must be finite and in (0, 1)"
+            + "; f_v_in=" + _float_text(f_v_in)
+        )
     v = np.zeros(len(growing_stage), dtype=np.float32)
     h = np.zeros(len(growing_stage), dtype=np.float32)
+    if k_v == 0:
+        return (v, h), 0, ""
 
-    starts_season, ends_season = get_season_boundaries(growing_stage)
+    _, ends_season = get_season_boundaries(growing_stage)
     starts_growing, ends_growing = get_stage_boundaries(growing_stage, 2)  # stage 2 is the growing period
+
+    # Match each emergence to the first season end strictly after it.
+    ends_season = ends_season[np.searchsorted(ends_season, starts_growing, side="right")]
+
+    # limit the vegetation growth to the carrying capacity, save here to avoid repetitive float32 casts
+    k_v_limit = np.float32(k_v)
 
     for emergence, growth, harvest in zip(starts_growing, ends_growing, ends_season):
         v[emergence] = k_v * f_v_in  # emergence from soil
-        T_v = growth - emergence  # typical growth time
+        T_v = growth - emergence  # typical growth time, in simulation steps
+        if T_v <= 0:
+            return None, ErrorCode.VEGETATION_GROWTH.value, (
+                "veg_seasonal: T_v must be positive"
+                + "; step=" + str(emergence) + ", T_v=" + str(T_v)
+            )
         # ``harvest`` is the exclusive end of a season. If the final season
         # continues to the end of the input, there is no following harvest
         # step, so stop growth at the last available sample.
         growth_end = min(harvest, len(growing_stage) - 1)
         for i in range(emergence + 1, growth_end + 1):
             v[i] = v[i-1] + (6/(T_v*k_v))*v[i-1]*(k_v-v[i-1])
+            if not np.isfinite(v[i]):
+                return None, ErrorCode.VEGETATION_GROWTH.value, (
+                    "veg_seasonal: nonfinite biomass from the logistic update"
+                    + "; step=" + str(i) + ", T_v=" + str(T_v)
+                    + ", k_v=" + _float_text(k_v)
+                )
+            # cap to prevent numerical artifacts with low time resolution to overshoot the carrying capacity
+            v[i] = min(v[i], k_v_limit)
         # check if harvest is included in the time axis (for the last harvest)
         if harvest + 1 < len(growing_stage):
             h[harvest + 1] = v[harvest]
 
-    return v, h  # type: ignore
+    return (v, h), 0, ""
+
+
+veg_seasonal_numba = _veg_seasonal
 
 
 #------------------------------------------------------------------------------

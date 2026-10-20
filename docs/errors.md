@@ -4,7 +4,7 @@ TODO: build proper sphinx doc
 
 `ErrorCode` values are globally unique and grouped by component: 1000–1999
 for biogeochemistry, 2000–2999 for respiration, and 3000–3999 for initialization
-solvers, and 4000–4999 for weathering. Zero means success. Published codes
+solvers, 4000–4999 for weathering, and 5000–5999 for vegetation. Zero means success. Published codes
 must not be renumbered or reused.
 Compare enum members in code rather than parsing error messages.
 
@@ -60,6 +60,7 @@ The public compiled entry points are:
 
 - `smew.biogeochem_balance_numba`
 - `smew.respiration_numba`
+- `smew.veg_seasonal_numba`
 - `smew.conc_to_f_CEC_numba`
 - `smew.total_to_f_CEC_and_conc_numba`
 - `smew.Kelland_numba`
@@ -76,6 +77,10 @@ Use the code to distinguish failure from success. Successful biogeochemistry
 results are `(name, value)` pairs, converted to a dictionary by its Python
 wrapper. Other entry points preserve their numerical result tuples/lists.
 Partial trajectories are not returned on failure.
+
+For seasonal vegetation, Python code calls `smew.veg_seasonal(...)` and receives
+`(biomass, harvest)`. Compiled code calls `smew.veg_seasonal_numba(...)`, checks
+the returned code before unpacking the result, and propagates any failure.
 
 Both Python and compiled entry points assume valid model inputs. The error
 contract covers numerical failures during computation. Input requirements are:
@@ -96,6 +101,11 @@ contract covers numerical failures during computation. Input requirements are:
   when pores are not provided.
 - Respiration uses nonempty moisture, vegetation, and temperature arrays of
   equal length, with a supported soil name.
+- Seasonal vegetation takes a one-dimensional numeric stage array (normally
+  contiguous `int8`). The calendar is assumed valid: stages 0–4, nondecreasing
+  within each season, with stage 0 separating seasons. Invalid capacity, initial
+  fraction or a nonfinite logistic update return vegetation error codes.
+  Successful results are `(biomass, harvest)`.
 - Initialization solvers use 5 concentrations, 4 totals where applicable,
   nonempty moisture arrays where applicable, and a soil supported by the CEC
   constants (`smew.K_GT_CEC`).
