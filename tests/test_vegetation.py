@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from numba import config, njit
+from numba import njit
 
 import smew
 
@@ -148,22 +148,3 @@ def test_compiled_parent_returns_same_biomass_as_python_wrapper(capacity):
     assert code == 0 and message == ""
     for actual, expected in zip(result, smew.veg_seasonal(stages, capacity, .1)):
         np.testing.assert_array_equal(actual, expected)
-
-
-@pytest.mark.skipif(config.DISABLE_JIT or not config.NRT_STATS, reason="Requires compiled NRT allocation counters")
-@pytest.mark.parametrize("capacity", [-1., 0., 10.])
-def test_compiled_parent_releases_arrays_on_success_and_failure(capacity):
-    from tests.numba_probe import check_released
-
-    stages = np.array([0, 1, 2, 3, 4, 0, 0], dtype=np.int8)
-    check_released(lambda: _parent_vegetation(stages, capacity, .05))
-
-
-@pytest.mark.skipif(config.DISABLE_JIT or not config.NRT_STATS, reason="Requires compiled NRT allocation counters")
-def test_compiled_parent_releases_arrays_after_growth_failure():
-    from tests.numba_probe import check_released
-
-    stages = np.array([2] + [3] * 20 + [4, 0, 0], dtype=np.int8)
-    result, code, message = _parent_vegetation(stages, 2e38, .5)
-    assert result is None and code == smew.ErrorCode.VEGETATION_GROWTH
-    check_released(lambda: _parent_vegetation(stages, 2e38, .5))

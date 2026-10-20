@@ -9,7 +9,8 @@ import pytest
 from numba import config
 
 import smew
-from tests.numba_probe import collect_outputs
+from tests.numba_probe import check_released, collect_outputs
+from tests.test_vegetation import _parent_vegetation
 
 pytestmark = pytest.mark.xdist_group("numba_modes")
 
@@ -112,3 +113,18 @@ def test_cumulative_area_preserves_trapezoidal_integral():
     actual_grid, actual = smew.normalized_cumulative_area(x, y)
     np.testing.assert_array_equal(actual_grid, grid)
     np.testing.assert_allclose(actual, cumulative / cumulative[-1], rtol=1e-15)
+
+
+@pytest.mark.skipif(config.DISABLE_JIT or not config.NRT_STATS, reason="Requires compiled NRT allocation counters")
+@pytest.mark.parametrize("capacity", [-1., 0., 10.])
+def test_compiled_parent_releases_arrays_on_success_and_failure(capacity):
+    stages = np.array([0, 1, 2, 3, 4, 0, 0], dtype=np.int8)
+    check_released(lambda: _parent_vegetation(stages, capacity, .05))
+
+
+@pytest.mark.skipif(config.DISABLE_JIT or not config.NRT_STATS, reason="Requires compiled NRT allocation counters")
+def test_compiled_parent_releases_arrays_after_growth_failure():
+    stages = np.array([2] + [3] * 20 + [4, 0, 0], dtype=np.int8)
+    result, code, message = _parent_vegetation(stages, 2e38, .5)
+    assert result is None and code == smew.ErrorCode.VEGETATION_GROWTH
+    check_released(lambda: _parent_vegetation(stages, 2e38, .5))

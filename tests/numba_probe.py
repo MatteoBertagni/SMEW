@@ -238,10 +238,14 @@ def collect_outputs(*, helpers_only=False):
                 RuntimeError, "Residual evaluation failed",
                 smew.ErrorCode.CHEMISTRY_RESIDUAL,
             )
+            # High alkalinity now invokes the CEC correction. Force its residual
+            # to fail and check that the nested error propagates without leaking.
+            invalid_cec = np.asarray(inputs["K_CEC"]).copy()
+            invalid_cec[0] = np.nan
             check_released(
-                lambda: original(**{**inputs, "pH_in": 12.}),
-                ValueError, "Not enough cations",
-                smew.ErrorCode.BIOGEOCHEM_INSUFFICIENT_CATIONS,
+                lambda: original(**{**inputs, "pH_in": 12., "K_CEC": invalid_cec}),
+                RuntimeError, "ic.f_CEC_Alk_to_conc",
+                smew.ErrorCode.F_CEC_ALK_TO_CONC_RESIDUAL,
             )
             check_released(
                 lambda: original(**{
