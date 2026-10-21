@@ -9,7 +9,8 @@ import warnings
 import numpy as np
 from numba import njit
 import smew
-from smew._utils import _solve_system
+from smew._utils import _solve_system, _solver_work_size
+from smew.equations import BIOGEOCHEM_N_UNKNOWNS
 from smew.errors import (
     ErrorCode, _float_text, _solver_error, raise_for_error,
 )
@@ -110,11 +111,9 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
             "They can be estimated with: pore_d_in, pore_pdf_in = smew.soil_pore_pdf(soil)."
         )
     # Pre-allocate scratchpads once outside the time loop to prevent GC overhead.
-    # Work buffer size satisfies MINPACK's n*(3*n + 13)/2 requirement for the 16-variable system.
-    # Scalar solves reuse views of these buffers without triggering heap allocation.
-    solver_work = np.empty(16 * 16 + 16 * (16 + 1) // 2 + 6 * 16)
-    solver_residual = np.empty(16)
-    solver_state = np.empty(16)
+    solver_state = np.empty(BIOGEOCHEM_N_UNKNOWNS)
+    solver_residual = np.empty(solver_state.size)
+    solver_work = np.empty(_solver_work_size(solver_state.size))
     solver_parameters = np.empty(25)
     # Scalar solves use views of the same buffers, without further allocation.
     scalar_residual = solver_residual[:1]

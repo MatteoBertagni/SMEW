@@ -12,6 +12,12 @@ this file directly; compiled runs require a Cython rebuild after edits.
 import numpy as np
 from numba import njit
 
+# Number of unknowns in each vector system. Update alongside the residuals,
+# initial guesses, and solution unpacking when adding or removing unknowns.
+BIOGEOCHEM_N_UNKNOWNS = 16
+TOTAL_TO_CEC_N_UNKNOWNS = 13
+KELLAND_N_UNKNOWNS = 5
+
 # p contains trial values; out receives residuals in place.
 # Keep state indices and buffer sizes consistent with callers when adding unknowns.
 # After edits, rebuild with `make install-native` and check with `make test`.
@@ -157,7 +163,7 @@ def biogeochem_equations(
     K_Ca_K,
     K_Ca_H,
 ):
-    out = np.empty(16)
+    out = np.empty(BIOGEOCHEM_N_UNKNOWNS)
     biogeochem_residual(
         p,
         Alk_tot,
@@ -339,7 +345,7 @@ def total_to_cec_equations(
     K_Ca_K,
     K_Ca_H,
 ):
-    out = np.empty(13)
+    out = np.empty(TOTAL_TO_CEC_N_UNKNOWNS)
     total_to_cec_residual(
         p,
         H,
@@ -427,7 +433,7 @@ def kelland_equations(
     K_Ca_Al,
     K_Ca_H,
 ):
-    out = np.empty(5)
+    out = np.empty(KELLAND_N_UNKNOWNS)
     kelland_residual(
         p,
         Al_w,

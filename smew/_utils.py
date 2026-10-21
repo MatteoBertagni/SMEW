@@ -6,6 +6,7 @@ import warnings
 
 import numpy as np
 from scipy.optimize import fsolve
+from numba import njit
 from numba.extending import overload
 from smew.equations import (
     water_equations, h_equations, biogeochem_equations,
@@ -21,6 +22,12 @@ BIOGEOCHEM_SYSTEM = 2
 CEC_CALCIUM_SYSTEM = 3
 TOTAL_TO_CEC_SYSTEM = 4
 KELLAND_SYSTEM = 5
+
+
+@njit
+def _solver_work_size(n_unknowns):
+    """Number of float64 values required by MINPACK hybrd's work buffer."""
+    return n_unknowns * (3 * n_unknowns + 13) // 2
 
 
 # Execution contract: operates as the pure-Python fallback using SciPy's fsolve.

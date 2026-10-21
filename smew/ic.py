@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 from numba import njit
 import smew
-from smew._utils import _solve_system
+from smew._utils import _solve_system, _solver_work_size
 from smew._utils import CEC_CALCIUM_SYSTEM, TOTAL_TO_CEC_SYSTEM, KELLAND_SYSTEM
 from smew.errors import (
     ErrorCode, _float_text, _solver_error, raise_for_error,
@@ -47,9 +47,8 @@ def _conc_to_f_CEC(conc_in, pH_in, soil, conv_mol, conv_Al):
     #CEC fractions
     f_Ca = np.array((0.2,))
     parameters = np.array((Al, conv_Al, Ca, Mg, Na, K, H, K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H))
-    residual = np.empty(1)
-    # Sized according to MINPACK hybrd scratchpad requirements: n*(3*n + 13)/2.
-    work = np.empty(8)
+    residual = np.empty(f_Ca.size)
+    work = np.empty(_solver_work_size(f_Ca.size))
     status = _solve_system(CEC_CALCIUM_SYSTEM, f_Ca, parameters, residual, work, 1.49012e-8)
     if status <= 0:
         return _solver_error(
@@ -179,10 +178,8 @@ def _total_to_f_CEC_and_conc(
         Ca_tot, Mg_tot, K_tot, Na_tot, f_acid, K_Ca_Al,
         K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H,
     ))
-    residual = np.empty(13)
-    # Sized according to MINPACK hybrd scratchpad requirements: n*(3*n + 13)/2.
-    # 13 * 13 + 13 * (13 + 1) // 2 + 6 * 13 = 338
-    work = np.empty(338)
+    residual = np.empty(x0.size)
+    work = np.empty(_solver_work_size(x0.size))
     status = _solve_system(TOTAL_TO_CEC_SYSTEM, x0, parameters, residual, work, 1e-14)
     if status <= 0:
         return _solver_error(
@@ -286,10 +283,8 @@ def _Kelland(total_in, pH_in, conc_in, s, soil, n, Zr, CEC_tot, conv_mol, conv_A
         Al_w, Al, H, Ca, Ca_tot, f_Mg, f_K, f_Na, n, Zr,
         s[0], CEC_tot, conv_Al, K_Ca_Al, K_Ca_H,
     ))
-    residual = np.empty(5)
-    # Sized according to MINPACK hybrd scratchpad requirements: n*(3*n + 13)/2.
-    # 5 * 5 + 5 * (5 + 1) // 2 + 6 * 5 = 70
-    work = np.empty(70)
+    residual = np.empty(x0.size)
+    work = np.empty(_solver_work_size(x0.size))
     status = _solve_system(KELLAND_SYSTEM, x0, parameters, residual, work, 1e-14)
     if status <= 0:
         return _solver_error(
