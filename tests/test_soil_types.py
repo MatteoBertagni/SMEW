@@ -13,7 +13,10 @@ SOIL_GROUPS = (
     ("loam", "loam"),
     ("silt loam", "loam"),
     ("silt", "loam"),
+    ("sandy clay loam", "loam"),
+    ("silty clay loam", "loam"),
     ("clay loam", "clay"),
+    ("sandy clay", "clay"),
     ("silty clay", "clay"),
     ("clay", "clay"),
 )
@@ -47,7 +50,7 @@ def test_legacy_silty_loam_cec_alias_is_preserved():
     )
 
 
-@pytest.mark.parametrize("soil", ("peat", "sandy clay loam", "silty clay loam", "sandy clay"))
+@pytest.mark.parametrize("soil", ("peat",))
 def test_unsupported_cec_soil_reports_input_and_supported_names(soil):
     with pytest.raises(ValueError) as caught:
         smew.K_GT_CEC(soil, 1.)

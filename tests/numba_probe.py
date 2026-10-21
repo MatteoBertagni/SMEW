@@ -76,16 +76,11 @@ def collect_outputs(*, helpers_only=False):
         "sand", "loamy sand", "sandy loam", "loam", "silt", "silt loam",
         "sandy clay loam", "silty clay loam", "clay loam", "sandy clay", "silty clay", "clay",
     )
-    # CEC coefficients are unavailable for three hydrology/pore textures.
-    cec_soil_names = tuple(
-        soil for soil in soil_names
-        if soil not in ("sandy clay loam", "silty clay loam", "sandy clay")
-    )
     for soil in soil_names:
         record("soil/" + soil, smew.soil_const(soil))
         for model in ("ding2016", "campbell"):
             record(f"pores/{soil}/{model}", smew.soil_pore_pdf(soil, model, 50))
-    for soil in cec_soil_names:
+    for soil in soil_names:
         record("K_GT_CEC/" + soil, smew.K_GT_CEC(soil, 1.))
     call(soil_pores._gradient, np.array([1., 2., 8., 10.]), np.array([0., .2, 1., 2.]))
     for fn in (smew.D_0, smew.Dw_0, smew.plant_nutr_f):
@@ -141,7 +136,7 @@ def collect_outputs(*, helpers_only=False):
     for rain in (smew.rain_stoc(.2, .01, 365., 1.), smew.rain_stoc_season(np.full(12, .2), np.full(12, .01), 365., 1.)):
         assert rain.shape == (365,) and np.isfinite(rain).all() and (rain >= 0.).all()
     fractions = np.array([.6, .2, .08, .05, .04, .03])
-    for soil in cec_soil_names:
+    for soil in soil_names:
         record("f_CEC_to_conc/" + soil, smew.f_CEC_to_conc(fractions, 6., soil, 1., 1.))
     conc, _ = call(smew.f_CEC_to_conc, fractions, 6., "loam", 1., 1.)
     call(smew.f_CEC_and_conc_to_K, fractions, np.asarray(conc), 6., "loam", 1., 1.)
