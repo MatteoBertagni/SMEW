@@ -4,6 +4,8 @@
 Created on Mon Dec 16 14:34:44 2019
 """
 
+import warnings
+
 import numpy as np
 import smew
 from scipy.optimize import fsolve
@@ -11,8 +13,12 @@ from smew.equations import water_equations, h_equations, biogeochem_equations
 #minimize, least_squares, newton_krylov, broyden1, root, broyden2
 
 def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, M_rock_in2, t_app2, mineral2, rock_f_in2, d_in2, psd_perc_in2, SSA_in2, diss_f, dt, conv_Al, conv_mol, keyword_add):
+    warnings.warn(
+        "biogeochem_balance2psd is deprecated and will be removed in a future release.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
-            
     # Preallocating the variables
     pH = np.zeros(len(s))
     H = np.zeros(len(s))
@@ -234,7 +240,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
         def equations(p):
             return water_equations(p, Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i])
         
-        H_rain[i] = fsolve(equations, 10**-6*conv_mol) # [mol/l]
+        H_rain[i] = fsolve(equations, 10**-6*conv_mol)[0] # [mol/l]
         DIC_rain[i]=CO2_w_rain[i]+k1[i]*CO2_w_rain[i]/H_rain[i]+k2[i]*k1[i]*CO2_w_rain[i]/(H_rain[i]**2)
     
 #------------------------------------------------------------------------------            
@@ -356,9 +362,9 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
             for j in range(0, number_min):
                 Omega[j,0] = smew.sil_Omega(mineral[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp[j], conv_mol,conv_Al) #[-]
                 #weathering rate [mol-conv/ m2 d]                
-                Wr[j,0]= smew.sil_Wr(mineral[j], Omega[j,0], s[0], H[0], k_H_T[j,0], k_w_T[j,0],k_OH_T[j,0], n_H[j], n_OH[j], diss_f,  conv_mol) 
+                Wr[j,0]= smew.sil_Wr(mineral[j], Omega[j,0], H[0], k_H_T[j,0], k_w_T[j,0],k_OH_T[j,0], n_H[j], n_OH[j], diss_f,  conv_mol)
                 #weathering flux [mol-conv/d] 
-                EW[j,0] = Wr[j,0]*SA[0]*rock_f[j,0]
+                EW[j,0] = Wr[j,0]*SA[0]*rock_f[j,0]*s[0]
 
     #Silicate weathering SECOND PSD
     if M_rock_in2 > 0:
@@ -395,9 +401,9 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
             for j in range(0, number_min2):
                 Omega2[j,0] = smew.sil_Omega(mineral2[j], Ca[0], Mg[0], K[0], Na[0], Al[0], AlOH4[0], Si[0], H[0], K_sp2[j], conv_mol,conv_Al) #[-]
                 #weathering rate [mol-conv/ m2 d]                
-                Wr2[j,0]= smew.sil_Wr(mineral2[j], Omega2[j,0], s[0], H[0], k_H_T2[j,0], k_w_T2[j,0],k_OH_T2[j,0], n_H2[j], n_OH2[j], diss_f,  conv_mol) 
+                Wr2[j,0]= smew.sil_Wr(mineral2[j], Omega2[j,0], H[0], k_H_T2[j,0], k_w_T2[j,0],k_OH_T2[j,0], n_H2[j], n_OH2[j], diss_f,  conv_mol)
                 #weathering flux [mol-conv/d] 
-                EW2[j,0] = Wr2[j,0]*SA2[0]*rock_f2[j,0]
+                EW2[j,0] = Wr2[j,0]*SA2[0]*rock_f2[j,0]*s[0]
                 
 #------------------------------------------------------------------------------
     #SYSTEM RESOLUTION
@@ -501,7 +507,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
                 #saturation and weathering rate
                 for j in range(0, number_min):
                     Omega[j,i] = smew.sil_Omega(mineral[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp[j], conv_mol,conv_Al) #[-]           
-                    Wr[j,i]= smew.sil_Wr(mineral[j], Omega[j,i], s[i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol) 
+                    Wr[j,i]= smew.sil_Wr(mineral[j], Omega[j,i], H[i], k_H_T[j,i], k_w_T[j,i],k_OH_T[j,i], n_H[j], n_OH[j], diss_f,  conv_mol)
 
                 #post application only
                 if i> tt_app:
@@ -521,7 +527,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
                     [lamb[:,i], SSA[:,i], psd[:,i], SA[i]] = smew.psd_evol(d[:,i], delta_d[:,i], d[:,i-1], delta_d[:,i-1], psd[:,i-1], n_d_cl, a, b, rho_rock)
                  
                 #weathering fluxes         
-                EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i] # [mol/d]
+                EW[:,i] = Wr[:,i]*SA[i]*rock_f[:,i]*s[i] # [mol/d]; linear wet-surface scaling
 
          #Silicate weathering PSD2
             if M_rock_in2 > 0:
@@ -529,7 +535,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
                 #saturation and weathering rate
                 for j in range(0, number_min2):
                     Omega2[j,i] = smew.sil_Omega(mineral2[j], Ca[i], Mg[i], K[i], Na[i], Al[i], AlOH4[i], Si[i], H[i], K_sp2[j], conv_mol,conv_Al)          
-                    Wr2[j,i]= smew.sil_Wr(mineral2[j], Omega2[j,i], s[i], H[i], k_H_T2[j,i], k_w_T2[j,i],k_OH_T2[j,i], n_H2[j], n_OH2[j], diss_f,  conv_mol) 
+                    Wr2[j,i]= smew.sil_Wr(mineral2[j], Omega2[j,i], H[i], k_H_T2[j,i], k_w_T2[j,i],k_OH_T2[j,i], n_H2[j], n_OH2[j], diss_f,  conv_mol)
 
                 #post application only
                 if i> tt_app2:
@@ -549,7 +555,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
                     [lamb2[:,i], SSA2[:,i], psd2[:,i], SA2[i]] = smew.psd_evol(d2[:,i], delta_d2[:,i], d2[:,i-1], delta_d2[:,i-1], psd2[:,i-1], n_d_cl2, a2, b, rho_rock)
                  
                 #weathering fluxes         
-                EW2[:,i] = Wr2[:,i]*SA2[i]*rock_f2[:,i] # [mol/d]
+                EW2[:,i] = Wr2[:,i]*SA2[i]*rock_f2[:,i]*s[i] # [mol/d]; linear wet-surface scaling
                     
 
     data = {k: v for k, v in locals().items()}
