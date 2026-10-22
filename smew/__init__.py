@@ -1,6 +1,8 @@
 
 import smew
 
+from smew._version import __version__
+
 from smew.biogeochem import (
     biogeochem_balance,
     biogeochem_balance_numba,
