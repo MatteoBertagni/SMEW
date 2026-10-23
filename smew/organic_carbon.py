@@ -4,11 +4,28 @@
 Created on Mon Dec 16 12:19:42 2019
 """
 import numpy as np
+from numba import njit
 import smew
-from statistics import mean
+from smew.errors import ErrorCode, _float_text, raise_for_error
+
 
 def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, temp_soil,dt,conv_mol, tau_OC=None):
-      
+    """Calculate respiration, reporting failures after compiled arrays are freed."""
+    s, v, temp_soil = (np.ascontiguousarray(a, dtype=np.float64) for a in (s, v, temp_soil))
+    result, error_code, error_message = _respiration(
+        ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr,
+        temp_soil, dt, conv_mol, tau_OC,
+    )
+    raise_for_error(error_code, error_message)
+    return result
+
+
+@njit(nogil=True, error_model="numpy")
+def _respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, temp_soil, dt, conv_mol, tau_OC=None):
+    """Return (results or None, error_code, error_message) for valid inputs.
+
+    Arrays must be nonempty, matching 1D float64 arrays; soil must be supported.
+    """
     # Preallocating the variables
     f_s = np.zeros(len(s))
     f_T = np.zeros(len(s))
@@ -39,8 +56,6 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
 
     if np.any(temp_active > 0.0):
         f_T = temp_active / np.mean(temp_active[temp_active > 0.0])
-    else:
-        f_T = 0.0
        
     #CO2 gas-diffusion baricenter
     if Zr <= 0.3:
@@ -59,9 +74,15 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
             Fs_in = (D[0]*1000/(Z_CO2))*(CO2_air_in - CO2_atm) # [mol-conv/m2] 
             activity0 = f_s[0] * f_T[0] * (1.0 + ratio_aut_het * v[0] / k_v)
             if activity0 <= 0.0:
-                raise ValueError("Cannot estimate k_dec from CO2_air_in when the initial soil is "
-                                 "frozen or biologically inactive. Provide tau_OC or start from an "
-                                 "unfrozen active timestep.")
+                return None, ErrorCode.RESPIRATION_INITIAL_ACTIVITY.value, (
+                    'respiration.initial_conditions: Cannot estimate k_dec from CO2_air_in '
+                    'when the initial soil is frozen or biologically inactive. '
+                    'Provide tau_OC or start from an unfrozen active timestep.; step=0, time_days=0'
+                    + ', activity=' + _float_text(activity0)
+                    + ', s=' + _float_text(s[0])
+                    + ', temp_soil=' + _float_text(temp_soil[0])
+                    + ', SOC=' + _float_text(SOC[0])
+                )
             k_dec = MM_C * Fs_in / (r * Zr * activity0 * SOC[0])
 
     # mean decomposition activity
@@ -69,12 +90,18 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
     mean_f_dec = np.mean(f_dec)
 
     if mean_f_dec <= 0.0:
-        raise ValueError("Mean decomposition activity is zero. Cannot estimate ADD or SOC "
-            "from steady-state balance.")
+        return None, ErrorCode.RESPIRATION_MEAN_ACTIVITY.value, (
+            'respiration.steady_state: Mean decomposition activity is zero. '
+            'Cannot estimate ADD or SOC from steady-state balance.'
+            + '; mean_activity=' + _float_text(mean_f_dec)
+        )
 
     # ADD estimate for qs-equilibrium (in absence of data)
+    # Use a numeric local rather than reassigning optional ADD, which Numba cannot type.
     if ADD is None and SOC[0] is not None:
-        ADD = r * Zr * k_dec * mean_f_dec * SOC[0]  # [gOC/(m2*d)]
+        add_rate = r * Zr * k_dec * mean_f_dec * SOC[0]  # [gOC/(m2*d)]
+    else:
+        add_rate = ADD
 
     # SOC estimate for qs-equilibrium (in absence of data)
     if SOC_in is None and ADD is not None:
@@ -83,11 +110,14 @@ def respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, tem
     # OC equation
     DEC[0] = k_dec*f_T[0]*f_s[0]*SOC[0]
     for i in range(1, len(s)):
-        SOC[i] = SOC[i-1]+(ADD/Zr-r*DEC[i-1])*dt               
+        SOC[i] = SOC[i-1]+(add_rate/Zr-r*DEC[i-1])*dt               
         DEC[i] = k_dec*f_T[i]*f_s[i]*SOC[i] # [gOC/(m3*d)]
         
     #CO2 respiration 
     r_het = r*DEC*Zr/MM_C #mol-conv/ m2 d 
     r_aut = ratio_aut_het*r_het*v/k_v #if this changes, the initial equilibrium condition above must be changed
                          
-    return(SOC, r_het, r_aut, D)
+    return (SOC, r_het, r_aut, D), 0, ""
+
+
+respiration_numba = _respiration

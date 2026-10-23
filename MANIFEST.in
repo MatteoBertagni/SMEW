@@ -1,0 +1,8 @@
+graft third_party/cminpack
+include smew/equations.pxd
+include smew/_native/_minpack.pyx
+include Makefile
+recursive-include tests *.py *.toml
+include tests/README.md
+prune build
+global-exclude __pycache__ *.py[cod] *.so *.pyd *.nbc *.nbi
