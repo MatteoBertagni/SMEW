@@ -4,5 +4,12 @@ include smew/_native/_minpack.pyx
 include Makefile
 recursive-include tests *.py *.toml
 include tests/README.md
+include docs/conf.py
+include Example.ipynb
+recursive-include docs *.rst *.ipynb *.css
+include images/SMEW_logo.png
+prune docs/_build
+prune docs/_generated
+prune docs/diagrams
 prune build
 global-exclude __pycache__ *.py[cod] *.so *.pyd *.nbc *.nbi

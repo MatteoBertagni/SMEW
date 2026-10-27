@@ -142,7 +142,7 @@ def _total_to_f_CEC_and_conc(
     conv_mol,
     conv_Al,
 ):
-    """Return (results or None, error_code, error_message) for valid inputs; see docs/errors.md."""
+    """Return (results or None, error_code, error_message) for valid inputs; see docs/errors.rst."""
     #constants 
     K_CEC = smew.K_GT_CEC(soil, conv_mol)  #CEC Gaines-Thomas
     K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
@@ -251,7 +251,7 @@ def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
 
 @njit(nogil=True, error_model="numpy")
 def _Kelland(total_in, pH_in, conc_in, s, soil, n, Zr, CEC_tot, conv_mol, conv_Al):
-    """Return (results or None, error_code, error_message) for valid inputs; see docs/errors.md."""
+    """Return (results or None, error_code, error_message) for valid inputs; see docs/errors.rst."""
     #constants 
     K_CEC = smew.K_GT_CEC(soil, conv_mol)  #CEC Gaines-Thomas
     K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
