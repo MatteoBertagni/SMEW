@@ -225,6 +225,14 @@ def collect_outputs(*, helpers_only=False):
             for inputs in simulation_inputs:
                 check_released(lambda: original(**inputs))
             inputs = simulation_inputs[0]
+            # Rain and the alternative soil H estimate share the same error code,
+            # while their messages retain the stage that failed.
+            for field, context in (("temp_soil", "biogeochem.rainwater"),
+                                   ("r_het", "biogeochem.hydrogen")):
+                check_released(
+                    lambda: original(**{**inputs, field: np.full_like(inputs[field], np.nan)}),
+                    RuntimeError, context, smew.ErrorCode.WATER_ALK_RESIDUAL,
+                )
             check_released(
                 lambda: original(**{**inputs, "conc_in": [0.] * 5}),
                 RuntimeError, "Residual evaluation failed",

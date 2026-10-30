@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 import smew
-from smew.equations import water_equations
+from smew.equations import water_alk_equations
 
 
 @pytest.mark.parametrize("rock_mass", (0., 1.))
@@ -37,11 +37,18 @@ def test_two_application_model_warns_and_preserves_rate_flux_contract(rock_mass)
     assert np.isfinite(result["pH"]).all()
     assert (result["H_rain"] > 0.).all()
     for i, hydrogen in enumerate(result["H_rain"]):
-        residual = water_equations(
+        residual = water_alk_equations(
             np.array([hydrogen]), 0., result["k1"][i], result["k2"][i],
             result["CO2_w_rain"][i], result["k_w"][i],
         )
         assert abs(residual) < 1e-12
+    # The last timestep also solves the same balance at the soil's trial Alk0.
+    assert result["H0_2"] > 0.
+    residual = water_alk_equations(
+        np.array([result["H0_2"]]), result["Alk0"], result["k1"][-1],
+        result["k2"][-1], result["CO2_w0"], result["k_w"][-1],
+    )
+    assert abs(residual) < 1e-12
     assert result["M_rock"][0] == rock_mass
     assert result["M_rock2"][0] == rock_mass
 

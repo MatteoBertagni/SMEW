@@ -16,6 +16,8 @@ def test_error_codes_are_unique():
 
 
 @pytest.mark.parametrize("code,base", [
+    (smew.ErrorCode.WATER_ALK_RESIDUAL, RuntimeError),
+    (smew.ErrorCode.WATER_ALK_SOLVER_INPUT, ValueError),
     (smew.ErrorCode.CHEMISTRY_NO_CONVERGENCE, ValueError),
     (smew.ErrorCode.CHEMISTRY_RESIDUAL, RuntimeError),
 ])
@@ -77,13 +79,33 @@ def test_respiration_reports_initial_state():
 @njit
 def _invalid_solver_error():
     # Unwritten scratch memory must not appear in diagnostics.
-    return _solver_error(np.int32(-2), np.empty(1), smew.ErrorCode.RAIN_RESIDUAL,
-                         smew.ErrorCode.RAIN_SOLVER_INPUT, "biogeochem.rainwater")
+    return _solver_error(np.int32(-2), np.empty(1), smew.ErrorCode.WATER_ALK_RESIDUAL,
+                         smew.ErrorCode.WATER_ALK_SOLVER_INPUT, "biogeochem.rainwater")
 
 
 def test_invalid_solver_buffers_have_no_residual_measurement():
     result, code, message = _invalid_solver_error()
     assert result is None
-    assert code == smew.ErrorCode.RAIN_SOLVER_INPUT
+    assert code == smew.ErrorCode.WATER_ALK_SOLVER_INPUT
     assert "solver_status=-2" in message
     assert "max_abs_residual=" not in message
+
+
+@njit
+def _water_alk_residual_error(context):
+    return _solver_error(
+        np.int32(-1), np.array([np.nan]), smew.ErrorCode.WATER_ALK_RESIDUAL,
+        smew.ErrorCode.WATER_ALK_SOLVER_INPUT, context,
+    )
+
+
+@pytest.mark.parametrize("context", ("biogeochem.rainwater", "biogeochem.hydrogen"))
+def test_water_alk_failure_preserves_solve_context(context):
+    result, code, message = _water_alk_residual_error(context)
+    assert result is None
+    assert code == smew.ErrorCode.WATER_ALK_RESIDUAL
+    assert "solver_status=-1" in message
+    assert "max_abs_residual=nan" in message
+    assert context in message
+    with pytest.raises(RuntimeError, match=context):
+        smew.raise_for_error(code, message)

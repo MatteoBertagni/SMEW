@@ -15,7 +15,7 @@ the tests to a temporary directory outside the checkout. It runs:
 
 ```bash
 python tests/check_wheel.py
-python -m pytest --import-mode=importlib tests/test_native_equations.py tests/test_native_solver.py tests/test_backend.py
+python -m pytest --import-mode=importlib tests/test_equations.py tests/test_native_equations.py tests/test_native_solver.py tests/test_backend.py tests/test_biogeochem2psd.py
 ```
 
 `check_wheel.py` requires both extensions, their Numba binding, and the license
@@ -41,6 +41,12 @@ scenario, ensuring each expensive model configuration executes once per backend.
 Compiled mode runs in one process so the scenarios and backend probe share
 Numba compilations. Its process starts with `NUMBA_NRT_STATS=1` for allocation
 checks. Use `make test-serial` to also run Python mode without multiprocessing.
+
+The shared aqueous-alkalinity tests check known residuals and their signs,
+including zero, positive and negative prescribed alkalinity. Native solver
+checks compare the same parameter order `(Alk, k1, k2, CO2_w, k_w)` with
+SciPy. Both rainwater and alternative soil hydrogen calculations use
+`WATER_ALK_SYSTEM`; the legacy two-application tests check both uses too.
 
 ```bash
 make test PYTEST_ARGS='-k physical'  # range checks without references
@@ -84,6 +90,9 @@ It covers native residual failures, insufficient cations, missing nonlinear
 pore inputs, zero-area nonlinear distributions, and inactive-soil respiration errors. These
 checks run after compilation warmup; compiler memory and process RSS are not
 used as a proxy for leaked arrays.
+
+Rainwater and soil hydrogen residual failures both report `WATER_ALK_RESIDUAL`;
+the allocation checks also verify their distinct diagnostic contexts.
 
 `test_errors.py` checks code uniqueness, generated messages, exception
 serialization, and propagation through a parent Numba

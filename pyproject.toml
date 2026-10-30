@@ -68,7 +68,7 @@ test-requires = ["pytest>=8,<10", "marimo>=0.19.7,<1"]
 test-sources = ["tests"]
 test-command = [
     "python tests/check_wheel.py",
-    "python -m pytest --import-mode=importlib tests/test_native_equations.py tests/test_native_solver.py tests/test_backend.py tests/test_biogeochem2psd.py",
+    "python -m pytest --import-mode=importlib tests/test_equations.py tests/test_native_equations.py tests/test_native_solver.py tests/test_backend.py tests/test_biogeochem2psd.py",
 ]
 
 [tool.cibuildwheel.linux]

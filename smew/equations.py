@@ -24,38 +24,25 @@ TOTAL_TO_CEC_N_UNKNOWNS = 13
 
 # Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
 @njit(nogil=True, error_model="numpy")
-def water_residual(H_rain, Alk_rain, k1, k2, CO2_w_rain, k_w):
-    return Alk_rain - (
-        k1 * CO2_w_rain / H_rain
-        + 2 * k1 * k2 * CO2_w_rain / H_rain**2
-        - H_rain
-        + k_w / H_rain
+def water_alk_residual(H, Alk, k1, k2, CO2_w, k_w):
+    """Return prescribed minus calculated aqueous alkalinity at hydrogen ``H``.
+
+    Shared by rainwater equilibrium and the alternative soil hydrogen estimate.
+    Parameters after ``H`` are ``(Alk, k1, k2, CO2_w, k_w)`` in both solvers.
+    """
+    return Alk - (
+        k1 * CO2_w / H
+        + 2 * k1 * k2 * CO2_w / H**2
+        - H
+        + k_w / H
     )
 
 
 # SciPy only: unpack p[0] and return the scalar residual to fsolve.
 @njit(nogil=True, error_model="numpy")
-def water_equations(p, Alk_rain, k1, k2, CO2_w_rain, k_w):
-    """Rainwater alkalinity residual; ``p`` contains H"""
-    return water_residual(p[0], Alk_rain, k1, k2, CO2_w_rain, k_w)
-
-
-# Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
-@njit(nogil=True, error_model="numpy")
-def h_residual(H0, k1, k2, CO2_w0, k_w, Alk0):
-    return (
-        k1 * CO2_w0 / H0
-        + 2 * k1 * k2 * CO2_w0 / H0**2
-        - H0
-        + k_w / H0
-    ) - Alk0
-
-
-# SciPy only: unpack p[0] and return the scalar residual to fsolve.
-@njit(nogil=True, error_model="numpy")
-def h_equations(p, k1, k2, CO2_w0, k_w, Alk0):
-    """Alternative hydrogen guess residual; ``p`` contains H"""
-    return h_residual(p[0], k1, k2, CO2_w0, k_w, Alk0)
+def water_alk_equations(p, Alk, k1, k2, CO2_w, k_w):
+    """SciPy adapter for :func:`water_alk_residual`; ``p`` contains only ``H``."""
+    return water_alk_residual(p[0], Alk, k1, k2, CO2_w, k_w)
 
 
 # Fill out with 16 residuals; used by the SciPy wrapper and compiled cminpack callback.

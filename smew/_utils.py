@@ -9,15 +9,14 @@ from scipy.optimize import fsolve
 from numba import njit
 from numba.extending import overload
 from smew.equations import (
-    water_equations, h_equations, biogeochem_equations,
+    water_alk_equations, biogeochem_equations,
     cec_calcium_equation, total_to_cec_equations,
 )
 
 
 # Integer tags passed to the native dispatcher to select the corresponding C residual
 # function pointer inside the compiled cminpack wrapper.
-WATER_SYSTEM = 0
-HYDROGEN_SYSTEM = 1
+WATER_ALK_SYSTEM = 1
 BIOGEOCHEM_SYSTEM = 2
 CEC_CALCIUM_SYSTEM = 3
 TOTAL_TO_CEC_SYSTEM = 4
@@ -37,10 +36,8 @@ def _solve_system(system, state, parameters, residual, work, xtol):
     Compiled callers must return failures (status <= 0) to a Python entry point
     rather than raise while they still own Numba-allocated arrays to prevent memory leaks.
     """
-    if system == WATER_SYSTEM:
-        equations = water_equations
-    elif system == HYDROGEN_SYSTEM:
-        equations = h_equations
+    if system == WATER_ALK_SYSTEM:
+        equations = water_alk_equations
     elif system == BIOGEOCHEM_SYSTEM:
         equations = biogeochem_equations
     elif system == CEC_CALCIUM_SYSTEM:

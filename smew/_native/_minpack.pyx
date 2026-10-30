@@ -6,15 +6,14 @@ import warnings
 from libc.float cimport DBL_EPSILON
 from libc.math cimport isfinite
 from smew._native._equations cimport (
-    water_residual, h_residual, biogeochem_residual,
+    water_alk_residual, biogeochem_residual,
     cec_calcium_residual, total_to_cec_residual,
 )
 
 from smew import _utils, equations
 
 # Native integers let callbacks use the shared identifiers without the GIL.
-cdef int WATER_SYSTEM = _utils.WATER_SYSTEM
-cdef int HYDROGEN_SYSTEM = _utils.HYDROGEN_SYSTEM
+cdef int WATER_ALK_SYSTEM = _utils.WATER_ALK_SYSTEM
 cdef int BIOGEOCHEM_SYSTEM = _utils.BIOGEOCHEM_SYSTEM
 cdef int CEC_CALCIUM_SYSTEM = _utils.CEC_CALCIUM_SYSTEM
 cdef int TOTAL_TO_CEC_SYSTEM = _utils.TOTAL_TO_CEC_SYSTEM
@@ -46,10 +45,8 @@ cdef int _callback(void *userdata, int n, const double *state,
     cdef int i
     if iflag == 0:
         return 0
-    if problem.system == WATER_SYSTEM:
-        out[0] = water_residual(state[0], p[0], p[1], p[2], p[3], p[4])
-    elif problem.system == HYDROGEN_SYSTEM:
-        out[0] = h_residual(state[0], p[0], p[1], p[2], p[3], p[4])
+    if problem.system == WATER_ALK_SYSTEM:
+        out[0] = water_alk_residual(state[0], p[0], p[1], p[2], p[3], p[4])
     elif problem.system == BIOGEOCHEM_SYSTEM:
         biogeochem_residual(
             state, p[0], p[1], p[2], p[3], p[4], p[5],
@@ -76,7 +73,7 @@ cdef int _callback(void *userdata, int n, const double *state,
 
 
 cdef bint _system_layout(int system, int *n, int *parameters) noexcept nogil:
-    if system == WATER_SYSTEM or system == HYDROGEN_SYSTEM:
+    if system == WATER_ALK_SYSTEM:
         n[0], parameters[0] = 1, 5
     elif system == BIOGEOCHEM_SYSTEM:
         n[0], parameters[0] = BIOGEOCHEM_N_UNKNOWNS, 25

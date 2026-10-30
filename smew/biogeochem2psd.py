@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 import smew
 from scipy.optimize import fsolve
-from smew.equations import water_equations, h_equations, biogeochem_equations
+from smew.equations import water_alk_equations, biogeochem_equations
 #minimize, least_squares, newton_krylov, broyden1, root, broyden2
 
 def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, M_rock_in2, t_app2, mineral2, rock_f_in2, d_in2, psd_perc_in2, SSA_in2, diss_f, dt, conv_Al, conv_mol, keyword_add):
@@ -238,7 +238,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
     
     for i in range(0, len(s)):
         def equations(p):
-            return water_equations(p, Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i])
+            return water_alk_equations(p, Alk_rain, k1[i], k2[i], CO2_w_rain[i], k_w[i])
         
         H_rain[i] = fsolve(equations, 10**-6*conv_mol)[0] # [mol/l]
         DIC_rain[i]=CO2_w_rain[i]+k1[i]*CO2_w_rain[i]/H_rain[i]+k2[i]*k1[i]*CO2_w_rain[i]/(H_rain[i]**2)
@@ -454,7 +454,7 @@ def biogeochem_balance2psd(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut,
             K0 =  (K_tot[i]-f_K[i-1]*CEC_tot)/(n*Zr*s[i]*1000) #s[i-1]*K[i-1]/s[i]
             H0 = H[i-1]
             def eqH(p):
-                    return h_equations(p, k1[i], k2[i], CO2_w0, k_w[i], Alk0)
+                    return water_alk_equations(p, Alk0, k1[i], k2[i], CO2_w0, k_w[i])
             H0_2 =fsolve(eqH, H[i-1])[0]
             
             #solution 1

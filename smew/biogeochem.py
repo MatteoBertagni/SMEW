@@ -14,7 +14,7 @@ from smew.equations import BIOGEOCHEM_N_UNKNOWNS
 from smew.errors import (
     ErrorCode, _float_text, _solver_error, raise_for_error,
 )
-from smew._utils import WATER_SYSTEM, HYDROGEN_SYSTEM, BIOGEOCHEM_SYSTEM
+from smew._utils import WATER_ALK_SYSTEM, BIOGEOCHEM_SYSTEM
 from smew.weathering import _wetness_SA
 
 
@@ -306,11 +306,11 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
         scalar_parameters[2] = k2[i]
         scalar_parameters[3] = CO2_w_rain[i]
         scalar_parameters[4] = k_w[i]
-        status = _solve_system(WATER_SYSTEM, scalar_guess, scalar_parameters,
+        status = _solve_system(WATER_ALK_SYSTEM, scalar_guess, scalar_parameters,
                                scalar_residual, solver_work, 1.49012e-8)  # 1.49012e-8 is the default fsolve xtol
         if status <= 0:
             return _solver_error(
-                status, scalar_residual, ErrorCode.RAIN_RESIDUAL, ErrorCode.RAIN_SOLVER_INPUT,
+                status, scalar_residual, ErrorCode.WATER_ALK_RESIDUAL, ErrorCode.WATER_ALK_SOLVER_INPUT,
                 'biogeochem.rainwater'
                 + '; step=' + str(i)
                 + ', time_days=' + _float_text(i * dt)
@@ -554,16 +554,16 @@ def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D,
             H0 = H[i-1]
 
             scalar_guess[0] = H[i-1]
-            scalar_parameters[0] = k1[i]
-            scalar_parameters[1] = k2[i]
-            scalar_parameters[2] = CO2_w0
-            scalar_parameters[3] = k_w[i]
-            scalar_parameters[4] = Alk0
-            status = _solve_system(HYDROGEN_SYSTEM, scalar_guess, scalar_parameters,
+            scalar_parameters[0] = Alk0
+            scalar_parameters[1] = k1[i]
+            scalar_parameters[2] = k2[i]
+            scalar_parameters[3] = CO2_w0
+            scalar_parameters[4] = k_w[i]
+            status = _solve_system(WATER_ALK_SYSTEM, scalar_guess, scalar_parameters,
                                    scalar_residual, solver_work, 1.49012e-8)
             if status <= 0:
                 return _solver_error(
-                    status, scalar_residual, ErrorCode.HYDROGEN_RESIDUAL, ErrorCode.HYDROGEN_SOLVER_INPUT,
+                    status, scalar_residual, ErrorCode.WATER_ALK_RESIDUAL, ErrorCode.WATER_ALK_SOLVER_INPUT,
                     'biogeochem.hydrogen'
                     + '; step=' + str(i)
                     + ', time_days=' + _float_text(i * dt)

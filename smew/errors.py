@@ -14,18 +14,17 @@ from numba.extending import register_jitable
 @unique
 class ErrorCode(IntEnum):
     OK = 0
-    # Each nonlinear solve has its own codes, including the fallback attempt.
-    RAIN_RESIDUAL = 1101
-    RAIN_SOLVER_INPUT = 1102
-    HYDROGEN_RESIDUAL = 1111
-    HYDROGEN_SOLVER_INPUT = 1112
-    CHEMISTRY_RESIDUAL = 1121
-    CHEMISTRY_SOLVER_INPUT = 1122
-    CHEMISTRY_RETRY_RESIDUAL = 1131
-    CHEMISTRY_RETRY_SOLVER_INPUT = 1132
-    CHEMISTRY_NO_CONVERGENCE = 1133
-    BIOGEOCHEM_INSUFFICIENT_CATIONS = 1201
-    BIOGEOCHEM_MISSING_PORES = 1204
+    # Nonlinear solves: 1000-1099.
+    WATER_ALK_RESIDUAL = 1001
+    WATER_ALK_SOLVER_INPUT = 1002
+    CHEMISTRY_RESIDUAL = 1011
+    CHEMISTRY_SOLVER_INPUT = 1012
+    CHEMISTRY_RETRY_RESIDUAL = 1021
+    CHEMISTRY_RETRY_SOLVER_INPUT = 1022
+    CHEMISTRY_NO_CONVERGENCE = 1023
+    # Biogeochemistry inputs and initial conditions: 1100-1199.
+    BIOGEOCHEM_INSUFFICIENT_CATIONS = 1101
+    BIOGEOCHEM_MISSING_PORES = 1102
     # Organic carbon: 2000-2999.
     RESPIRATION_INITIAL_ACTIVITY = 2001
     RESPIRATION_MEAN_ACTIVITY = 2002
@@ -121,8 +120,8 @@ def raise_for_error(code, message):
     """Raise a Python exception after the compiled calculation has returned."""
     if code != ErrorCode.OK:
         exception = SMEWSolverError if code in (
-            ErrorCode.RAIN_RESIDUAL, ErrorCode.HYDROGEN_RESIDUAL,
-            ErrorCode.CHEMISTRY_RESIDUAL, ErrorCode.CHEMISTRY_RETRY_RESIDUAL,
-            ErrorCode.CEC_RESIDUAL, ErrorCode.TOTAL_CEC_RESIDUAL,
+            ErrorCode.WATER_ALK_RESIDUAL, ErrorCode.CHEMISTRY_RESIDUAL,
+            ErrorCode.CHEMISTRY_RETRY_RESIDUAL, ErrorCode.CEC_RESIDUAL,
+            ErrorCode.TOTAL_CEC_RESIDUAL,
         ) else SMEWValueError
         raise exception(code, message)
