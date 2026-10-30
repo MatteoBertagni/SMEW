@@ -44,10 +44,10 @@ def mode_outputs(tmp_path_factory):
     "moisture", "respiration", "mov_avg", "psd_evol", "psd_number_from_mass",
     "normalized_cumulative_area", "wet_f_Anand", "wetness", "f_CEC_to_conc",
     "f_CEC_and_conc_to_K", "Amann", "conc_to_f_CEC", "total_to_f_CEC_and_conc",
-    "Kelland", "water_equations", "h_equations", "biogeochem_equations",
-    "cec_calcium_equation", "total_to_cec_equations", "kelland_equations",
+    "water_equations", "h_equations", "biogeochem_equations",
+    "cec_calcium_equation", "total_to_cec_equations",
     "water_residual", "h_residual", "biogeochem_residual", "cec_calcium_residual",
-    "total_to_cec_residual", "kelland_residual", "simulation",
+    "total_to_cec_residual", "simulation",
 ))
 def test_numerical_outputs_match_between_modes(mode_outputs, group):
     names = [name for name in mode_outputs["python"] if name.split("/")[0] == group]

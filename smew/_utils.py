@@ -10,7 +10,7 @@ from numba import njit
 from numba.extending import overload
 from smew.equations import (
     water_equations, h_equations, biogeochem_equations,
-    cec_calcium_equation, total_to_cec_equations, kelland_equations,
+    cec_calcium_equation, total_to_cec_equations,
 )
 
 
@@ -21,7 +21,6 @@ HYDROGEN_SYSTEM = 1
 BIOGEOCHEM_SYSTEM = 2
 CEC_CALCIUM_SYSTEM = 3
 TOTAL_TO_CEC_SYSTEM = 4
-KELLAND_SYSTEM = 5
 
 
 @njit
@@ -48,8 +47,6 @@ def _solve_system(system, state, parameters, residual, work, xtol):
         equations = cec_calcium_equation
     elif system == TOTAL_TO_CEC_SYSTEM:
         equations = total_to_cec_equations
-    elif system == KELLAND_SYSTEM:
-        equations = kelland_equations
     else:
         raise ValueError("Unknown equation system")
     solution, _, status, _ = fsolve(

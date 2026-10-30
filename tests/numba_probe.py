@@ -55,7 +55,7 @@ def collect_outputs(*, helpers_only=False):
     import smew
     from smew import equations, vegetation, soil_pores
     from smew.biogeochem import _biogeochem_balance
-    from smew.ic import _conc_to_f_CEC, _total_to_f_CEC_and_conc, _Kelland
+    from smew.ic import _conc_to_f_CEC, _total_to_f_CEC_and_conc
     from smew.organic_carbon import _respiration
 
     outputs = {}
@@ -144,7 +144,7 @@ def collect_outputs(*, helpers_only=False):
     # Exercise every equation directly as well as through cminpack.
     for name, fn in inspect.getmembers(equations):
         if name.endswith(("_equations", "_equation", "_residual")):
-            size = 16 if name.startswith("biogeochem") else 13 if name.startswith("total_to_cec") else 5 if name.startswith("kelland") else 1
+            size = 16 if name.startswith("biogeochem") else 13 if name.startswith("total_to_cec") else 1
             out = np.zeros(size)
             args = [np.ones(size) if param == "p" else out if param == "out" else 1.
                     for param in inspect.signature(fn).parameters]
@@ -156,8 +156,6 @@ def collect_outputs(*, helpers_only=False):
         totals = [conc[i] * (.4*.3*.6*1000) + fractions[i]*.1/charge
                   for i, charge in enumerate((2, 2, 1, 1))]
         call(smew.total_to_f_CEC_and_conc, totals, 6., .07, [.6], "loam", .4, .3, .1, 1., 1.)
-        totals[0] += .01
-        call(smew.Kelland, totals, 6., conc, [.6], "loam", .4, .3, .1, 1., 1.)
         from tests.example_marimo_notebook import app
         original = smew.biogeochem_balance
         freeze = False
@@ -279,7 +277,7 @@ def collect_outputs(*, helpers_only=False):
         "f_CEC_to_conc", "f_CEC_and_conc_to_K", "Amann",
     )] + [vegetation.get_stage_boundaries, vegetation.get_season_boundaries, _respiration]
     if not helpers_only:
-        numerical += [_biogeochem_balance, _conc_to_f_CEC, _total_to_f_CEC_and_conc, _Kelland]
+        numerical += [_biogeochem_balance, _conc_to_f_CEC, _total_to_f_CEC_and_conc]
     for fn in numerical:
         if disabled:
             assert not hasattr(fn, "py_func"), fn.__name__

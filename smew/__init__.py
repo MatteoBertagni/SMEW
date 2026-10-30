@@ -44,10 +44,8 @@ from smew.ic import (
     total_to_f_CEC_and_conc,
     f_CEC_and_conc_to_K,
     Amann,
-    Kelland,
     conc_to_f_CEC_numba,
     total_to_f_CEC_and_conc_numba,
-    Kelland_numba,
 )
 
 from smew.weathering import (

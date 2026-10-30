@@ -41,6 +41,10 @@ Changes since 1.2.0.
   definition. Add a marimo example and automated regression, physical-range,
   Python/compiled agreement, memory-release, and package checks.
 
+### Removed
+
+ - Removed Kelland equations and code.
+
 ### Fixed
 
 - Account for excess water at the numerical saturation cap; correct soil-class

@@ -10,7 +10,7 @@ import numpy as np
 from numba import njit
 import smew
 from smew._utils import _solve_system, _solver_work_size
-from smew._utils import CEC_CALCIUM_SYSTEM, TOTAL_TO_CEC_SYSTEM, KELLAND_SYSTEM
+from smew._utils import CEC_CALCIUM_SYSTEM, TOTAL_TO_CEC_SYSTEM
 from smew.errors import (
     ErrorCode, _float_text, _solver_error, raise_for_error,
 )
@@ -233,84 +233,6 @@ def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
 
 
 #------------------------------------------------------------------------------
- # Input: Total (Ca, Mg, K, Na) and Al_w
-
-def Kelland(total_in, pH_in, conc_in, s, soil, n,Zr,CEC_tot,conv_mol,conv_Al):
-    """Solve the Kelland initial conditions using the process-wide JIT setting."""
-    # Ensure inputs are contiguous float64 arrays for Numba compilation and C double* compatibility.
-    result, error_code, error_message = _Kelland(
-        np.ascontiguousarray(total_in, dtype=np.float64), pH_in,
-        np.ascontiguousarray(conc_in, dtype=np.float64), np.ascontiguousarray(s, dtype=np.float64),
-        soil, n, Zr, CEC_tot, conv_mol, conv_Al,
-    )
-    raise_for_error(error_code, error_message)
-    if error_message:
-        warnings.warn(error_message, RuntimeWarning, stacklevel=2)
-    return result
-
-
-@njit(nogil=True, error_model="numpy")
-def _Kelland(total_in, pH_in, conc_in, s, soil, n, Zr, CEC_tot, conv_mol, conv_Al):
-    """Return (results or None, error_code, error_message) for valid inputs; see docs/errors.rst."""
-    #constants 
-    K_CEC = smew.K_GT_CEC(soil, conv_mol)  #CEC Gaines-Thomas
-    K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
-    K1, K2, K3, K4 = smew.K_Al(conv_mol)  #Al speciation
-
-    # known (mol-conv/m2)
-    Ca_tot, Mg_tot, K_tot, Na_tot = total_in
-    Ca, Mg, K, Na, Al_w = conc_in
-    H = 10.0**(-pH_in) * conv_mol
-    Al = (H**4 / (H**4 + H**3*K1 + H**2*K1*K2 + H*K1*K2*K3 + K1*K2*K3*K4))*Al_w
-
-    n_Zr_s_1000 = n*Zr*s[0]*1000
-    #CEC
-    f_Mg = (Mg_tot - Mg*n_Zr_s_1000) * 2 / CEC_tot
-    f_K = (K_tot - K*n_Zr_s_1000) * 2 / CEC_tot
-    f_Na = (Na_tot - Na*n_Zr_s_1000) / CEC_tot
-
-    #initial guess
-    f_H0 = 1e-3
-    f_Al0 = 1e-3
-    f_Ca0 = 0.8 * (1 - f_H0 + f_Al0)
-    Al_tot0 = (f_Al0/3) * CEC_tot * conv_Al + Al_w * n_Zr_s_1000
-    CaCO30 = Ca_tot - Ca * n_Zr_s_1000 + f_Ca0 / 2 * CEC_tot
-
-    x0 = np.array((Al_tot0, CaCO30, f_Al0, f_H0, f_Ca0))
-
-    #system solution
-    parameters = np.array((
-        Al_w, Al, H, Ca, Ca_tot, f_Mg, f_K, f_Na, n, Zr,
-        s[0], CEC_tot, conv_Al, K_Ca_Al, K_Ca_H,
-    ))
-    residual = np.empty(x0.size)
-    work = np.empty(_solver_work_size(x0.size))
-    status = _solve_system(KELLAND_SYSTEM, x0, parameters, residual, work, 1e-14)
-    if status <= 0:
-        return _solver_error(
-            status, residual, ErrorCode.KELLAND_RESIDUAL, ErrorCode.KELLAND_SOLVER_INPUT,
-            'ic.Kelland'
-            + '; pH=' + _float_text(pH_in)
-            + ', s=' + _float_text(s[0])
-            + ', CEC_total=' + _float_text(CEC_tot)
-            + ', trial_f_Ca=' + _float_text(x0[4]),
-        )
-    # _solve_system writes the converged solution directly into the guess array x0.
-    Al_tot, CaCO3, f_Al, f_H, f_Ca = x0
-
-    #estimating soil-dependent K_CEC
-    K_Ca_Mg = (f_Ca/Ca) * (Mg/f_Mg)
-    K_Ca_K = (f_Ca/Ca) * (K/f_K)**2
-    K_Ca_Na = (f_Ca/Ca) * (Na/f_Na)**2
-    K_CEC = [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H]
-
-    conc_in = [Ca, Mg, K, Na, Al_w] 
-    f_CEC_in = [f_Ca, f_Mg, f_K, f_Na, f_Al, f_H]
-
-    return (conc_in, f_CEC_in, K_CEC, CaCO3), 0, ("MINPACK stopped with status " + str(status) if status != 1 else "")
-
-
-#------------------------------------------------------------------------------
  # Amann et al., fractions and Mg conc 
 
 @njit(nogil=True, error_model="numpy")
@@ -348,4 +270,3 @@ def Amann(f_CEC_in, pH_in, Mg_in, soil, conv_mol,conv_Al):
 
 conc_to_f_CEC_numba = _conc_to_f_CEC
 total_to_f_CEC_and_conc_numba = _total_to_f_CEC_and_conc
-Kelland_numba = _Kelland

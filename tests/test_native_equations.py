@@ -13,7 +13,7 @@ def test_private_extension_keeps_python_equations_importable():
     assert python_equations.__file__.endswith("equations.py")
     assert set(native.__pyx_capi__) == {
         "water_residual", "h_residual", "biogeochem_residual",
-        "cec_calcium_residual", "total_to_cec_residual", "kelland_residual",
+        "cec_calcium_residual", "total_to_cec_residual",
     }
 
 

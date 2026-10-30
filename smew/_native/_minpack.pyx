@@ -7,7 +7,7 @@ from libc.float cimport DBL_EPSILON
 from libc.math cimport isfinite
 from smew._native._equations cimport (
     water_residual, h_residual, biogeochem_residual,
-    cec_calcium_residual, total_to_cec_residual, kelland_residual,
+    cec_calcium_residual, total_to_cec_residual,
 )
 
 from smew import _utils, equations
@@ -18,12 +18,10 @@ cdef int HYDROGEN_SYSTEM = _utils.HYDROGEN_SYSTEM
 cdef int BIOGEOCHEM_SYSTEM = _utils.BIOGEOCHEM_SYSTEM
 cdef int CEC_CALCIUM_SYSTEM = _utils.CEC_CALCIUM_SYSTEM
 cdef int TOTAL_TO_CEC_SYSTEM = _utils.TOTAL_TO_CEC_SYSTEM
-cdef int KELLAND_SYSTEM = _utils.KELLAND_SYSTEM
 
 # Copy shared dimensions into C integers for use without the GIL.
 cdef int BIOGEOCHEM_N_UNKNOWNS = equations.BIOGEOCHEM_N_UNKNOWNS
 cdef int TOTAL_TO_CEC_N_UNKNOWNS = equations.TOTAL_TO_CEC_N_UNKNOWNS
-cdef int KELLAND_N_UNKNOWNS = equations.KELLAND_N_UNKNOWNS
 
 cdef extern from "cminpack.h":
     ctypedef int (*hybrd_callback)(void *, int, const double *, double *, int) noexcept nogil
@@ -67,11 +65,6 @@ cdef int _callback(void *userdata, int n, const double *state,
             state, p[0], p[1], p[2], p[3], p[4], p[5],
             p[6], p[7], p[8], p[9], p[10], p[11], p[12],
             p[13], p[14], p[15], p[16], p[17], p[18], p[19], out)
-    elif problem.system == KELLAND_SYSTEM:
-        kelland_residual(
-            state, p[0], p[1], p[2], p[3], p[4], p[5],
-            p[6], p[7], p[8], p[9], p[10], p[11], p[12],
-            p[13], p[14], out)
     else:
         problem.callback_failed = 1
         return -1
@@ -91,8 +84,6 @@ cdef bint _system_layout(int system, int *n, int *parameters) noexcept nogil:
         n[0], parameters[0] = 1, 12
     elif system == TOTAL_TO_CEC_SYSTEM:
         n[0], parameters[0] = TOTAL_TO_CEC_N_UNKNOWNS, 20
-    elif system == KELLAND_SYSTEM:
-        n[0], parameters[0] = KELLAND_N_UNKNOWNS, 15
     else:
         return False
     return True

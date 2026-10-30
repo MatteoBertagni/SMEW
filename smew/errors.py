@@ -34,8 +34,6 @@ class ErrorCode(IntEnum):
     CEC_SOLVER_INPUT = 3002
     TOTAL_CEC_RESIDUAL = 3011
     TOTAL_CEC_SOLVER_INPUT = 3012
-    KELLAND_RESIDUAL = 3021
-    KELLAND_SOLVER_INPUT = 3022
     WEATHERING_ERROR = 4001
 
 
@@ -126,6 +124,5 @@ def raise_for_error(code, message):
             ErrorCode.RAIN_RESIDUAL, ErrorCode.HYDROGEN_RESIDUAL,
             ErrorCode.CHEMISTRY_RESIDUAL, ErrorCode.CHEMISTRY_RETRY_RESIDUAL,
             ErrorCode.CEC_RESIDUAL, ErrorCode.TOTAL_CEC_RESIDUAL,
-            ErrorCode.KELLAND_RESIDUAL,
         ) else SMEWValueError
         raise exception(code, message)

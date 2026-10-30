@@ -16,7 +16,6 @@ from numba import njit
 # initial guesses, and solution unpacking when adding or removing unknowns.
 BIOGEOCHEM_N_UNKNOWNS = 16
 TOTAL_TO_CEC_N_UNKNOWNS = 13
-KELLAND_N_UNKNOWNS = 5
 
 # p contains trial values; out receives residuals in place.
 # Keep state indices and buffer sizes consistent with callers when adding unknowns.
@@ -375,85 +374,4 @@ def total_to_cec_equations(
         out[4], out[5], out[6], out[7],
         out[8], out[9], out[10], out[11],
         out[12],
-    )
-
-
-# Fill out with 5 residuals; used by the SciPy wrapper and compiled cminpack callback.
-@njit(nogil=True, error_model="numpy")
-def kelland_residual(
-    p,
-    Al_w,
-    Al,
-    H,
-    Ca,
-    Ca_tot,
-    f_Mg,
-    f_K,
-    f_Na,
-    n,
-    Zr,
-    s,
-    CEC_tot,
-    conv_Al,
-    K_Ca_Al,
-    K_Ca_H,
-    out,
-):
-    """Residuals for the five Kelland initial-condition unknowns."""
-    Al_tot = p[0]
-    CaCO3 = p[1]
-    f_Al = p[2]
-    f_H = p[3]
-    f_Ca = p[4]
-    out[0] = Al_w*n*Zr*s*1000 + (f_Al/3)*CEC_tot*conv_Al - Al_tot
-    out[1] = Ca*n*Zr*s*1000 + (f_Ca/2)*CEC_tot + CaCO3 - Ca_tot
-    out[2] = f_Al - (Al/conv_Al)*(f_Ca**3 / (K_Ca_Al*Ca**3))**0.5
-    out[3] = f_H - H*(f_Ca / (K_Ca_H*Ca))**0.5
-    out[4] = 1 - (f_Ca + f_Al + f_Mg + f_Na + f_K + f_H)
-    return 0
-
-
-# SciPy only: allocate out and return the 5 residuals as a tuple to fsolve.
-@njit(nogil=True, error_model="numpy")
-def kelland_equations(
-    p,
-    Al_w,
-    Al,
-    H,
-    Ca,
-    Ca_tot,
-    f_Mg,
-    f_K,
-    f_Na,
-    n,
-    Zr,
-    s,
-    CEC_tot,
-    conv_Al,
-    K_Ca_Al,
-    K_Ca_H,
-):
-    out = np.empty(KELLAND_N_UNKNOWNS)
-    kelland_residual(
-        p,
-        Al_w,
-        Al,
-        H,
-        Ca,
-        Ca_tot,
-        f_Mg,
-        f_K,
-        f_Na,
-        n,
-        Zr,
-        s,
-        CEC_tot,
-        conv_Al,
-        K_Ca_Al,
-        K_Ca_H,
-        out
-    )
-    return (
-        out[0], out[1], out[2], out[3],
-        out[4],
     )

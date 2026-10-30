@@ -13,7 +13,7 @@ Calling from your own compiled model
 
 This section is only needed when calling SMEW inside another Numba function.
 The functions ``biogeochem_balance_numba``, ``respiration_numba``,
-``conc_to_f_CEC_numba``, ``total_to_f_CEC_and_conc_numba`` and ``Kelland_numba``
+``conc_to_f_CEC_numba`` and ``total_to_f_CEC_and_conc_numba``
 return ``(result, code, message)`` instead of raising an error directly.
 
 Code ``0`` means success; a nonzero code means failure and ``result`` is ``None``.

@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from smew.equations import water_equations
-from smew._utils import WATER_SYSTEM, KELLAND_SYSTEM
+from smew._utils import WATER_SYSTEM, TOTAL_TO_CEC_SYSTEM
 
 
 _minpack = pytest.importorskip("smew._native._minpack")
@@ -48,8 +48,8 @@ def test_workspace_is_reused_and_checked():
     _, first, _, _ = _minpack.solve(WATER_SYSTEM, [1e-6], parameters, workspace=workspace)
     _, second, _, _ = _minpack.solve(WATER_SYSTEM, [2e-6], parameters, workspace=workspace)
     assert first is second
-    with pytest.raises(ValueError, match="workspace for 5 unknowns"):
-        _minpack.solve(KELLAND_SYSTEM, [1.0] * 5, [1.0] * 15, workspace=workspace)
+    with pytest.raises(ValueError, match="workspace for 13 unknowns"):
+        _minpack.solve(TOTAL_TO_CEC_SYSTEM, [1.0] * 13, [1.0] * 20, workspace=workspace)
     workspace.work = np.empty(1)
     with pytest.raises(ValueError, match="workspace buffers"):
         _minpack.solve(WATER_SYSTEM, [1e-6], parameters, workspace=workspace)
