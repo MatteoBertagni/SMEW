@@ -23,8 +23,9 @@ Changes since 1.2.0.
 
 ### Changed
 
-- **Soil and carbon balance:** updated soil moisture thresholds to use the Campbell
-  water retention relation. Respiration now uses the average of temperatures above
+- **Soil and carbon balance:** updated flexible soil moisture thresholds based on 
+  water potential values using the Campbell water retention relation. 
+  Respiration now uses the average of temperatures above
   0 °C as its reference. Steady-state carbon estimates now combine moisture and
   temperature effects at each timestep before averaging.
 - **Numerical architecture:** shared equations in `smew.equations` support Python
@@ -43,8 +44,7 @@ Changes since 1.2.0.
 ### Fixed
 
 - Account for excess water at the numerical saturation cap; correct soil-class
-  handling and vegetation boundary indexing; preserve linear wet-surface scaling
-  in the two-application weathering model.
+  handling and vegetation boundary indexing.
 
 ### Deprecated
 
