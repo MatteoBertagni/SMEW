@@ -94,6 +94,16 @@ def _respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, te
             'respiration.steady_state: Mean decomposition activity is zero. '
             'Cannot estimate ADD or SOC from steady-state balance.'
             + '; mean_activity=' + _float_text(mean_f_dec)
+            + '; mean_f_T=' + _float_text(np.mean(f_T))
+            + '; temp_soil_min=' + _float_text(np.min(temp_soil))
+            + '; temp_soil_max=' + _float_text(np.max(temp_soil))
+            + '; mean_f_s=' + _float_text(np.mean(f_s))
+            + '; soil=' + soil
+            + '; s_h=' + _float_text(s_h)
+            + '; s_w=' + _float_text(s_w)
+            + '; s_i=' + _float_text(s_i)
+            + '; s_min=' + _float_text(np.min(s))
+            + '; s_max=' + _float_text(np.max(s))
         )
 
     # ADD estimate for qs-equilibrium (in absence of data)
