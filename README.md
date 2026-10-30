@@ -105,6 +105,8 @@ function pointers.
 
 ## Documentation
 
+Read the [online documentation](https://matteobertagni.github.io/SMEW/).
+
 The Sphinx documentation uses this README as its landing page and has four main
 sections:
 
