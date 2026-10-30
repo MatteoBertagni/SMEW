@@ -43,7 +43,7 @@ def mode_outputs(tmp_path_factory):
     "carb_W", "sil_Wr", "temp", "veg", "season", "boundaries", "up_act",
     "moisture", "respiration", "mov_avg", "psd_evol", "psd_number_from_mass",
     "normalized_cumulative_area", "wet_f_Anand", "wetness", "f_CEC_to_conc",
-    "f_CEC_and_conc_to_K", "Amann", "conc_to_f_CEC", "total_to_f_CEC_and_conc",
+    "f_CEC_and_conc_to_K", "conc_to_f_CEC", "total_to_f_CEC_and_conc",
     "water_equations", "h_equations", "biogeochem_equations",
     "cec_calcium_equation", "total_to_cec_equations",
     "water_residual", "h_residual", "biogeochem_residual", "cec_calcium_residual",

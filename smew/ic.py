@@ -232,41 +232,5 @@ def f_CEC_and_conc_to_K(f_CEC_in, conc_in, pH_in, soil, conv_mol,conv_Al):
     return K_CEC
 
 
-#------------------------------------------------------------------------------
- # Amann et al., fractions and Mg conc 
-
-@njit(nogil=True, error_model="numpy")
-def Amann(f_CEC_in, pH_in, Mg_in, soil, conv_mol,conv_Al):
-    #pH
-    H = 10.0**(-pH_in)*conv_mol
-
-    #constants 
-    K_CEC = smew.K_GT_CEC(soil,conv_mol)  #CEC Gaines-Thomas
-    K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H = K_CEC
-    K1, K2, K3, K4 = smew.K_Al(conv_mol)  #Al speciation
-
-    #f_CEC [-]
-    f_Ca, f_Mg, f_K, f_Na, f_Al, f_H = f_CEC_in
-
-    #conc from measurements
-    Mg = Mg_in
-
-    #estimates of concentrations
-    Ca = (Mg/f_Mg) / K_Ca_Mg * f_Ca
-    K = ((Ca/f_Ca) * K_Ca_K)**0.5 * f_K
-    Na = ((Ca/f_Ca) * K_Ca_Na)**0.5 * f_Na
-    Al = ((Ca/f_Ca)**3 * K_Ca_Al)**0.5 * f_Al * conv_Al
-
-    Al_w = Al / (H**4 / (H**4 + H**3*K1 + H**2*K1*K2 + H*K1*K2*K3 + K1*K2*K3*K4))
-
-    #estimates of K_CEC
-    K_Ca_H = (f_Ca/Ca) * (H/f_H)**2
-
-    conc_in = [Ca, Mg, K, Na, Al_w]
-    K_CEC = [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H]
-
-    return conc_in, K_CEC
-
-
 conc_to_f_CEC_numba = _conc_to_f_CEC
 total_to_f_CEC_and_conc_numba = _total_to_f_CEC_and_conc

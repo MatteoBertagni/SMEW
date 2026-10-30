@@ -140,7 +140,6 @@ def collect_outputs(*, helpers_only=False):
         record("f_CEC_to_conc/" + soil, smew.f_CEC_to_conc(fractions, 6., soil, 1., 1.))
     conc, _ = call(smew.f_CEC_to_conc, fractions, 6., "loam", 1., 1.)
     call(smew.f_CEC_and_conc_to_K, fractions, np.asarray(conc), 6., "loam", 1., 1.)
-    call(smew.Amann, fractions, 6., .001, "loam", 1., 1.)
     # Exercise every equation directly as well as through cminpack.
     for name, fn in inspect.getmembers(equations):
         if name.endswith(("_equations", "_equation", "_residual")):
@@ -274,7 +273,7 @@ def collect_outputs(*, helpers_only=False):
         "pore_pdf_ding2016", "pore_pdf_campbell", "veg", "veg_seasonal", "up_act",
         "carb_W", "sil_Omega", "sil_Wr", "psd_evol", "psd_number_from_mass",
         "normalized_cumulative_area", "wet_f_Anand", "wetness_SA", "mov_avg",
-        "f_CEC_to_conc", "f_CEC_and_conc_to_K", "Amann",
+        "f_CEC_to_conc", "f_CEC_and_conc_to_K",
     )] + [vegetation.get_stage_boundaries, vegetation.get_season_boundaries, _respiration]
     if not helpers_only:
         numerical += [_biogeochem_balance, _conc_to_f_CEC, _total_to_f_CEC_and_conc]

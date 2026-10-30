@@ -43,7 +43,6 @@ from smew.ic import (
     f_CEC_to_conc,
     total_to_f_CEC_and_conc,
     f_CEC_and_conc_to_K,
-    Amann,
     conc_to_f_CEC_numba,
     total_to_f_CEC_and_conc_numba,
 )
