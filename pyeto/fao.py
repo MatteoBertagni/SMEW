@@ -87,7 +87,7 @@ def avp_from_rhmin_rhmax(svp_tmin, svp_tmax, rh_min, rh_max):
 
 def avp_from_rhmax(svp_tmin, rh_max):
     """
-    Estimate actual vapour pressure (*e*a) from saturation vapour pressure at
+    Estimate actual vapour pressure (*ea*) from saturation vapour pressure at
     daily minimum temperature and maximum relative humidity
 
     Based on FAO equation 18 in Allen et al (1998).
@@ -292,7 +292,7 @@ def fao56_penman_monteith(net_rad, t, ws, svp, avp, delta_svp, psy, shf=0.0):
     :param ws: Wind speed at 2 m height [m s-1]. If not measured at 2m,
         convert using ``wind_speed_at_2m()``.
     :param svp: Saturation vapour pressure [kPa]. Can be estimated using
-        ``svp_from_t()''.
+        ``svp_from_t()``.
     :param avp: Actual vapour pressure [kPa]. Can be estimated using a range
         of functions with names beginning with 'avp_from'.
     :param delta_svp: Slope of saturation vapour pressure curve [kPa degC-1].
@@ -405,7 +405,6 @@ def monthly_soil_heat_flux2(t_month_prev, t_month_cur):
     resulting heat flux can be converted to equivalent evaporation [mm day-1]
     using ``energy2evap()``.
 
-    Arguments:
     :param t_month_prev: Mean air temperature of the previous month
         [deg Celsius]
     :param t_month_cur: Mean air temperature of the current month [deg Celsius]
@@ -525,11 +524,13 @@ def psy_const_of_psychrometer(psychrometer, atmos_pres):
 
     :param psychrometer: Integer between 1 and 3 which denotes type of
         psychrometer:
+
         1. ventilated (Asmann or aspirated type) psychrometer with
            an air movement of approximately 5 m/s
         2. natural ventilated psychrometer with an air movement
            of approximately 1 m/s
         3. non ventilated psychrometer installed indoors
+
     :param atmos_pres: Atmospheric pressure [kPa]. Can be estimated using
         ``atm_pressure()``.
     :return: Psychrometric constant [kPa degC-1].

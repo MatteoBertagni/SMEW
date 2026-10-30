@@ -1,0 +1,18 @@
+/* Overall page: navigation, article and sidebars. */
+.bd-page-width {
+    max-width: 100rem;
+}
+
+/* Article: text, code and plots. */
+.bd-main .bd-content .bd-article-container {
+    max-width: 72rem;
+}
+
+dl.py dt.sig {
+    overflow-wrap: anywhere;
+}
+
+.bd-article pre {
+    overflow-x: auto;
+}
+

@@ -1,8 +1,15 @@
 
 import smew
 
+from smew._version import __version__
+
 from smew.biogeochem import (
-    biogeochem_balance
+    biogeochem_balance,
+    biogeochem_balance_numba,
+)
+
+from smew.errors import (
+    ErrorCode, SMEWError, raise_for_error,
 )
 
 from smew.biogeochem2psd import (
@@ -36,8 +43,8 @@ from smew.ic import (
     f_CEC_to_conc,
     total_to_f_CEC_and_conc,
     f_CEC_and_conc_to_K,
-    Amann,
-    Kelland
+    conc_to_f_CEC_numba,
+    total_to_f_CEC_and_conc_numba,
 )
 
 from smew.weathering import (
@@ -62,11 +69,13 @@ from smew.soil_pores import (
 )
 
 from smew.organic_carbon import (
-    respiration
+    respiration,
+    respiration_numba,
 )
 
 from smew.vegetation import (
     veg,
+    veg_seasonal,
     up_act
 )
 
