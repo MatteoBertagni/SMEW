@@ -26,6 +26,9 @@ def _(mo):
     and ten-minute timestep. It uses **fixed weekly rainfall** so that repeated
     runs can be compared.
 
+    Numerical functions use Numba. To run them as Python, start marimo with
+    `NUMBA_DISABLE_JIT=1` set in the environment before importing SMEW.
+
     Read the explanations and change the inputs below to explore the model.
     Units are shown next to each input. The calculation runs automatically;
     the **Generate plots** button at the end draws the results on demand.
