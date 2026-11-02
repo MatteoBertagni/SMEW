@@ -87,3 +87,5 @@ before-test = 'python -m pip install "pytest>=8,<10" "marimo>=0.19.7,<1"'
 Homepage = "https://pypi.org/project/smew"
 Repository = "https://github.com/MatteoBertagni/SMEW"
 Documentation = "https://matteobertagni.github.io/SMEW/"
+Article = "https://doi.org/10.1029/2024MS004224"
+Zenodo = "https://doi.org/10.5281/zenodo.14356660"
