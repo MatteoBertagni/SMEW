@@ -6,22 +6,27 @@ import warnings
 
 import numpy as np
 from scipy.optimize import fsolve
+from numba import njit
 from numba.extending import overload
 from smew.equations import (
-    water_equations, h_equations, biogeochem_equations, cec_calcium_equation,
-    f_cec_alk_to_conc_equation, total_to_cec_equations, kelland_equations,
+    water_alk_equations, biogeochem_equations, cec_calcium_equation,
+    f_cec_alk_to_conc_equation, total_to_cec_equations,
 )
 
 
 # Integer tags passed to the native dispatcher to select the corresponding C residual
 # function pointer inside the compiled cminpack wrapper.
-WATER_SYSTEM = 0
-HYDROGEN_SYSTEM = 1
+WATER_ALK_SYSTEM = 1
 BIOGEOCHEM_SYSTEM = 2
 CEC_CALCIUM_SYSTEM = 3
 F_CEC_ALK_TO_CONC_SYSTEM = 4
 TOTAL_TO_CEC_SYSTEM = 5
-KELLAND_SYSTEM = 6
+
+
+@njit
+def _solver_work_size(n_unknowns):
+    """Number of float64 values required by MINPACK hybrd's work buffer."""
+    return n_unknowns * (3 * n_unknowns + 13) // 2
 
 
 # Execution contract: operates as the pure-Python fallback using SciPy's fsolve.
@@ -32,10 +37,8 @@ def _solve_system(system, state, parameters, residual, work, xtol):
     Compiled callers must return failures (status <= 0) to a Python entry point
     rather than raise while they still own Numba-allocated arrays to prevent memory leaks.
     """
-    if system == WATER_SYSTEM:
-        equations = water_equations
-    elif system == HYDROGEN_SYSTEM:
-        equations = h_equations
+    if system == WATER_ALK_SYSTEM:
+        equations = water_alk_equations
     elif system == BIOGEOCHEM_SYSTEM:
         equations = biogeochem_equations
     elif system == CEC_CALCIUM_SYSTEM:
@@ -44,8 +47,6 @@ def _solve_system(system, state, parameters, residual, work, xtol):
         equations = f_cec_alk_to_conc_equation
     elif system == TOTAL_TO_CEC_SYSTEM:
         equations = total_to_cec_equations
-    elif system == KELLAND_SYSTEM:
-        equations = kelland_equations
     else:
         raise ValueError("Unknown equation system")
     solution, _, status, _ = fsolve(

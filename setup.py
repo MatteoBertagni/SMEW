@@ -69,7 +69,7 @@ def native_extensions():
     source = (ROOT / "smew" / "equations.py").read_text(encoding="utf-8")
     # SciPy's vector wrappers pass NumPy arrays; the native residuals instead
     # receive C pointers. Keep the scientific functions verbatim in both builds.
-    python_only = {"biogeochem_equations", "total_to_cec_equations", "kelland_equations"}
+    python_only = {"biogeochem_equations", "total_to_cec_equations"}
     lines = source.splitlines(keepends=True)
     for node in ast.parse(source).body:
         if isinstance(node, ast.ImportFrom) and node.module == "numba":

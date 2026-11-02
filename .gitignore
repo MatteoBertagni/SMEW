@@ -20,6 +20,9 @@ __pycache__/
 .pytest_cache/
 .venv/
 __marimo__/
+docs/_build/
+docs/_generated/
+docs/.jupyter_cache/
 
 # Generated native-extension artifacts
 smew/_native/_equations*.so

@@ -6,20 +6,22 @@ import warnings
 from libc.float cimport DBL_EPSILON
 from libc.math cimport isfinite
 from smew._native._equations cimport (
-    water_residual, h_residual, biogeochem_residual, cec_calcium_residual,
-    f_cec_alk_to_conc_residual, total_to_cec_residual, kelland_residual,
+    water_alk_residual, biogeochem_residual, cec_calcium_residual,
+    f_cec_alk_to_conc_residual, total_to_cec_residual,
 )
 
-from smew import _utils
+from smew import _utils, equations
 
 # Native integers let callbacks use the shared identifiers without the GIL.
-cdef int WATER_SYSTEM = _utils.WATER_SYSTEM
-cdef int HYDROGEN_SYSTEM = _utils.HYDROGEN_SYSTEM
+cdef int WATER_ALK_SYSTEM = _utils.WATER_ALK_SYSTEM
 cdef int BIOGEOCHEM_SYSTEM = _utils.BIOGEOCHEM_SYSTEM
 cdef int CEC_CALCIUM_SYSTEM = _utils.CEC_CALCIUM_SYSTEM
 cdef int F_CEC_ALK_TO_CONC_SYSTEM = _utils.F_CEC_ALK_TO_CONC_SYSTEM
 cdef int TOTAL_TO_CEC_SYSTEM = _utils.TOTAL_TO_CEC_SYSTEM
-cdef int KELLAND_SYSTEM = _utils.KELLAND_SYSTEM
+
+# Copy shared dimensions into C integers for use without the GIL.
+cdef int BIOGEOCHEM_N_UNKNOWNS = equations.BIOGEOCHEM_N_UNKNOWNS
+cdef int TOTAL_TO_CEC_N_UNKNOWNS = equations.TOTAL_TO_CEC_N_UNKNOWNS
 
 cdef extern from "cminpack.h":
     ctypedef int (*hybrd_callback)(void *, int, const double *, double *, int) noexcept nogil
@@ -44,10 +46,8 @@ cdef int _callback(void *userdata, int n, const double *state,
     cdef int i
     if iflag == 0:
         return 0
-    if problem.system == WATER_SYSTEM:
-        out[0] = water_residual(state[0], p[0], p[1], p[2], p[3], p[4])
-    elif problem.system == HYDROGEN_SYSTEM:
-        out[0] = h_residual(state[0], p[0], p[1], p[2], p[3], p[4])
+    if problem.system == WATER_ALK_SYSTEM:
+        out[0] = water_alk_residual(state[0], p[0], p[1], p[2], p[3], p[4])
     elif problem.system == BIOGEOCHEM_SYSTEM:
         biogeochem_residual(
             state, p[0], p[1], p[2], p[3], p[4], p[5],
@@ -66,11 +66,6 @@ cdef int _callback(void *userdata, int n, const double *state,
             state, p[0], p[1], p[2], p[3], p[4], p[5],
             p[6], p[7], p[8], p[9], p[10], p[11], p[12],
             p[13], p[14], p[15], p[16], p[17], p[18], p[19], out)
-    elif problem.system == KELLAND_SYSTEM:
-        kelland_residual(
-            state, p[0], p[1], p[2], p[3], p[4], p[5],
-            p[6], p[7], p[8], p[9], p[10], p[11], p[12],
-            p[13], p[14], out)
     else:
         problem.callback_failed = 1
         return -1
@@ -82,18 +77,16 @@ cdef int _callback(void *userdata, int n, const double *state,
 
 
 cdef bint _system_layout(int system, int *n, int *parameters) noexcept nogil:
-    if system == WATER_SYSTEM or system == HYDROGEN_SYSTEM:
+    if system == WATER_ALK_SYSTEM:
         n[0], parameters[0] = 1, 5
     elif system == BIOGEOCHEM_SYSTEM:
-        n[0], parameters[0] = 16, 25
+        n[0], parameters[0] = BIOGEOCHEM_N_UNKNOWNS, 25
     elif system == CEC_CALCIUM_SYSTEM:
         n[0], parameters[0] = 1, 12
     elif system == F_CEC_ALK_TO_CONC_SYSTEM:
         n[0], parameters[0] = 1, 8
     elif system == TOTAL_TO_CEC_SYSTEM:
-        n[0], parameters[0] = 13, 20
-    elif system == KELLAND_SYSTEM:
-        n[0], parameters[0] = 5, 15
+        n[0], parameters[0] = TOTAL_TO_CEC_N_UNKNOWNS, 20
     else:
         return False
     return True
@@ -169,8 +162,7 @@ class Workspace:
         self.dimension = dimension
         self.residual = np.empty(dimension, dtype=np.float64)
         self.work = np.empty(
-            dimension * dimension + dimension * (dimension + 1) // 2
-            + 6 * dimension,
+            _utils._solver_work_size(dimension),
             dtype=np.float64,
         )
 
@@ -207,7 +199,7 @@ def solve(int system_id, initial, parameters,
         raise ValueError(f"solver needs a workspace for {n} unknowns")
     residual = workspace.residual
     work = workspace.work
-    if residual.size != n or work.size < n * n + n * (n + 1) // 2 + 6 * n:
+    if residual.size != n or work.size < _utils._solver_work_size(n):
         raise ValueError("workspace buffers have the wrong size")
 
     cdef double[::1] x_view = state

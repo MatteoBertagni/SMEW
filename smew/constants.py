@@ -93,7 +93,7 @@ def soil_hydraulic_const(soil):
         K_s = 3.0
         n = 0.435
 
-    elif soil == "silt loam":
+    elif soil == "silt loam" or soil == "silty loam":
         psi_s_log_cm = 56.6
         b = 5.30
         K_s = 0.62
@@ -444,11 +444,11 @@ def K_GT_CEC(soil, conv_mol):
         K_Ca_K = 10**(-1.16)*conv_mol #[conc]
         K_Ca_Na = 10**(0.75)*conv_mol #[conc]
         K_Ca_H = 10**(-5)*conv_mol #[conc] for tePas et al a better constant is 0.5 1e-9 *conv_mol,
-        K_Ca_Al = 10**(-1.7)/conv_mol #[conc^-1] #heterovalent (make it higher to favor Ca adsorbed) 
+        K_Ca_Al = 10**(-1.7)/conv_mol #[conc^-1] #heterovalent (make it higher to favor Ca adsorbed)
         #K_Ca_AlOH = 10**(-1.7)
         #K_Ca_AlOH2 = 10**(-1.7)*conv_mol
     
-    elif soil in ['loam', 'silt loam', 'silty loam', 'silt']:  # TODO: check which of silt or silty loam should be used
+    elif soil in ['loam', 'silt loam', 'silty loam', 'silt', 'sandy clay loam', 'silty clay loam']:
         K_Ca_Mg = 10**(0.1); #[-]
         K_Ca_K = 10**(-2)*conv_mol
         K_Ca_Na = 10**(0.38)*conv_mol
@@ -457,7 +457,7 @@ def K_GT_CEC(soil, conv_mol):
         #K_Ca_AlOH = 10**(-0.86)
         #K_Ca_AlOH2 = 10**(-0.86)*conv_mol
         
-    elif soil in ['clay', 'clay loam', 'silty clay']:
+    elif soil in ['clay', 'clay loam', 'silty clay', 'sandy clay']:
         K_Ca_Mg = 10**(0.39); #[-]
         K_Ca_K = 10**(-2.42)*conv_mol
         K_Ca_Na = 10**(0.774)*conv_mol
@@ -467,11 +467,10 @@ def K_GT_CEC(soil, conv_mol):
         #K_Ca_AlOH2 = 10**(-0.2)*conv_mol
     
     else:
-        # TODO: what about 'sandy clay loam', 'silty clay loam', 'sandy clay'
         raise ValueError(
             "Unknown soil type '" + soil + "' in K_GT_CEC. Supported soil types: "
             "sand, loamy sand, sandy loam, loam, silt loam, silt, "
-            "clay loam, silty clay, clay"
+            "clay loam, silty clay, clay, sandy clay loam, silty clay loam, sandy clay"
         )
         
     # K_Na_K = (K_Ca_K/K_Ca_Na)**(1/2)]

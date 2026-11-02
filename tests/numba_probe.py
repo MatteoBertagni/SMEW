@@ -55,7 +55,7 @@ def collect_outputs(*, helpers_only=False):
     import smew
     from smew import equations, vegetation, soil_pores
     from smew.biogeochem import _biogeochem_balance
-    from smew.ic import _conc_to_f_CEC, _total_to_f_CEC_and_conc, _Kelland
+    from smew.ic import _conc_to_f_CEC, _total_to_f_CEC_and_conc
     from smew.organic_carbon import _respiration
 
     outputs = {}
@@ -76,16 +76,11 @@ def collect_outputs(*, helpers_only=False):
         "sand", "loamy sand", "sandy loam", "loam", "silt", "silt loam",
         "sandy clay loam", "silty clay loam", "clay loam", "sandy clay", "silty clay", "clay",
     )
-    # CEC coefficients are unavailable for three hydrology/pore textures.
-    cec_soil_names = tuple(
-        soil for soil in soil_names
-        if soil not in ("sandy clay loam", "silty clay loam", "sandy clay")
-    )
     for soil in soil_names:
         record("soil/" + soil, smew.soil_const(soil))
         for model in ("ding2016", "campbell"):
             record(f"pores/{soil}/{model}", smew.soil_pore_pdf(soil, model, 50))
-    for soil in cec_soil_names:
+    for soil in soil_names:
         record("K_GT_CEC/" + soil, smew.K_GT_CEC(soil, 1.))
     call(soil_pores._gradient, np.array([1., 2., 8., 10.]), np.array([0., .2, 1., 2.]))
     for fn in (smew.D_0, smew.Dw_0, smew.plant_nutr_f):
@@ -141,15 +136,14 @@ def collect_outputs(*, helpers_only=False):
     for rain in (smew.rain_stoc(.2, .01, 365., 1.), smew.rain_stoc_season(np.full(12, .2), np.full(12, .01), 365., 1.)):
         assert rain.shape == (365,) and np.isfinite(rain).all() and (rain >= 0.).all()
     fractions = np.array([.6, .2, .08, .05, .04, .03])
-    for soil in cec_soil_names:
+    for soil in soil_names:
         record("f_CEC_to_conc/" + soil, smew.f_CEC_to_conc(fractions, 6., soil, 1., 1.))
     conc, _ = call(smew.f_CEC_to_conc, fractions, 6., "loam", 1., 1.)
     call(smew.f_CEC_and_conc_to_K, fractions, np.asarray(conc), 6., "loam", 1., 1.)
-    call(smew.Amann, fractions, 6., .001, "loam", 1., 1.)
     # Exercise every equation directly as well as through cminpack.
     for name, fn in inspect.getmembers(equations):
         if name.endswith(("_equations", "_equation", "_residual")):
-            size = 16 if name.startswith("biogeochem") else 13 if name.startswith("total_to_cec") else 5 if name.startswith("kelland") else 1
+            size = 16 if name.startswith("biogeochem") else 13 if name.startswith("total_to_cec") else 1
             out = np.zeros(size)
             args = [np.ones(size) if param == "p" else out if param == "out" else 1.
                     for param in inspect.signature(fn).parameters]
@@ -161,8 +155,6 @@ def collect_outputs(*, helpers_only=False):
         totals = [conc[i] * (.4*.3*.6*1000) + fractions[i]*.1/charge
                   for i, charge in enumerate((2, 2, 1, 1))]
         call(smew.total_to_f_CEC_and_conc, totals, 6., .07, [.6], "loam", .4, .3, .1, 1., 1.)
-        totals[0] += .01
-        call(smew.Kelland, totals, 6., conc, [.6], "loam", .4, .3, .1, 1., 1.)
         from tests.example_marimo_notebook import app
         original = smew.biogeochem_balance
         freeze = False
@@ -233,6 +225,14 @@ def collect_outputs(*, helpers_only=False):
             for inputs in simulation_inputs:
                 check_released(lambda: original(**inputs))
             inputs = simulation_inputs[0]
+            # Rain and the alternative soil H estimate share the same error code,
+            # while their messages retain the stage that failed.
+            for field, context in (("temp_soil", "biogeochem.rainwater"),
+                                   ("r_het", "biogeochem.hydrogen")):
+                check_released(
+                    lambda: original(**{**inputs, field: np.full_like(inputs[field], np.nan)}),
+                    RuntimeError, context, smew.ErrorCode.WATER_ALK_RESIDUAL,
+                )
             check_released(
                 lambda: original(**{**inputs, "conc_in": [0.] * 5}),
                 RuntimeError, "Residual evaluation failed",
@@ -285,10 +285,10 @@ def collect_outputs(*, helpers_only=False):
         "pore_pdf_ding2016", "pore_pdf_campbell", "veg", "veg_seasonal_numba", "up_act",
         "carb_W", "sil_Omega", "sil_Wr", "psd_evol", "psd_number_from_mass",
         "normalized_cumulative_area", "wet_f_Anand", "wetness_SA", "mov_avg",
-        "f_CEC_to_conc", "f_CEC_and_conc_to_K", "Amann",
+        "f_CEC_to_conc", "f_CEC_and_conc_to_K",
     )] + [vegetation.get_stage_boundaries, vegetation.get_season_boundaries, _respiration]
     if not helpers_only:
-        numerical += [_biogeochem_balance, _conc_to_f_CEC, _total_to_f_CEC_and_conc, _Kelland]
+        numerical += [_biogeochem_balance, _conc_to_f_CEC, _total_to_f_CEC_and_conc]
     for fn in numerical:
         if disabled:
             assert not hasattr(fn, "py_func"), fn.__name__

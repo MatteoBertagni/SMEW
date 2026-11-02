@@ -12,6 +12,11 @@ this file directly; compiled runs require a Cython rebuild after edits.
 import numpy as np
 from numba import njit
 
+# Number of unknowns in each vector system. Update alongside the residuals,
+# initial guesses, and solution unpacking when adding or removing unknowns.
+BIOGEOCHEM_N_UNKNOWNS = 16
+TOTAL_TO_CEC_N_UNKNOWNS = 13
+
 # p contains trial values; out receives residuals in place.
 # Keep state indices and buffer sizes consistent with callers when adding unknowns.
 # After edits, rebuild with `make install-native` and check with `make test`.
@@ -19,38 +24,25 @@ from numba import njit
 
 # Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
 @njit(nogil=True, error_model="numpy")
-def water_residual(H_rain, Alk_rain, k1, k2, CO2_w_rain, k_w):
-    return Alk_rain - (
-        k1 * CO2_w_rain / H_rain
-        + 2 * k1 * k2 * CO2_w_rain / H_rain**2
-        - H_rain
-        + k_w / H_rain
+def water_alk_residual(H, Alk, k1, k2, CO2_w, k_w):
+    """Return prescribed minus calculated aqueous alkalinity at hydrogen ``H``.
+
+    Shared by rainwater equilibrium and the alternative soil hydrogen estimate.
+    Parameters after ``H`` are ``(Alk, k1, k2, CO2_w, k_w)`` in both solvers.
+    """
+    return Alk - (
+        k1 * CO2_w / H
+        + 2 * k1 * k2 * CO2_w / H**2
+        - H
+        + k_w / H
     )
 
 
 # SciPy only: unpack p[0] and return the scalar residual to fsolve.
 @njit(nogil=True, error_model="numpy")
-def water_equations(p, Alk_rain, k1, k2, CO2_w_rain, k_w):
-    """Rainwater alkalinity residual; ``p`` contains H"""
-    return water_residual(p[0], Alk_rain, k1, k2, CO2_w_rain, k_w)
-
-
-# Return one residual; shared by the SciPy wrapper and compiled cminpack callback.
-@njit(nogil=True, error_model="numpy")
-def h_residual(H0, k1, k2, CO2_w0, k_w, Alk0):
-    return (
-        k1 * CO2_w0 / H0
-        + 2 * k1 * k2 * CO2_w0 / H0**2
-        - H0
-        + k_w / H0
-    ) - Alk0
-
-
-# SciPy only: unpack p[0] and return the scalar residual to fsolve.
-@njit(nogil=True, error_model="numpy")
-def h_equations(p, k1, k2, CO2_w0, k_w, Alk0):
-    """Alternative hydrogen guess residual; ``p`` contains H"""
-    return h_residual(p[0], k1, k2, CO2_w0, k_w, Alk0)
+def water_alk_equations(p, Alk, k1, k2, CO2_w, k_w):
+    """SciPy adapter for :func:`water_alk_residual`; ``p`` contains only ``H``."""
+    return water_alk_residual(p[0], Alk, k1, k2, CO2_w, k_w)
 
 
 # Fill out with 16 residuals; used by the SciPy wrapper and compiled cminpack callback.
@@ -157,7 +149,7 @@ def biogeochem_equations(
     K_Ca_K,
     K_Ca_H,
 ):
-    out = np.empty(16)
+    out = np.empty(BIOGEOCHEM_N_UNKNOWNS)
     biogeochem_residual(
         p,
         Alk_tot,
@@ -393,7 +385,7 @@ def total_to_cec_equations(
     K_Ca_K,
     K_Ca_H,
 ):
-    out = np.empty(13)
+    out = np.empty(TOTAL_TO_CEC_N_UNKNOWNS)
     total_to_cec_residual(
         p,
         H,
@@ -423,85 +415,4 @@ def total_to_cec_equations(
         out[4], out[5], out[6], out[7],
         out[8], out[9], out[10], out[11],
         out[12],
-    )
-
-
-# Fill out with 5 residuals; used by the SciPy wrapper and compiled cminpack callback.
-@njit(nogil=True, error_model="numpy")
-def kelland_residual(
-    p,
-    Al_w,
-    Al,
-    H,
-    Ca,
-    Ca_tot,
-    f_Mg,
-    f_K,
-    f_Na,
-    n,
-    Zr,
-    s,
-    CEC_tot,
-    conv_Al,
-    K_Ca_Al,
-    K_Ca_H,
-    out,
-):
-    """Residuals for the five Kelland initial-condition unknowns."""
-    Al_tot = p[0]
-    CaCO3 = p[1]
-    f_Al = p[2]
-    f_H = p[3]
-    f_Ca = p[4]
-    out[0] = Al_w*n*Zr*s*1000 + (f_Al/3)*CEC_tot*conv_Al - Al_tot
-    out[1] = Ca*n*Zr*s*1000 + (f_Ca/2)*CEC_tot + CaCO3 - Ca_tot
-    out[2] = f_Al - (Al/conv_Al)*(f_Ca**3 / (K_Ca_Al*Ca**3))**0.5
-    out[3] = f_H - H*(f_Ca / (K_Ca_H*Ca))**0.5
-    out[4] = 1 - (f_Ca + f_Al + f_Mg + f_Na + f_K + f_H)
-    return 0
-
-
-# SciPy only: allocate out and return the 5 residuals as a tuple to fsolve.
-@njit(nogil=True, error_model="numpy")
-def kelland_equations(
-    p,
-    Al_w,
-    Al,
-    H,
-    Ca,
-    Ca_tot,
-    f_Mg,
-    f_K,
-    f_Na,
-    n,
-    Zr,
-    s,
-    CEC_tot,
-    conv_Al,
-    K_Ca_Al,
-    K_Ca_H,
-):
-    out = np.empty(5)
-    kelland_residual(
-        p,
-        Al_w,
-        Al,
-        H,
-        Ca,
-        Ca_tot,
-        f_Mg,
-        f_K,
-        f_Na,
-        n,
-        Zr,
-        s,
-        CEC_tot,
-        conv_Al,
-        K_Ca_Al,
-        K_Ca_H,
-        out
-    )
-    return (
-        out[0], out[1], out[2], out[3],
-        out[4],
     )

@@ -6,26 +6,15 @@
 
 import cython
 
-cdef double water_residual(
-    double H_rain,
-    double Alk_rain,
+
+cdef double water_alk_residual(
+    double H,
+    double Alk,
     double k1,
     double k2,
-    double CO2_w_rain,
+    double CO2_w,
     double k_w,
 ) noexcept nogil
-
-
-
-cdef double h_residual(
-    double H0,
-    double k1,
-    double k2,
-    double CO2_w0,
-    double k_w,
-    double Alk0,
-) noexcept nogil
-
 
 
 # Declare local variables as C doubles for native compilation; declaration order does not matter.
@@ -102,34 +91,4 @@ cdef int total_to_cec_residual(
     double f_acid,
     double K_Ca_Al, double K_Ca_Mg, double K_Ca_Na,
     double K_Ca_K, double K_Ca_H, double *out,
-) noexcept nogil
-
-
-
-# Declare local variables as C doubles for native compilation; declaration order does not matter.
-@cython.locals(
-    Al_tot=cython.double,
-    CaCO3=cython.double,
-    f_Al=cython.double,
-    f_H=cython.double,
-    f_Ca=cython.double,
-)
-cdef int kelland_residual(
-    const double *p,
-    double Al_w,
-    double Al,
-    double H,
-    double Ca,
-    double Ca_tot,
-    double f_Mg,
-    double f_K,
-    double f_Na,
-    double n,
-    double Zr,
-    double s,
-    double CEC_tot,
-    double conv_Al,
-    double K_Ca_Al,
-    double K_Ca_H,
-    double *out,
 ) noexcept nogil
