@@ -76,7 +76,7 @@ manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
 
 [tool.cibuildwheel.macos]
-environment = { SMEW_BUILD_NATIVE = "1", SMEW_CPU_TARGET = "portable", MACOSX_DEPLOYMENT_TARGET = "11.0" }
+environment = { SMEW_BUILD_NATIVE = "1", SMEW_CPU_TARGET = "portable", MACOSX_DEPLOYMENT_TARGET = "15.0" }
 
 [tool.cibuildwheel.windows]
 # Keep version bounds quoted: cmd.exe treats bare < and > as redirections.

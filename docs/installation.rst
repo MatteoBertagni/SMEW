@@ -17,6 +17,8 @@ You do not need a C compiler to install it. Numba is installed automatically;
 it translates numerical functions into fast machine code the first time you
 use them. See :doc:`usage` to choose how the model runs and which solver it uses.
 
+macOS wheels require macOS 15 or newer on both Apple Silicon and Intel Macs.
+
 For an isolated environment, use Python's built-in ``venv``:
 
 .. code-block:: bash

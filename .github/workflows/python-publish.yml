@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   sdist:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,15 +38,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             arch: x86_64
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-26.04-arm
             arch: aarch64
-          - os: macos-15-intel
+          - os: macos-26-intel
             arch: x86_64
-          - os: macos-14
+          - os: macos-26
             arch: arm64
-          - os: windows-2022
+          - os: windows-2025
             arch: AMD64
     steps:
       - uses: actions/setup-python@v5
@@ -82,7 +82,7 @@ jobs:
   pypi-publish:
     if: github.event_name == 'release'
     needs: [sdist, wheels]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       id-token: write
     steps:
