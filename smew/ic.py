@@ -45,11 +45,11 @@ def _conc_to_f_CEC(conc_in, pH_in, soil, conv_mol, conv_Al):
     Al = (H**4 / (H**4 + H**3*K1 + H**2*K1*K2 + H*K1*K2*K3 + K1*K2*K3*K4))*Al_w  #mol-conv/l
 
     #CEC fractions
-    f_Ca = np.array((0.2,))
+    calcium_state = np.array((0.2,))
     parameters = np.array((Al, conv_Al, Ca, Mg, Na, K, H, K_Ca_Al, K_Ca_Mg, K_Ca_Na, K_Ca_K, K_Ca_H))
-    residual = np.empty(f_Ca.size)
-    work = np.empty(_solver_work_size(f_Ca.size))
-    status = _solve_system(CEC_CALCIUM_SYSTEM, f_Ca, parameters, residual, work, 1.49012e-8)
+    residual = np.empty(calcium_state.size)
+    work = np.empty(_solver_work_size(calcium_state.size))
+    status = _solve_system(CEC_CALCIUM_SYSTEM, calcium_state, parameters, residual, work, 1.49012e-8)
     if status <= 0:
         return _solver_error(
             status, residual, ErrorCode.CEC_RESIDUAL, ErrorCode.CEC_SOLVER_INPUT,
@@ -57,8 +57,9 @@ def _conc_to_f_CEC(conc_in, pH_in, soil, conv_mol, conv_Al):
             + '; pH=' + _float_text(pH_in)
             + ', Ca=' + _float_text(Ca)
             + ', Al=' + _float_text(Al)
-            + ', trial_f_Ca=' + _float_text(f_Ca[0]),
+            + ', trial_f_Ca=' + _float_text(calcium_state[0]),
         )
+    f_Ca = calcium_state[0]
     f_Al = (Al/conv_Al) * (f_Ca**3 / (K_Ca_Al * Ca**3))**0.5
     f_Mg = Mg * (f_Ca / (K_Ca_Mg*Ca))
     f_Na = Na * (f_Ca / (K_Ca_Na*Ca))**0.5
