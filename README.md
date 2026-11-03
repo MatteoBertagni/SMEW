@@ -4,6 +4,16 @@
 
 # Soil Model for Enhanced Weathering (SMEW)
 
+[![PyPI version](https://img.shields.io/pypi/v/smew.svg)](https://pypi.org/project/smew/)
+[![Python requirement](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fsmew%2Fjson&query=%24.info.requires_python&label=python&color=blue)](https://pypi.org/project/smew/)
+[![Monthly PyPI downloads](https://img.shields.io/pypi/dm/smew.svg)](https://pypistats.org/packages/smew)
+[![Zenodo DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14356660.svg)](https://doi.org/10.5281/zenodo.14356660)
+[![Article DOI](https://img.shields.io/badge/article_DOI-10.1029%2F2024MS004224-blue.svg)](https://doi.org/10.1029/2024MS004224)
+[![Tests](https://github.com/MatteoBertagni/SMEW/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/MatteoBertagni/SMEW/actions/workflows/tests.yml)
+[![Wheel build status](https://github.com/MatteoBertagni/SMEW/actions/workflows/python-publish.yml/badge.svg)](https://github.com/MatteoBertagni/SMEW/actions/workflows/python-publish.yml)
+[![Documentation](https://github.com/MatteoBertagni/SMEW/actions/workflows/docs.yml/badge.svg?branch=main)](https://matteobertagni.github.io/SMEW/)
+[![License: AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](https://github.com/MatteoBertagni/SMEW/blob/main/LICENSE.txt)
+
 This folder contains all material related to the Soil Model for Enhanced Weathering (SMEW) published in Bertagni et al., 2025, JAMES
 The material includes the numerical codes for the model, the experimental data used for the analyses, and the Jupyter notebooks for the model-experiment comparison.
 
