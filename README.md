@@ -21,7 +21,7 @@ pip install smew
 
 Release wheels contain the compiled Cython equations and bundled cminpack solver;
 installing a matching wheel requires no C compiler. Wheels are built for CPython
-3.11–3.14 on Linux x86-64 and ARM64 (glibc 2.28+), macOS Apple Silicon
+3.11–3.15 on Linux x86-64 and ARM64 (glibc 2.28+), macOS Apple Silicon
 (macOS 15+), and Windows x86-64. Intel macOS wheels require macOS 15+,
 support CPython 3.11–3.13, and use Numba 0.62, the last series with upstream
 Intel macOS binaries

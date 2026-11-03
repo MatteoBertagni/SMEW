@@ -29,7 +29,9 @@ dependencies = [
     "matplotlib",
     # Numba 0.62 is the last series providing Intel macOS wheels.
     "numba>=0.62,<0.63; sys_platform == 'darwin' and platform_machine == 'x86_64'",
-    "numba>=0.62; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "numba>=0.62; python_version < '3.15' and (sys_platform != 'darwin' or platform_machine != 'x86_64')",
+    # Numba 0.68 adds Python 3.15 support.
+    "numba>=0.68; python_version >= '3.15' and (sys_platform != 'darwin' or platform_machine != 'x86_64')",
 ]
 requires-python = ">=3.11"
 
@@ -62,8 +64,8 @@ include-package-data = false
 version = {attr = "smew._version.__version__"}
 
 [tool.cibuildwheel]
-build = "cp3{11,12,13,14}-*"
-skip = ["*-musllinux_*", "cp314-macosx_x86_64"]
+build = "cp3{11,12,13,14,15}-*"
+skip = ["*-musllinux_*", "cp3{14,15}-macosx_x86_64"]
 environment = { SMEW_BUILD_NATIVE = "1", SMEW_CPU_TARGET = "portable" }
 test-requires = ["pytest>=8,<10", "marimo>=0.19.7,<1"]
 test-sources = ["tests"]
