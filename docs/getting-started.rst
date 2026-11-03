@@ -25,8 +25,8 @@ Use Python 3.11 or newer. In your terminal, with your Python environment activat
 ---------------------
 
 Download `Example.ipynb from GitHub
-<https://github.com/MatteoBertagni/SMEW/blob/HEAD/Example.ipynb>`_ using
-**Download raw file**, or use the copy in the repository's main folder.
+<https://github.com/MatteoBertagni/SMEW/blob/HEAD/notebooks/Example.ipynb>`_ using
+**Download raw file**, or use ``notebooks/Example.ipynb`` in the repository.
 From the folder containing the notebook, run:
 
 .. code-block:: bash

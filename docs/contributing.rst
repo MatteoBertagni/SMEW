@@ -3,7 +3,7 @@ Maintaining the documentation
 
 Edit the README for the home page, ``docs/*.rst`` for the guides, or the
 explanatory text inside Python functions (their *docstrings*) for the API
-reference. Edit ``Example.ipynb`` to change the example.
+reference. Edit ``notebooks/Example.ipynb`` to change the example.
 
 Preview your changes
 ---------------------

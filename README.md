@@ -49,7 +49,7 @@ import smew
 
 Use `"1"` to disable Numba and `"0"` to enable it. After changing this value
 in a notebook, restart the kernel and run all cells from the top. The
-[Example notebook](Example.ipynb) shows how to use this option. SMEW's
+[Example notebook](notebooks/Example.ipynb) shows how to use this option. SMEW's
 default when this variable is unset is Numba enabled.
 
 SMEW solves coupled nonlinear equations to find quantities such as soil pH and
@@ -85,6 +85,7 @@ function pointers.
 ## Folders
 
 - `smew`: contains the python codes for the SMEW numerical model
+- `notebooks`: contains the example and model-experiment comparison Jupyter notebooks
 - `Exp_data`: contains the experimental data obtained from the various publications through a web plot digitizer (https://apps.automeris.io/wpd/)
 - `pyeto`: contains the Python codes to estimate the potential evapotranspiration (Mark Richards, https://pyeto.readthedocs.io/en/latest/index.html)
 
@@ -101,8 +102,8 @@ function pointers.
 ## Instructions
 
 1. Download or pull the whole repository into a selected working directory.
-2. Run the Jupyter notebook 'Example' to verify that the model components (smew) are correctly used within the notebooks.
-3. Change the parameters in the file 'Example' to run specific simulations for different scenarios.
+2. Run `notebooks/Example.ipynb` to verify that the model components (smew) are correctly used within the notebooks.
+3. Change the parameters in `notebooks/Example.ipynb` to run specific simulations for different scenarios.
 4. For the Jupyter notebooks of the model-experiment comparison, define the selected base directory in the first cell of each notebook.
 
 ## Documentation
@@ -113,7 +114,7 @@ The Sphinx documentation uses this README as its landing page and has four main
 sections:
 
 - [Getting started](docs/getting-started.rst): installation and running the
-  [Example notebook](Example.ipynb).
+  [Example notebook](notebooks/Example.ipynb).
 - [User guide](docs/user-guide.rst): preparing simulations, choosing Python or
   compiled mode, and understanding warnings and failed calculations.
 - [Model development](docs/model-development.rst): how the chemical equations
