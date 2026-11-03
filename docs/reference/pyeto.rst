@@ -1,8 +1,9 @@
 Evapotranspiration support (pyeto)
 ==================================
 
-SMEW bundles pyeto for its evapotranspiration calculations. These functions
-are available from ``pyeto``; they are not SMEW solver entry points.
+SMEW bundles pyeto in ``third_party/pyeto`` for its evapotranspiration
+calculations. After installing SMEW, these functions are available from
+``pyeto``; they are not SMEW solver entry points.
 
 FAO equations
 -------------

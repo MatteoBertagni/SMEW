@@ -72,7 +72,7 @@ def _readme_links(app, doctree):
         return
     for node in doctree.findall(addnodes.pending_xref):
         target = node.get("reftarget", "")
-        if target == "Example.ipynb":
+        if target == "notebooks/Example.ipynb":
             node["reftarget"] = "_generated/Example"
             node["refdomain"] = "std"
             node["reftype"] = "doc"
@@ -80,7 +80,10 @@ def _readme_links(app, doctree):
             node["reftarget"] = str(Path(target.removeprefix("docs/")).with_suffix(""))
             node["refdomain"] = "std"
             node["reftype"] = "doc"
-        elif target in {"tests/README.md", "third_party/cminpack/CopyrightMINPACK.txt"}:
+        elif target in {
+            "tests/README.md", "third_party/cminpack/CopyrightMINPACK.txt",
+            "third_party/pyeto/LICENSE.txt",
+        }:
             link = nodes.reference(
                 "", "", refuri=f"https://github.com/MatteoBertagni/SMEW/blob/HEAD/{target}"
             )
@@ -95,8 +98,8 @@ def _readme_links(app, doctree):
 
 
 def _prepare_example(app):
-    """Stage the root notebook without modifying its source or saved outputs."""
-    notebook = nbformat.read(ROOT / "Example.ipynb", as_version=4)
+    """Stage the example notebook without modifying its source or saved outputs."""
+    notebook = nbformat.read(ROOT / "notebooks" / "Example.ipynb", as_version=4)
     for cell in notebook.cells:
         if cell.cell_type == "code":
             cell.outputs = []

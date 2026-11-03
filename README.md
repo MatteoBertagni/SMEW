@@ -1,11 +1,21 @@
 <p align="center">
-  <img src="images/SMEW_logo.png" class="dark-light" alt="SMEW logo" width="150">
+  <img src="https://raw.githubusercontent.com/MatteoBertagni/SMEW/main/images/SMEW_logo.png" class="dark-light" alt="SMEW logo" width="150">
 </p>
 
 # Soil Model for Enhanced Weathering (SMEW)
 
-This folder contains all material related to the Soil Model for Enhanced Weathering (SMEW) published in Bertagni et al., 2025, JAMES
-The material includes the numerical codes for the model, the experimental data used for the analyses, and the Jupyter notebooks for the model-experiment comparison.
+[![PyPI version](https://img.shields.io/pypi/v/smew.svg)](https://pypi.org/project/smew/)
+[![Python requirement](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fsmew%2Fjson&query=%24.info.requires_python&label=python&color=blue)](https://pypi.org/project/smew/)
+[![Monthly PyPI downloads](https://img.shields.io/pypi/dm/smew.svg)](https://pypistats.org/packages/smew)
+[![Zenodo DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14356660.svg)](https://doi.org/10.5281/zenodo.14356660)
+[![Article DOI](https://img.shields.io/badge/article_DOI-10.1029%2F2024MS004224-blue.svg)](https://doi.org/10.1029/2024MS004224)
+[![Tests](https://github.com/MatteoBertagni/SMEW/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/MatteoBertagni/SMEW/actions/workflows/tests.yml)
+[![Wheel build status](https://github.com/MatteoBertagni/SMEW/actions/workflows/python-publish.yml/badge.svg)](https://github.com/MatteoBertagni/SMEW/actions/workflows/python-publish.yml)
+[![Documentation](https://github.com/MatteoBertagni/SMEW/actions/workflows/docs.yml/badge.svg?branch=main)](https://matteobertagni.github.io/SMEW/)
+[![License: AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](https://github.com/MatteoBertagni/SMEW/blob/main/LICENSE.txt)
+
+This repository contains the Soil Model for Enhanced Weathering (SMEW), with associated examples notebooks and experimental data, initially released with [Bertagni et al., 2025, JAMES](https://doi.org/10.1029/2024MS004224).
+SMEW is a dynamic, depth-averaged ecohydrological and biogeochemical model for enhanced weathering dynamics in the upper soil layers.
 
 Article: [https://doi.org/10.1029/2024MS004224](https://doi.org/10.1029/2024MS004224)\
 Documentation: [https://matteobertagni.github.io/SMEW/](https://matteobertagni.github.io/SMEW/)\
@@ -13,80 +23,69 @@ Zenodo repository: [https://doi.org/10.5281/zenodo.14356660](https://doi.org/10.
 GitHub repository: [https://github.com/MatteoBertagni/SMEW](https://github.com/MatteoBertagni/SMEW)\
 PyPi package: [https://pypi.org/project/smew](https://pypi.org/project/smew)
 
-Install with:
+
+## Quick start
+
+With Python 3.11 or newer, install with:
 
 ```bash
 pip install smew
 ```
 
-Release wheels contain the compiled Cython equations and bundled cminpack solver;
-installing a matching wheel requires no C compiler. Wheels are built for CPython
-3.11–3.14 on Linux x86-64 and ARM64 (glibc 2.28+), macOS Apple Silicon
-(macOS 15+), and Windows x86-64. Intel macOS wheels require macOS 15+,
-support CPython 3.11–3.13, and use Numba 0.62, the last series with upstream
-Intel macOS binaries
-([Numba release notes](https://numba.readthedocs.io/en/stable/release/0.62.0-notes.html)).
-Dependencies may impose newer OS requirements.
-Alpine/musl, Windows ARM64, and free-threaded Python are not currently wheel targets.
-If no matching wheel exists, pip attempts to build the source distribution and
-requires a C compiler. To require a SMEW wheel instead, use
-`python -m pip install --only-binary=smew smew`.
+This installs SMEW from PyPI, including precompiled code when a compatible package is available for your platform.
 
-Numerical calculations use ordinary Numba `@njit` decorators, including
-vegetation, temperature, rainfall, moisture, organic carbon, soil pores,
-weathering, initialization, and the main biogeochemistry model. Compilation happens
-on the first call. `ET0` and plotting functions remain Python.
+If installation asks for a C compiler, see the 
+[installation guide](https://matteobertagni.github.io/SMEW/installation.html) for setup instructions and 
+compiler-free alternatives.
 
-Choose the solver mode in the **first cell of a notebook** or at the top of a
-script, before importing Numba or SMEW:
+Once installed, download the example notebook located in [notebooks/Example.ipynb](notebooks/Example.ipynb).
+Open it with Jupyter and run all cells!
+
+To run the model–experiment comparisons, download or clone the full repository so the notebooks and experimental data 
+stay together.
+If you move the files, update the data path near the top of each notebook.
+
+
+## Choose how the model runs
+
+SMEW provides two modes using the same chemical equations:
+
+- **Compiled mode (default):** uses Numba, Cython equations and cminpack for
+  faster simulations. The first calculation in each Python session includes
+  compilation time for Numba.
+- **Python mode:** uses Python equations and SciPy’s `fsolve`, making it easier
+  to inspect calculations and test equation changes.
+
+To select a mode, put this in the **first notebook cell** or at the top of
+your script (like in the example notebook), before importing SMEW or Numba:
 
 ```python
 import os
 
-os.environ["NUMBA_DISABLE_JIT"] = "1"  # "1": Python/SciPy; "0": Numba/Cython/cminpack
+os.environ["NUMBA_DISABLE_JIT"] = "1"  # "1": Python; "0": compiled
 import smew
 ```
 
-Use `"1"` to disable Numba and `"0"` to enable it. After changing this value
-in a notebook, restart the kernel and run all cells from the top. The
-[Example notebook](Example.ipynb) shows how to use this option. SMEW's
-default when this variable is unset is Numba enabled.
+After changing modes, **restart the kernel and run all cells**.
+Compiled chemistry calculations require the native extensions included in
+release wheels.
 
-SMEW solves coupled nonlinear equations to find quantities such as soil pH and
-dissolved ion concentrations that satisfy the model's chemical balances and
-equilibrium relations. With Numba enabled, it uses **cminpack**, a numerical
-solver written in C, together with compiled versions of SMEW's equations. This
-is called the **native solver** because it runs as compiled machine code.
-With Numba disabled, SMEW solves these equations using SciPy's `fsolve` and
-the Python versions of the equations.
+When comparing Python and compiled modes, use the same rainfall input array.
+Setting the same random seed in both modes does not guarantee identical rainfall.
 
-The native solver is loaded only when these nonlinear equations need to be
-solved in Numba mode. Other calculations, such as temperature, rainfall and
-vegetation growth, can use Numba without the native solver installed.
+See the [example notebook](https://matteobertagni.github.io/SMEW/_generated/Example.html) to get started,
+[solver guide](https://matteobertagni.github.io/SMEW/solver.html) for numerical details, and
+[troubleshooting](https://matteobertagni.github.io/SMEW/errors.html) for warnings and failed simulations.
 
-Small Python entry-point wrappers handle array conversion, solver
-warnings, numerical failures, and result dictionaries. In particular, failed
-compiled simulations return before Python raises the exception, so Numba can
-release their arrays. This matters when a worker runs many simulations in the
-same process to avoid memory leaks.
-Errors expose a globally unique `ErrorCode` and a debug message containing the
-failing component, timestep, and relevant numerical values. Python callers can
-catch `smew.SMEWError`; compiled callers use the public `*_numba` entry points,
-which return `(result, error_code, error_message)` without raising. See
-[model failures](docs/errors.rst) for examples and supported interfaces.
-The deprecated two-application model returns named numerical results, but its
-outer loop and nonlinear solves still use Python/SciPy.
-
-Stochastic rainfall uses NumPy's exponential sampler. Numba maintains its own
-random state, so Python and compiled rainfall runs need not produce identical
-samples. Numba's disk cache is disabled because the solver uses process-local
-function pointers.
 
 ## Folders
 
 - `smew`: contains the python codes for the SMEW numerical model
-- `Exp_data`: contains the experimental data obtained from the various publications through a web plot digitizer (https://apps.automeris.io/wpd/)
-- `pyeto`: contains the Python codes to estimate the potential evapotranspiration (Mark Richards, https://pyeto.readthedocs.io/en/latest/index.html)
+- `docs`: contains the Sphinx documentation of SMEW
+- `tests`: contains the test suite of SMEW
+- `notebooks`: contains the example and model-experiment comparison Jupyter notebooks
+- `notebooks/Exp_data`: contains the experimental data obtained from the various publications through a web plot digitizer (https://apps.automeris.io/wpd/)
+- `third_party`: contains bundled dependencies: pyeto for potential evapotranspiration (Mark Richards, https://pyeto.readthedocs.io/en/latest/index.html) and the cminpack solver
 
 
 ## Jupyter notebooks
@@ -98,13 +97,6 @@ function pointers.
 - `Mesocosm_Kelland`: model-experiment comparisons with the experiments by Kelland et al. (2020)
 
 
-## Instructions
-
-1. Download or pull the whole repository into a selected working directory.
-2. Run the Jupyter notebook 'Example' to verify that the model components (smew) are correctly used within the notebooks.
-3. Change the parameters in the file 'Example' to run specific simulations for different scenarios.
-4. For the Jupyter notebooks of the model-experiment comparison, define the selected base directory in the first cell of each notebook.
-
 ## Documentation
 
 Read the [online documentation](https://matteobertagni.github.io/SMEW/).
@@ -112,14 +104,14 @@ Read the [online documentation](https://matteobertagni.github.io/SMEW/).
 The Sphinx documentation uses this README as its landing page and has four main
 sections:
 
-- [Getting started](docs/getting-started.rst): installation and running the
-  [Example notebook](Example.ipynb).
-- [User guide](docs/user-guide.rst): preparing simulations, choosing Python or
+- [Getting started](https://matteobertagni.github.io/SMEW/getting-started.html): installation and running the
+  [Example notebook](https://matteobertagni.github.io/SMEW/_generated/Example.html).
+- [User guide](https://matteobertagni.github.io/SMEW/user-guide.html): preparing simulations, choosing Python or
   compiled mode, and understanding warnings and failed calculations.
-- [Model development](docs/model-development.rst): how the chemical equations
+- [Model development](https://matteobertagni.github.io/SMEW/model-development.html): how the chemical equations
   are solved, how to change and test them, how to update the documentation, and
   how to publish releases.
-- [API reference](docs/reference/index.rst): function signatures and descriptions
+- [API reference](https://matteobertagni.github.io/SMEW/reference/index.html): function signatures and descriptions
   drawn from the source code's docstrings.
 
 From the repository, build it with:
@@ -131,40 +123,33 @@ make docs  # make the documentation using make (see the documentation for window
 
 Open `docs/_build/html/index.html`.
 
-See [documentation maintenance](docs/contributing.rst) for more details.
+See [documentation maintenance](https://matteobertagni.github.io/SMEW/contributing.html) for more details.
 
 ## Development and model testing
 
-Requires Python 3.11+. Once the repository cloned, install with `pip install -e '.[dev]'`,
-then run `make test` for full-year time-series comparisons and physical-range checks.
-Use `make example` to open the marimo example with plots generated on demand.
-See [tests/README.md](tests/README.md) for setup and reference updates.
+With Python 3.11+ and a C compiler, run these commands from the cloned repository root:
 
-`make build` (or `make build-native`) creates a source archive and wheel with
-the private Cython equations and cminpack solver extensions.
-`make install-native` rebuilds them in the active editable installation after
-equation changes. Use
-`make install-python` for a source installation without a C compiler, or
-`make build-python` to package that variant. `make clean-build` removes generated
-package build files, native extensions and distributions. `make clean-docs`
-removes generated documentation, and `make clean` runs both. The Python source remains
-available as `smew.equations`; restart the Python process after a native
-rebuild.
+```bash
+pip install -e '.[dev]'
+make test     # full-year comparisons and physical-range checks in both modes
+make example  # open the interactive marimo example
+```
 
-`SMEW_BUILD_NATIVE=0` disables the C extensions. Build dependencies, including
-Cython, are installed by pip in an isolated build environment.
+After changing compiled equations, run `make install-native` and restart Python.
 
-### Release packaging
+See the [test guide](tests/README.md) for test setup and reference updates,
+and [installation and builds](https://matteobertagni.github.io/SMEW/installation.html)
+for compiler-free setup, packaging and other build commands.
 
-Releases are built and tested automatically through GitHub Actions before
-publication to PyPI. See the [release guide](docs/releasing.rst) for packaging
-checks and release instructions.
 
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
 See the `LICENSE.txt` file for details.
+
+SMEW bundles pyeto under the BSD license in
+[third_party/pyeto/LICENSE.txt](third_party/pyeto/LICENSE.txt).
 
 SMEW includes cminpack's hybrid solver source under the terms in
 [third_party/cminpack/CopyrightMINPACK.txt](third_party/cminpack/CopyrightMINPACK.txt).

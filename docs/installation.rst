@@ -194,7 +194,7 @@ another interpreter, pass its command or path, for example
    * - ``make install-python``
      - Reinstall the editable project without building extensions.
    * - ``make docs`` / ``make docs-check``
-     - Build HTML and execute a copy of ``Example.ipynb``; ``docs-check``
+     - Build HTML and execute a copy of ``notebooks/Example.ipynb``; ``docs-check``
        rereads all sources. See :doc:`contributing`.
    * - ``make test``
      - Run Python and compiled suites in separate processes, including
@@ -204,7 +204,7 @@ another interpreter, pass its command or path, for example
    * - ``make example``
      - Open the existing interactive marimo example.
    * - ``make check-notebooks``
-     - Check the marimo example's structure; does not execute ``Example.ipynb``.
+     - Check the marimo example's structure; does not execute ``notebooks/Example.ipynb``.
    * - ``make update-baseline CASE=default``
      - Intentionally replace one regression baseline after reviewing a change.
    * - ``make clean-build``

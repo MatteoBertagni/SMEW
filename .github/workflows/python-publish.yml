@@ -67,7 +67,7 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               print(f"path={archives[0].as_posix()}", file=output)
       - name: Build and test installed wheels from the source distribution
-        uses: pypa/cibuildwheel@v4.2.1
+        uses: pypa/cibuildwheel@v4.3.5
         with:
           package-dir: ${{ steps.sdist.outputs.path }}
           output-dir: wheelhouse

@@ -25,6 +25,8 @@ for module in (smew, pyeto, _equations, _minpack):
     assert Path(module.__file__).resolve() in recorded, module.__file__
 assert _native_solve is not None
 assert any(str(item).endswith("/licenses/LICENSE.txt") for item in files)
+assert any(str(item).endswith("/licenses/third_party/pyeto/LICENSE.txt")
+           for item in files)
 assert any(str(item).endswith("/licenses/third_party/cminpack/CopyrightMINPACK.txt")
            for item in files)
 assert not any(str(item).endswith((".nbc", ".nbi")) for item in files)

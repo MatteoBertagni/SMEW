@@ -27,6 +27,12 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                        mixalf_in=1.0,
                       ):
     """Normalize inputs and run the model; NUMBA_DISABLE_JIT selects Python mode."""
+    f_CEC_in = np.asarray(f_CEC_in, dtype=np.float64)
+    if f_CEC_in.shape != (6,):
+        raise ValueError(
+            "f_CEC_in must be a one-dimensional array with exactly six values "
+            "(Ca, Mg, K, Na, Al, H); got shape " + str(f_CEC_in.shape)
+        )
     arguments = {
         "n": n,
         "s": s,
@@ -69,7 +75,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
         "mixalf_in": mixalf_in,
     }
     # Standardise array inputs as contiguous float64 arrays, using empty arrays for None.
-    # Flatten inputs to C-contiguous float64 arrays so Numba can pass raw memory
+    # Convert inputs to C-contiguous float64 arrays so Numba can pass raw memory
     # pointers (const double*) directly to Cython/cminpack without layout conversion.
     for name in ("s", "L", "T", "I", "v", "r_het", "r_aut", "D", "temp_soil",
                  "conc_in", "f_CEC_in", "K_CEC", "rock_f_in", "d_in", "psd_perc_in",
