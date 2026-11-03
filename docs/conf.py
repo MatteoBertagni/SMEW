@@ -80,7 +80,10 @@ def _readme_links(app, doctree):
             node["reftarget"] = str(Path(target.removeprefix("docs/")).with_suffix(""))
             node["refdomain"] = "std"
             node["reftype"] = "doc"
-        elif target in {"tests/README.md", "third_party/cminpack/CopyrightMINPACK.txt"}:
+        elif target in {
+            "tests/README.md", "third_party/cminpack/CopyrightMINPACK.txt",
+            "third_party/pyeto/LICENSE.txt",
+        }:
             link = nodes.reference(
                 "", "", refuri=f"https://github.com/MatteoBertagni/SMEW/blob/HEAD/{target}"
             )

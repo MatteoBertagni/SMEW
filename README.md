@@ -87,7 +87,7 @@ function pointers.
 - `smew`: contains the python codes for the SMEW numerical model
 - `notebooks`: contains the example and model-experiment comparison Jupyter notebooks
 - `Exp_data`: contains the experimental data obtained from the various publications through a web plot digitizer (https://apps.automeris.io/wpd/)
-- `pyeto`: contains the Python codes to estimate the potential evapotranspiration (Mark Richards, https://pyeto.readthedocs.io/en/latest/index.html)
+- `third_party`: contains bundled dependencies: pyeto for potential evapotranspiration (Mark Richards, https://pyeto.readthedocs.io/en/latest/index.html) and the cminpack solver
 
 
 ## Jupyter notebooks
@@ -102,9 +102,10 @@ function pointers.
 ## Instructions
 
 1. Download or pull the whole repository into a selected working directory.
-2. Run `notebooks/Example.ipynb` to verify that the model components (smew) are correctly used within the notebooks.
-3. Change the parameters in `notebooks/Example.ipynb` to run specific simulations for different scenarios.
-4. For the Jupyter notebooks of the model-experiment comparison, define the selected base directory in the first cell of each notebook.
+2. From the repository root, run `python -m pip install -e .` to install SMEW and its bundled dependencies.
+3. Run `notebooks/Example.ipynb` to verify that the model components (smew) are correctly used within the notebooks.
+4. Change the parameters in `notebooks/Example.ipynb` to run specific simulations for different scenarios.
+5. For the Jupyter notebooks of the model-experiment comparison, define the selected base directory in the first cell of each notebook.
 
 ## Documentation
 
@@ -166,6 +167,9 @@ checks and release instructions.
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
 See the `LICENSE.txt` file for details.
+
+SMEW bundles pyeto under the BSD license in
+[third_party/pyeto/LICENSE.txt](third_party/pyeto/LICENSE.txt).
 
 SMEW includes cminpack's hybrid solver source under the terms in
 [third_party/cminpack/CopyrightMINPACK.txt](third_party/cminpack/CopyrightMINPACK.txt).

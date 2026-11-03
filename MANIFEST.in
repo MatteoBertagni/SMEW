@@ -1,4 +1,5 @@
 graft third_party/cminpack
+graft third_party/pyeto
 include smew/equations.pxd
 include smew/_native/_minpack.pyx
 include Makefile

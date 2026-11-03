@@ -11,7 +11,7 @@ authors = [{ name = "Matteo Bertagni", email = "matteo.bertagni@polito.it" }]
 license = "AGPL-3.0-only"
 license-files = [
     "LICENSE.txt",
-    "pyeto/LICENSE.txt",
+    "third_party/pyeto/LICENSE.txt",
     "third_party/cminpack/CopyrightMINPACK.txt",
 ]
 classifiers = [
@@ -57,6 +57,7 @@ addopts = "-ra"
 
 [tool.setuptools]
 packages = ["smew", "smew._native", "pyeto"]
+package-dir = {pyeto = "third_party/pyeto"}
 # Sources belong in the sdist; never sweep local binaries into a Python-only wheel.
 include-package-data = false
 
