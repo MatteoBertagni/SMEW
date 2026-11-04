@@ -74,7 +74,7 @@ Use an :doc:`editable installation <installation>` and start in
    .. code-block:: bash
 
       # Rebuild after changing the equations.
-      make install-native
+      spin install-native
 
-See :doc:`installation` for the command without Make. Run ``make test`` to
+See :doc:`installation` for setup instructions. Run ``spin test`` to
 check the existing scenarios without replacing their reference results.

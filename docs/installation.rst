@@ -61,10 +61,11 @@ Clone the repository and run these commands from its root:
 
    # Install SMEW so that edits to its Python files take effect,
    # along with tools for testing and building the documentation.
-   pip install -e '.[dev,docs]'
+   pip install -e ".[dev,docs]"
 
 The ``dev`` extra installs the testing, packaging and marimo tools; ``docs``
-installs Sphinx and the Jupyter notebook execution dependencies. Omit either
+installs Sphinx and the Jupyter notebook execution dependencies. Both include
+Spin, which provides the development commands below on all platforms. Omit either
 extra when it is not needed. Building the C extensions requires a C compiler
 (GCC/Clang on Linux or macOS, or MSVC Build Tools on Windows).
 Pip installs Cython and the other build dependencies in
@@ -87,15 +88,9 @@ equations or native solver also need a rebuild:
 
 .. code-block:: console
 
-   make install-native
+   spin install
 
-The equivalent command, including on platforms without Make, is:
-
-.. code-block:: console
-
-   pip install --no-cache-dir -e .
-
-This uses the default ``SMEW_BUILD_NATIVE=1``. Restart Python after rebuilding
+This sets ``SMEW_BUILD_NATIVE=1`` for the installation. Restart Python after rebuilding
 to load the new extensions. Edit ``src/smew/equations.py`` and its declarations in
 ``src/smew/equations.pxd``; generated files under ``build/`` are overwritten.
 
@@ -130,28 +125,10 @@ From the SMEW folder, run:
 .. code-block:: bash
 
    # Install your local copy so that you can edit its Python files.
-   make install-python
+   spin install-python
 
-If Make is unavailable, use the command for your terminal instead.
-On Linux or macOS:
-
-.. code-block:: bash
-
-   # Skip building C extensions and install your local copy for editing.
-   SMEW_BUILD_NATIVE=0 pip install --no-cache-dir -e .
-
-On Windows PowerShell:
-
-.. code-block:: powershell
-
-   # Skip building C extensions during this installation.
-   $env:SMEW_BUILD_NATIVE = "0"
-   pip install --no-cache-dir -e .
-
-   # Clear the installation setting afterwards.
-   Remove-Item Env:SMEW_BUILD_NATIVE
-
-These installation commands skip the C extensions; they do not select Python
+Spin sets ``SMEW_BUILD_NATIVE=0`` only for the installation process.
+This skips the C extensions; it does not select Python
 mode. Keep ``NUMBA_DISABLE_JIT`` set to ``"1"`` in your notebook or script as
 shown above. Numba remains installed, but is disabled by this setting.
 
@@ -159,27 +136,20 @@ shown above. Numba remains installed, but is disabled by this setting.
 
    If you previously built C extensions in this folder, their files may remain.
    They do not need to be removed to use Python mode. To check an installation
-   with no C extensions at all, run ``make clean-build`` before
-   ``make install-python``. This removes generated extensions and package build
+   with no C extensions at all, run ``spin clean-build`` before
+   ``spin install-python``. This removes generated extensions and package build
    files, including the ``build/`` and ``dist/`` folders.
 
-Makefile commands
------------------
+Spin commands
+-------------
 
-.. note::
+Activate your Python environment, then run Spin from the repository root.
+`Spin <https://github.com/scientific-python/spin>`_ is installed by either the
+``dev`` or ``docs`` extra. You can also install it separately with
+``python -m pip install "spin>=0.19,<1"``.
 
-   If ``make`` is unavailable, install it with ``sudo apt install make`` on
-   Ubuntu/Debian, or install Apple's `Command Line Tools
-   <https://developer.apple.com/documentation/xcode/installing-the-command-line-tools/>`_
-   with ``xcode-select --install`` on macOS.
-
-   Make is optional. The direct PowerShell commands shown on this page offer
-   an alternative on Windows, with no Make installation needed.
-
-Activate your Python environment, then run Make from the repository root.
-Make uses the ``python`` command from your active environment. To choose
-another interpreter, pass its command or path, for example
-``make build PYTHON=python3.11``.
+Run ``spin --help`` to list commands and ``spin test --help`` for command help.
+Each command uses the Python interpreter running Spin.
 
 .. list-table::
    :header-rows: 1
@@ -187,46 +157,43 @@ another interpreter, pass its command or path, for example
 
    * - Command
      - Purpose
-   * - ``make build`` / ``make build-native``
+   * - ``spin build`` / ``spin build-native``
      - Build a native source distribution and wheel under ``dist/``.
-   * - ``make build-python``
+   * - ``spin build-python``
      - Build a ready-to-install Python package without C extensions.
-   * - ``make install-native``
+   * - ``spin install`` / ``spin install-native``
      - Rebuild extensions in the editable installation.
-   * - ``make install-python``
+   * - ``spin install-python``
      - Reinstall the editable project without building extensions.
-   * - ``make docs`` / ``make docs-check``
+   * - ``spin docs`` / ``spin docs-check``
      - Build HTML and execute a copy of ``notebooks/Example.ipynb``; ``docs-check``
        rereads all sources. See :doc:`contributing`.
-   * - ``make test``
+   * - ``spin test``
      - Run Python and compiled suites in separate processes, including
        full-year regressions.
-   * - ``make test-serial``
+   * - ``spin test-serial``
      - Run the same suites without parallel Python workers.
-   * - ``make example``
+   * - ``spin example``
      - Open the existing interactive marimo example.
-   * - ``make check-notebooks``
+   * - ``spin check-notebooks``
      - Check the marimo example's structure; does not execute ``notebooks/Example.ipynb``.
-   * - ``make update-baseline CASE=default``
+   * - ``spin update-baseline --case default``
      - Intentionally replace one regression baseline after reviewing a change.
-   * - ``make clean-build``
+   * - ``spin clean-build``
      - Remove generated native extensions, ``build/``, ``dist/`` and egg metadata.
-   * - ``make clean-docs``
+   * - ``spin clean-docs``
      - Remove ``docs/_build/``, ``docs/_generated/`` and ``docs/.jupyter_cache/``.
-   * - ``make clean``
+   * - ``spin clean``
      - Run both ``clean-build`` and ``clean-docs``.
 
-For documentation and packaging without Make, activate your Python environment
-and run the following commands from the SMEW folder. These work in Windows
-PowerShell as well as Linux and macOS terminals; choose the command for your task:
+Pass extra pytest, Sphinx or build options after ``--``:
 
-.. code-block:: powershell
+.. code-block:: console
 
-   # Build the documentation website (equivalent to make docs).
-   python -m sphinx -b html -W --keep-going docs docs/_build/html
+   spin test -- -k physical
+   spin docs -- -D nb_execution_mode=off
+   spin build-python -- --wheel
 
-   # Rebuild all pages and rerun the example (equivalent to make docs-check).
-   python -m sphinx -b html -W --keep-going -E -a -D nb_execution_mode=force docs docs/_build/html
-
-   # Build the standard installation packages (equivalent to make build).
-   python -m build
+The test command runs both backends in separate processes, stopping if either
+fails. Build and installation commands set their native-build option only in
+the child process; your terminal's environment is preserved.

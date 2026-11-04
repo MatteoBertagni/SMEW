@@ -19,7 +19,7 @@ TOTAL_TO_CEC_N_UNKNOWNS = 13
 
 # p contains trial values; out receives residuals in place.
 # Keep state indices and buffer sizes consistent with callers when adding unknowns.
-# After edits, rebuild with `make install-native` and check with `make test`.
+# After edits, rebuild with `spin install-native` and check with `spin test`.
 
 
 # Return one residual; shared by the SciPy wrapper and compiled cminpack callback.

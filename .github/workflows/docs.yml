@@ -20,7 +20,7 @@ jobs:
       - name: Install model and documentation dependencies
         run: python -m pip install -e '.[docs]'
       - name: Build documentation and execute Example.ipynb
-        run: make docs-check PYTHON=python
+        run: python -m spin docs-check
       - uses: actions/upload-artifact@v4
         with:
           name: documentation

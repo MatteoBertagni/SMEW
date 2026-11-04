@@ -26,7 +26,7 @@ def load_baseline(name):
     if not path.is_file():
         raise FileNotFoundError(
             f"Missing reference {path}. Tests never create references. "
-            f"Review the model output, then run make update-baseline CASE={name}."
+            f"Review the model output, then run spin update-baseline --case {name}."
         )
     with np.load(path, allow_pickle=False) as archive:
         return {key: archive[key] for key in archive.files}

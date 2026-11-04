@@ -117,8 +117,8 @@ sections:
 From the repository, build it with:
 
 ```bash
-python -m pip install -e '.[docs]'  # install the libraries to build the docs
-make docs  # make the documentation using make (see the documentation for windows commands)
+python -m pip install -e ".[docs]"  # install the libraries to build the docs
+spin docs  # build the documentation on Windows, macOS or Linux
 ```
 
 Open `docs/_build/html/index.html`.
@@ -130,12 +130,16 @@ See [documentation maintenance](https://matteobertagni.github.io/SMEW/contributi
 With Python 3.11+ and a C compiler, run these commands from the cloned repository root:
 
 ```bash
-pip install -e '.[dev]'
-make test     # full-year comparisons and physical-range checks in both modes
-make example  # open the interactive marimo example
+pip install -e ".[dev]"
+spin test     # full-year comparisons and physical-range checks in both modes
+spin example  # open the interactive marimo example
 ```
 
-After changing compiled equations, run `make install-native` and restart Python.
+After changing compiled equations, run `spin install` and restart Python.
+
+Development commands use [Spin](https://github.com/scientific-python/spin),
+installed by the `dev` and `docs` extras. Activate your Python environment and
+run `spin --help` to list commands.
 
 See the [test guide](tests/README.md) for test setup and reference updates,
 and [installation and builds](https://matteobertagni.github.io/SMEW/installation.html)

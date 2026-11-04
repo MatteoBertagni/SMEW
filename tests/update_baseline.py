@@ -38,7 +38,7 @@ def main():
     BASELINES.mkdir(exist_ok=True)
     np.savez_compressed(path, **arrays)
     print(f"Wrote {path.relative_to(ROOT)}.")
-    print("Review the change and run make test before committing it.")
+    print("Review the change and run spin test before committing it.")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ graft third_party/cminpack
 graft third_party/pyeto
 include src/smew/equations.pxd
 include src/smew/_native/_minpack.pyx
-include Makefile
+include .spin/cmds.py
 recursive-include tests *.py *.toml
 include tests/README.md
 include docs/conf.py

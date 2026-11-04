@@ -3,9 +3,11 @@
 From the repository root, using Python 3.11 or newer:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]'
-make test
+python -m venv .venv
+# Activate: source .venv/bin/activate (Linux/macOS),
+# .\.venv\Scripts\Activate.ps1 (PowerShell), or .venv\Scripts\activate.bat (cmd).
+python -m pip install -e ".[dev]"
+spin test
 ```
 
 ## Installed wheel checks
@@ -30,17 +32,17 @@ subset's supporting files; full regressions require a repository checkout.
 Pytest runs three configurations of the [marimo example](../tests/example_marimo_notebook.py):
 the defaults, constant moisture, and no added rock. Each covers **365 days at a
 ten-minute timestep** (52,560 samples). Fixed weekly rainfall makes the runs
-repeatable. `make test` runs the suite in separate processes with `NUMBA_DISABLE_JIT=1`
+repeatable. `spin test` runs the suite in separate processes with `NUMBA_DISABLE_JIT=1`
 and `NUMBA_DISABLE_JIT=0`, using the same references and tolerances. Compiled regression
 tests fail if the native extensions are unavailable; they are not skipped.
 Assertions compare every selected timestep with its reference and
 check finite values and physical ranges separately. Solver warnings stay visible.
-`make test` runs Python mode in parallel, selecting the number of workers
+`spin test` runs Python mode in parallel, selecting the number of workers
 automatically and capping it at the three scenarios. Tests are grouped by
 scenario, ensuring each expensive model configuration executes once per backend.
 Compiled mode runs in one process so the scenarios and backend probe share
 Numba compilations. Its process starts with `NUMBA_NRT_STATS=1` for allocation
-checks. Use `make test-serial` to also run Python mode without multiprocessing.
+checks. Use `spin test-serial` to also run Python mode without multiprocessing.
 
 The shared aqueous-alkalinity tests check known residuals and their signs,
 including zero, positive and negative prescribed alkalinity. Native solver
@@ -49,11 +51,11 @@ SciPy. Both rainwater and alternative soil hydrogen calculations use
 `WATER_ALK_SYSTEM`; the legacy two-application tests check both uses too.
 
 ```bash
-make test PYTEST_ARGS='-k physical'  # range checks without references
-make test-serial                    # disable multiprocessing
-make test PYTHON=python             # use an activated environment
-make check-notebooks                # validate the marimo notebook
-make example                       # open the example; click to generate plots
+spin test -- -k physical  # range checks without references
+spin test-serial          # disable multiprocessing
+python -m spin test      # use this Python interpreter
+spin check-notebooks      # validate the marimo notebook
+spin example              # open the example; click to generate plots
 ```
 
 The example explains its inputs directly in Python. It can also run as a script
@@ -101,13 +103,13 @@ simulations while checking that their arrays are released.
 
 ## Updating references
 
-`make test` never writes references (baselines); missing references fail.
+`spin test` never writes references (baselines); missing references fail.
 For an intentional change, review the reported differences, then explicitly
 update each affected reference:
 
 ```bash
-make update-baseline CASE=default
-make test
+spin update-baseline --case default
+spin test
 ```
 
 This checks physical ranges, reports maximum changes, and replaces the selected
