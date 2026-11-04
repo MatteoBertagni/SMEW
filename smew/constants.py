@@ -8,58 +8,52 @@ import numpy as np
 from numba import njit
 
 
-#------------------------------------------------------------------------------
- # atmospheric CO2
     
 @njit(nogil=True, error_model="numpy")
-def CO2_atm(conv_mol):
+def CO2_atm(conv_mol: float) -> float:
+    """
+    Atmospheric CO2.
+    """
     
-    CO2_atm = 412E-6/22.41*conv_mol # [mol-conv/l] 
-                                                        
-    return CO2_atm
+    return 412E-6/22.41*conv_mol # [mol-conv/l]
 
-#------------------------------------------------------------------------------
- # soil CO2 diffusivity 
-    
-@njit(nogil=True, error_model="numpy")
-def D_0():
-    
-    D_0 = 1.6E-5*3600*24 #free-air diffusion [m2/d]
-                                                        
-    return D_0
 
-#------------------------------------------------------------------------------
- # solute diffusivity in soil water
-    
 @njit(nogil=True, error_model="numpy")
-def Dw_0():
+def D_0() -> float:
+    """
+    Soil CO2 diffusivity.
+    """
     
-    Dw_0 = 1e-9*3600*24 # [m2/d]
-                                                        
-    return Dw_0
+    return 1.6E-5*3600*24 #free-air diffusion [m2/d]
 
-#------------------------------------------------------------------------------
- # % of nutrients in plant dry matter (ideally plant dependent)
-    
+
 @njit(nogil=True, error_model="numpy")
-def plant_nutr_f():
+def Dw_0() -> float:
+    """
+    Solute diffusivity in soil water.
+    """
     
-    #current values are from Kelland's (2020) measurement for sorghum
-    
+    return 1e-9*3600*24  # [m2/d]
+
+
+@njit(nogil=True, error_model="numpy")
+def plant_nutr_f() -> tuple[float, float, float, float]:
+    """
+    Percentage of nutrients in plant dry matter (ideally plant dependent).
+
+    Current values are from Kelland's (2020) measurement for sorghum.
+    """
+
     v_f_Ca = 0.005 #suggested 2%, range 0.1 - 5 %, Weil and Bredy 2017
     v_f_Mg = 0.001 #suggested, 0.5%, range 0.1 - 1 %, Weil and Bredy 2017
     v_f_K = 0.01 #suggested 2%, range 1 - 5 %, Weil and Bredy 2017
     v_f_Si = 0.01 #suggested 5%, range 1 - 10%, Epstein 1994, PNAS
     
-    v_f = [v_f_Ca, v_f_Mg, v_f_K, v_f_Si]
-    
-                                                      
-    return v_f
+    return v_f_Ca, v_f_Mg, v_f_K, v_f_Si
 
-#------------------------------------------------------------------------------
 
 @njit(nogil=True, error_model="numpy")
-def soil_hydraulic_const(soil):
+def soil_hydraulic_const(soil: str) -> tuple[float, float, float, float]:
     """
     Campbell/Clapp-Hornberger hydraulic parameters.
 
@@ -152,9 +146,7 @@ def soil_hydraulic_const(soil):
         raise ValueError("Invalid soil type!")
         
     return psi_s_log_cm, b, K_s, n
-    
-#------------------------------------------------------------------------------
-# soil hydraulic constants and moisture thresholds
+
 
 @njit(nogil=True, error_model="numpy")
 def soil_const(
@@ -165,8 +157,8 @@ def soil_const(
         fc_conductivity_ratio: float = 0.02,
 ) -> tuple[float, float, float, float, float, float, float]:
     """
-    Compute soil moisture thresholds from water potentials and a relative conductivity threshold for field capacity,
-    and return soil hydraulic parameters for the selected texture.
+    Soil hydraulic constants and moisture thresholds, derived from soil type, water potentials and a relative
+    conductivity threshold for field capacity.
 
     :param soil: Soil texture class.
     :param psi_h_mpa: Water potentials [MPa] used to compute s_h. Defaults to -10 MPa, following Laio et al. (2001).
@@ -196,16 +188,28 @@ def soil_const(
 
     return s_h, s_w, s_i, s_fc, b, K_s, n
 
-#------------------------------------------------------------------------------
-
- # EW mineral constants 
 
 @njit(nogil=True, error_model="numpy")
-def min_const(mineral, conv_mol):
-    
-    # Most values are from Palandri (2004) unless otherwise specified
-    # Solubility product constants (K_sp) are, when available, from Morel et al., (1993) -- https://booksite.elsevier.com/9780120885305/appendices/Web_Appendices.pdf unless otherwise specified
-        
+def min_const(mineral: str, conv_mol: float) -> tuple[
+        float,  # MM_min
+        float,  # k_diss_H
+        float,  # k_diss_w
+        float,  # k_diss_OH
+        float,  # n_H
+        float,  # n_OH
+        float,  # E_H
+        float,  # E_w
+        float,  # E_OH
+        tuple[float, float, float, float, float, float],  # min_st
+        float,  # K_sp
+]:
+    """
+    EW mineral constants
+
+    Most values are from Palandri (2004) unless otherwise specified.
+    Solubility product constants (K_sp) are, when available, from Morel et al., (1993) -- https://booksite.elsevier.com/9780120885305/appendices/Web_Appendices.pdf unless otherwise specified.
+    """
+
     if mineral == 'albite': #NaAlSiO3
             #rho_min = 2.6*1e6 # [g/m3]: density
             MM_min =  263/conv_mol # [g/mol-conv]
@@ -411,14 +415,14 @@ def min_const(mineral, conv_mol):
     else:
         raise ValueError("No data for this mineral")
 
-    return(MM_min,k_diss_H,k_diss_w,k_diss_OH,n_H,n_OH,E_H,E_w,E_OH,min_st,K_sp)
+    return MM_min, k_diss_H, k_diss_w, k_diss_OH, n_H, n_OH, E_H, E_w, E_OH, min_st, K_sp
 
-#------------------------------------------------------------------------------
- # Carbonate weathering constants  
-    
 
 @njit(nogil=True, error_model="numpy")
-def carb_weath_const(conv_mol):
+def carb_weath_const(conv_mol: float) -> tuple[float, float, float, float, float, float]:
+    """
+    Carbonate weathering constants
+    """
     
     # Carbonate solubility products
     #https://booksite.elsevier.com/9780120885305/appendices/Web_Appendices.pdf
@@ -435,19 +439,20 @@ def carb_weath_const(conv_mol):
     tau_CaCO3 = 30 # [d] 
     tau_MgCO3 = 40 
     
-    return(K_CaCO3,K_MgCO3,r_CaCO3,r_MgCO3,tau_CaCO3,tau_MgCO3)
-    
-#------------------------------------------------------------------------------
- # CEC constants (Gaines-Thomas) 
+    return K_CaCO3, K_MgCO3, r_CaCO3, r_MgCO3, tau_CaCO3, tau_MgCO3
+
 
 @njit(nogil=True, error_model="numpy")
-def K_GT_CEC(soil, conv_mol):
+def K_GT_CEC(soil: str, conv_mol: float) -> tuple[float, float, float, float, float]:
+    """
+    CEC constants (Gaines-Thomas).
 
-    # Current values are from a meta-analysis of Dutch soils (0-30 cm, https://edepot.wur.nl/31605)
-    # Site-specific coefficient estimates can be obtained with soil-water coupled measurements
-    
+    Current values are from a meta-analysis of Dutch soils (0-30 cm, https://edepot.wur.nl/31605).
+    Site-specific coefficient estimates can be obtained with soil-water coupled measurements.
+    """
+
     if soil in ['sand', 'loamy sand', 'sandy loam']:
-        K_Ca_Mg = 10**(0.56); #[-]
+        K_Ca_Mg = 10**(0.56) #[-]
         K_Ca_K = 10**(-1.16)*conv_mol #[conc]
         K_Ca_Na = 10**(0.75)*conv_mol #[conc]
         K_Ca_H = 10**(-5)*conv_mol #[conc] for tePas et al a better constant is 0.5 1e-9 *conv_mol,
@@ -456,7 +461,7 @@ def K_GT_CEC(soil, conv_mol):
         #K_Ca_AlOH2 = 10**(-1.7)*conv_mol
     
     elif soil in ['loam', 'silt loam', 'silty loam', 'silt', 'sandy clay loam', 'silty clay loam']:
-        K_Ca_Mg = 10**(0.1); #[-]
+        K_Ca_Mg = 10**(0.1) #[-]
         K_Ca_K = 10**(-2)*conv_mol
         K_Ca_Na = 10**(0.38)*conv_mol
         K_Ca_H = 10**(-5.4)*conv_mol
@@ -465,7 +470,7 @@ def K_GT_CEC(soil, conv_mol):
         #K_Ca_AlOH2 = 10**(-0.86)*conv_mol
         
     elif soil in ['clay', 'clay loam', 'silty clay', 'sandy clay']:
-        K_Ca_Mg = 10**(0.39); #[-]
+        K_Ca_Mg = 10**(0.39) #[-]
         K_Ca_K = 10**(-2.42)*conv_mol
         K_Ca_Na = 10**(0.774)*conv_mol
         K_Ca_H = 10**(-6.67)*conv_mol
@@ -483,15 +488,16 @@ def K_GT_CEC(soil, conv_mol):
     # K_Na_K = (K_Ca_K/K_Ca_Na)**(1/2)]
     # K_Na_Al = (K_Ca_Al/K_Ca_Na**3)**(1/2)
    
-    K_CEC = [K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H]
+    K_CEC = (K_Ca_Mg, K_Ca_K, K_Ca_Na, K_Ca_Al, K_Ca_H)
                                           
-    return(K_CEC)
+    return K_CEC
 
-#------------------------------------------------------------------------------
- # Aluminium speciation (pag. 398 Weil and Brady)
 
 @njit(nogil=True, error_model="numpy")
-def K_Al(conv_mol):
+def K_Al(conv_mol: float) -> tuple[float, float, float, float]:
+    """
+    Aluminium speciation (pag. 398 Weil and Brady).
+    """
               
     pK1 = 5 
     pK2 = 5.1 
@@ -502,16 +508,15 @@ def K_Al(conv_mol):
     K2 = 10.0**(-pK2)*conv_mol
     K3 = 10.0**(-pK3)*conv_mol
     K4 = 10.0**(-pK4)*conv_mol
-   
-    K_Al = [K1, K2, K3, K4]
-                                          
-    return(K_Al)
 
-#------------------------------------------------------------------------------
- # carbonate speciation [Stumm and Morgan, 1996]
+    return K1, K2, K3, K4
+
 
 @njit(nogil=True, error_model="numpy")
-def K_C(T_K,conv_mol):
+def K_C(T_K: float, conv_mol: float) -> tuple[float, float, float, float]:
+    """
+    Carbonate speciation [Stumm and Morgan, 1996].
+    """
     
     T_ref = 25+273.15 # [K]: temperature standard conditions
     
@@ -528,13 +533,14 @@ def K_C(T_K,conv_mol):
     #Henry
     k_H = 0.83*np.exp(2400*(1/T_K-1/T_ref))
                                           
-    return(k1, k2, k_w, k_H)
+    return k1, k2, k_w, k_H
 
-#------------------------------------------------------------------------------
- # molar masses [g/mol]
 
 @njit(nogil=True, error_model="numpy")
-def MM(conv_mol):
+def MM(conv_mol: float) -> tuple[float, float, float, float, float, float, float, float]:
+    """
+    Molar masses [g/mol].
+    """
     
     MM_Mg = 24/conv_mol 
     MM_Ca = 40/conv_mol 
@@ -545,4 +551,4 @@ def MM(conv_mol):
     MM_Anions = 62/conv_mol
     MM_Al = 27/conv_mol
                                           
-    return(MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al)
+    return MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al
