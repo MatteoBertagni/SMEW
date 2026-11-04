@@ -7,7 +7,10 @@ name = "smew"
 dynamic = ["version"]
 description = "Soil Model for Enhanced Weathering (SMEW): a dynamic, depth-averaged ecohydrological and biogeochemical model for enhanced weathering dynamics in the upper soil layers."
 readme = "README.md"
-authors = [{ name = "Matteo Bertagni", email = "matteo.bertagni@polito.it" }]
+authors = [
+    { name = "Matteo Bertagni", email = "matteo.bertagni@polito.it" },
+    { name = "Romain François Thomas", email = "romain.thomas@polito.it" },
+]
 license = "AGPL-3.0-only"
 license-files = [
     "LICENSE.txt",

@@ -1,8 +1,10 @@
-cff-version: 1.1.0
-title: smew
+cff-version: 1.2.0
+title: Soil Model for Enhanced Weathering (SMEW)
 message: >-
-  If you use this software, please cite it using the
-  metadata from this file.
+  If you use this software, please cite both the code
+  (choose the DOI for the version you used at
+  https://doi.org/10.5281/zenodo.14356660) and the paper
+  (https://doi.org/10.1029/2024MS004224).
 type: software
 authors:
   - given-names: Matteo Bernard
@@ -10,6 +12,11 @@ authors:
     email: matteo.bertagni@polito.it
     affiliation: Politecnico di Torino
     orcid: 'https://orcid.org/0000-0001-5912-4794'
+  - given-names: Romain François
+    family-names: Thomas
+    email: romain.thomas@polito.it
+    affiliation: Politecnico di Torino
+    orcid: 'https://orcid.org/0009-0008-9900-1930'
 identifiers:
   - type: doi
     value: 10.5281/zenodo.14356660

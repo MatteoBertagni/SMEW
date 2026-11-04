@@ -147,6 +147,12 @@ and [installation and builds](https://matteobertagni.github.io/SMEW/installation
 for compiler-free setup, packaging and other build commands.
 
 
+## Citation
+
+If you use SMEW, please cite both the [code](https://doi.org/10.5281/zenodo.14356660)
+(choose the DOI for the version you used) and the [paper](https://doi.org/10.1029/2024MS004224).
+
+
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
