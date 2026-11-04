@@ -22,12 +22,12 @@ docs/_build/
 docs/_generated/
 docs/.jupyter_cache/
 
-# Generated native-extension artifacts
-smew/_native/_equations*.so
-smew/_native/_equations*.pyd
-smew/_native/_minpack*.so
-smew/_native/_minpack*.pyd
-smew/_native/_minpack.c
+# Compiled native extensions
+*.so
+*.pyd
+
+# Generated C source
+src/smew/_native/_minpack.c
 
 # --- Temporary files ---
 *.tmp
