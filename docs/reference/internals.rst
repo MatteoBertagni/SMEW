@@ -14,15 +14,15 @@ Files to edit
 
    * - Source file
      - What it contains
-   * - `smew/equations.py <https://github.com/MatteoBertagni/SMEW/blob/HEAD/smew/equations.py>`_
+   * - `src/smew/equations.py <https://github.com/MatteoBertagni/SMEW/blob/HEAD/src/smew/equations.py>`_
      - Equations, number of unknowns, and functions used by SciPy.
-   * - `smew/equations.pxd <https://github.com/MatteoBertagni/SMEW/blob/HEAD/smew/equations.pxd>`_
+   * - `src/smew/equations.pxd <https://github.com/MatteoBertagni/SMEW/blob/HEAD/src/smew/equations.pxd>`_
      - Variable and argument types needed to compile the equations.
-   * - `smew/biogeochem.py <https://github.com/MatteoBertagni/SMEW/blob/HEAD/smew/biogeochem.py>`_ / `smew/ic.py <https://github.com/MatteoBertagni/SMEW/blob/HEAD/smew/ic.py>`_
+   * - `src/smew/biogeochem.py <https://github.com/MatteoBertagni/SMEW/blob/HEAD/src/smew/biogeochem.py>`_ / `src/smew/ic.py <https://github.com/MatteoBertagni/SMEW/blob/HEAD/src/smew/ic.py>`_
      - Model inputs, initial estimates and use of the calculated solution.
-   * - `smew/_utils.py <https://github.com/MatteoBertagni/SMEW/blob/HEAD/smew/_utils.py>`_
+   * - `src/smew/_utils.py <https://github.com/MatteoBertagni/SMEW/blob/HEAD/src/smew/_utils.py>`_
      - Selection of the equation system in Python mode.
-   * - `smew/_native/_minpack.pyx <https://github.com/MatteoBertagni/SMEW/blob/HEAD/smew/_native/_minpack.pyx>`_
+   * - `src/smew/_native/_minpack.pyx <https://github.com/MatteoBertagni/SMEW/blob/HEAD/src/smew/_native/_minpack.pyx>`_
      - The same selection in compiled mode, including parameter and unknown counts.
 
 Changes to keep consistent

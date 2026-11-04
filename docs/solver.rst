@@ -3,7 +3,7 @@ How the solver works and how to change equations
 
 Changing soil, climate or rock inputs usually only requires editing
 :doc:`the example notebook <_generated/Example>`. To change a chemical
-relationship, start in ``smew/equations.py``.
+relationship, start in ``src/smew/equations.py``.
 
 How each timestep is solved
 ----------------------------
@@ -46,10 +46,10 @@ estimate can make an equation undefined. See :doc:`errors` for troubleshooting.
 Find the equation to change
 ---------------------------
 
-Edit the residual functions in ``smew/equations.py``. For example, this line
+Edit the residual functions in ``src/smew/equations.py``. For example, this line
 calculate the 8th residual:
 
-.. literalinclude:: ../smew/equations.py
+.. literalinclude:: ../src/smew/equations.py
    :language: python
    :start-at:     out[7] = Ca*nZrs1000
    :end-at:     out[7] = Ca*nZrs1000
@@ -61,7 +61,7 @@ Check your change
 Use an :doc:`editable installation <installation>` and start in
 :doc:`Python mode <usage>`.
 
-1. Edit the residual in ``smew/equations.py`` and, where possible, evaluate it
+1. Edit the residual in ``src/smew/equations.py`` and, where possible, evaluate it
    at a known solution to check signs, units and variable order.
 2. Restart the notebook kernel and rerun a familiar scenario with the same
    weather inputs. Compare mass balances, concentrations and exchange fractions.

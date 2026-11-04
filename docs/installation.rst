@@ -71,6 +71,8 @@ Pip installs Cython and the other build dependencies in
 an isolated build environment. cminpack is bundled in the repository; no
 separate MINPACK library is required.
 
+The Python package lives in ``src/smew``.
+
 .. note::
 
    On Linux, you may also need to install Python's development files to build
@@ -94,8 +96,8 @@ The equivalent command, including on platforms without Make, is:
    pip install --no-cache-dir -e .
 
 This uses the default ``SMEW_BUILD_NATIVE=1``. Restart Python after rebuilding
-to load the new extensions. Edit ``smew/equations.py`` and its declarations in
-``smew/equations.pxd``; generated files under ``build/`` are overwritten.
+to load the new extensions. Edit ``src/smew/equations.py`` and its declarations in
+``src/smew/equations.pxd``; generated files under ``build/`` are overwritten.
 
 Python mode for debugging and experiments
 --------------------------------------------

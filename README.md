@@ -80,7 +80,7 @@ See the [example notebook](https://matteobertagni.github.io/SMEW/_generated/Exam
 
 ## Folders
 
-- `smew`: contains the python codes for the SMEW numerical model
+- `src/smew`: contains the Python code for the SMEW numerical model
 - `docs`: contains the Sphinx documentation of SMEW
 - `tests`: contains the test suite of SMEW
 - `notebooks`: contains the example and model-experiment comparison Jupyter notebooks

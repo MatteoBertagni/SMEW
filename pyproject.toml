@@ -57,7 +57,7 @@ addopts = "-ra"
 
 [tool.setuptools]
 packages = ["smew", "smew._native", "pyeto"]
-package-dir = {pyeto = "third_party/pyeto"}
+package-dir = {"" = "src", pyeto = "third_party/pyeto"}
 # Sources belong in the sdist; never sweep local binaries into a Python-only wheel.
 include-package-data = false
 

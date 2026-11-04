@@ -2,14 +2,12 @@
 
 import os
 from pathlib import Path
-import sys
 
 from docutils import nodes
 from sphinx import addnodes
 import nbformat
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
 
 # Plain functions expose signatures/docstrings to autodoc, including public
 # aliases of @njit functions. Restore the environment before notebook kernels

@@ -27,7 +27,7 @@ releasing.
 Publish a release
 -----------------
 
-1. Set a new version in ``smew/_version.py`` and commit the change before
+1. Set a new version in ``src/smew/_version.py`` and commit the change before
    creating the release tag. PyPI versions cannot be overwritten.
 2. Publish a GitHub release for that tag. This triggers the same source and
    wheel builds used for preview runs.

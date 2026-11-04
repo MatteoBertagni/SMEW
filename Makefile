@@ -29,8 +29,8 @@ clean: clean-build clean-docs
 
 # Remove generated packages and C extensions before a fresh build.
 clean-build:
-	rm -rf -- build dist smew.egg-info
-	rm -f -- smew/_native/_equations*.so smew/_native/_equations*.pyd smew/_native/_minpack*.so smew/_native/_minpack*.pyd smew/_native/_minpack.c
+	rm -rf -- build dist smew.egg-info src/smew.egg-info
+	rm -f -- src/smew/_native/_equations*.so src/smew/_native/_equations*.pyd src/smew/_native/_minpack*.so src/smew/_native/_minpack*.pyd src/smew/_native/_minpack.c
 
 # Remove generated documentation and cached notebook results before rebuilding.
 clean-docs:

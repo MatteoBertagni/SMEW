@@ -12,6 +12,7 @@ from setuptools.errors import OptionError
 
 
 ROOT = Path(__file__).resolve().parent
+PACKAGE_ROOT = ROOT / "src" / "smew"
 CPU_TARGET = os.environ.get("SMEW_CPU_TARGET", "portable")
 if CPU_TARGET not in {"portable", "native", "avx2", "avx512"}:
     raise ValueError("SMEW_CPU_TARGET must be portable, native, avx2, or avx512")
@@ -66,7 +67,7 @@ def native_extensions():
     generated_relative = Path("build") / "cython_sources" / "smew" / "_native"
     generated = ROOT / generated_relative
     generated.mkdir(parents=True, exist_ok=True)
-    source = (ROOT / "smew" / "equations.py").read_text(encoding="utf-8")
+    source = (PACKAGE_ROOT / "equations.py").read_text(encoding="utf-8")
     # SciPy's vector wrappers pass NumPy arrays; the native residuals instead
     # receive C pointers. Keep the scientific functions verbatim in both builds.
     python_only = {"biogeochem_equations", "total_to_cec_equations"}
@@ -84,7 +85,7 @@ def native_extensions():
                 for line in range(node.lineno - 1, node.end_lineno):
                     lines[line] = "\n"
     (generated / "_equations.py").write_text("".join(lines), encoding="utf-8")
-    copyfile(ROOT / "smew" / "equations.pxd", generated / "_equations.pxd")
+    copyfile(PACKAGE_ROOT / "equations.pxd", generated / "_equations.pxd")
 
     equations = Extension(
         "smew._native._equations",
@@ -93,7 +94,7 @@ def native_extensions():
     cminpack = Path("third_party") / "cminpack"
     solver = Extension(
         "smew._native._minpack",
-        ["smew/_native/_minpack.pyx"] + [
+        ["src/smew/_native/_minpack.pyx"] + [
             str(cminpack / f"{name}.c") for name in (
                 "hybrd", "dogleg", "dpmpar", "enorm", "fdjac1",
                 "qform", "qrfac", "r1mpyq", "r1updt",
