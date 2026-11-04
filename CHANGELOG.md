@@ -1,6 +1,31 @@
 # Changelog
 
-## 1.3.0b1 (Unreleased)
+## 1.4.0 (Unreleased)
+
+### Added
+
+- `smew.ic.f_CEC_Alk_to_conc` to recalculate dissolved cation concentrations
+  and the calcium/hydrogen exchange coefficient, with Python and compiled solvers.
+- More detailed solver error diagnostics.
+
+### Changed
+
+- `soil_const` has a new argument `fc_conductivity_ratio` (default `0.02`) and now
+  returns the saturation at field capacity. The returned tuple is extended to include
+  it as `s_fc`: `(s_h, s_w, s_i, s_fc, b, K_s, n)`.
+- Numba callers must use `veg_seasonal_numba`, returning `(result, code, message)`;
+  `veg_seasonal` raises exceptions for invalid parameters or failed growth calculations.
+- Move the package to `src/smew`; update builds and documentation accordingly.
+
+### Fixed
+
+- Automatically adjust initial chemistry when cation charge is insufficient
+  for the prescribed alkalinity.
+- Handle zero vegetation capacity, invalid growth inputs, biomass overshoot,
+  and harvest alignment for partial seasons.
+- Restore notebook illustrations and correct documentation logo paths.
+
+## 1.3.0
 
 Changes since 1.2.0.
 
