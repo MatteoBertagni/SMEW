@@ -16,9 +16,13 @@
 - Numba callers must use `veg_seasonal_numba`, returning `(result, code, message)`;
   `veg_seasonal` raises exceptions for invalid parameters or failed growth calculations.
 - Move the package to `src/smew`; update builds and documentation accordingly.
+- Replaced Make commands with Spin for consistent development commands on Windows, 
+  macOS, and Linux.
 
 ### Fixed
 
+- Log an error and fall back to Python/SciPy chemistry solves when the native extensions
+  are missing or cannot load.
 - Automatically adjust initial chemistry when cation charge is insufficient
   for the prescribed alkalinity.
 - Handle zero vegetation capacity, invalid growth inputs, biomass overshoot,
