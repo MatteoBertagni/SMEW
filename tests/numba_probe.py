@@ -238,10 +238,14 @@ def collect_outputs(*, helpers_only=False):
                 RuntimeError, "Residual evaluation failed",
                 smew.ErrorCode.CHEMISTRY_RESIDUAL,
             )
+            # High alkalinity now invokes the CEC correction. Force its residual
+            # to fail and check that the nested error propagates without leaking.
+            invalid_cec = np.asarray(inputs["K_CEC"]).copy()
+            invalid_cec[0] = np.nan
             check_released(
-                lambda: original(**{**inputs, "pH_in": 12.}),
-                ValueError, "Not enough cations",
-                smew.ErrorCode.BIOGEOCHEM_INSUFFICIENT_CATIONS,
+                lambda: original(**{**inputs, "pH_in": 12., "K_CEC": invalid_cec}),
+                RuntimeError, "ic.f_CEC_Alk_to_conc",
+                smew.ErrorCode.F_CEC_ALK_TO_CONC_RESIDUAL,
             )
             check_released(
                 lambda: original(**{
@@ -278,7 +282,7 @@ def collect_outputs(*, helpers_only=False):
         "CO2_atm", "D_0", "Dw_0", "MM", "K_Al", "K_C", "K_GT_CEC", "plant_nutr_f",
         "soil_hydraulic_const", "soil_const", "min_const", "carb_weath_const", "temp",
         "rain_stoc", "rain_stoc_season", "moisture_balance", "soil_pore_pdf",
-        "pore_pdf_ding2016", "pore_pdf_campbell", "veg", "veg_seasonal", "up_act",
+        "pore_pdf_ding2016", "pore_pdf_campbell", "veg", "veg_seasonal_numba", "up_act",
         "carb_W", "sil_Omega", "sil_Wr", "psd_evol", "psd_number_from_mass",
         "normalized_cumulative_area", "wet_f_Anand", "wetness_SA", "mov_avg",
         "f_CEC_to_conc", "f_CEC_and_conc_to_K",

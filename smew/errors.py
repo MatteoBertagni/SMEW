@@ -33,7 +33,15 @@ class ErrorCode(IntEnum):
     CEC_SOLVER_INPUT = 3002
     TOTAL_CEC_RESIDUAL = 3011
     TOTAL_CEC_SOLVER_INPUT = 3012
+    F_CEC_ALK_TO_CONC_RESIDUAL = 3021
+    F_CEC_ALK_TO_CONC_SOLVER_INPUT = 3022
     WEATHERING_ERROR = 4001
+    # Vegetation: 5000-5999.
+    VEGETATION_CAPACITY = 5001
+    VEGETATION_INITIAL_FRACTION = 5002
+    VEGETATION_STAGE = 5003
+    VEGETATION_STAGE_ORDER = 5004
+    VEGETATION_GROWTH = 5005
 
 
 @register_jitable
@@ -75,6 +83,25 @@ def _float_text(value):
     if point >= len(digits):
         return sign + digits + "0" * (point - len(digits))
     return sign + digits[:point] + "." + digits[point:]
+
+
+@register_jitable
+def _series_diagnostic(name, values, dt):
+    """Summarize a full forcing series on failure, without dumping its values."""
+    count = 0
+    first = -1
+    for index in range(values.size):
+        if not np.isfinite(values[index]):
+            count += 1
+            if first == -1:
+                first = index
+    text = name + ': mean=' + _float_text(np.mean(values))
+    text += ', nonfinite_count=' + str(count)
+    if first != -1:
+        text += ', first_nonfinite_step=' + str(first)
+        text += ', first_nonfinite_time_days=' + _float_text(first * dt)
+        text += ', first_nonfinite_value=' + _float_text(values[first])
+    return text
 
 
 @register_jitable
@@ -122,6 +149,6 @@ def raise_for_error(code, message):
         exception = SMEWSolverError if code in (
             ErrorCode.WATER_ALK_RESIDUAL, ErrorCode.CHEMISTRY_RESIDUAL,
             ErrorCode.CHEMISTRY_RETRY_RESIDUAL, ErrorCode.CEC_RESIDUAL,
-            ErrorCode.TOTAL_CEC_RESIDUAL,
+            ErrorCode.TOTAL_CEC_RESIDUAL, ErrorCode.F_CEC_ALK_TO_CONC_RESIDUAL,
         ) else SMEWValueError
         raise exception(code, message)

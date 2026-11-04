@@ -9,8 +9,8 @@ from scipy.optimize import fsolve
 from numba import njit
 from numba.extending import overload
 from smew.equations import (
-    water_alk_equations, biogeochem_equations,
-    cec_calcium_equation, total_to_cec_equations,
+    water_alk_equations, biogeochem_equations, cec_calcium_equation,
+    f_cec_alk_to_conc_equation, total_to_cec_equations,
 )
 
 
@@ -19,7 +19,8 @@ from smew.equations import (
 WATER_ALK_SYSTEM = 1
 BIOGEOCHEM_SYSTEM = 2
 CEC_CALCIUM_SYSTEM = 3
-TOTAL_TO_CEC_SYSTEM = 4
+F_CEC_ALK_TO_CONC_SYSTEM = 4
+TOTAL_TO_CEC_SYSTEM = 5
 
 
 @njit
@@ -42,6 +43,8 @@ def _solve_system(system, state, parameters, residual, work, xtol):
         equations = biogeochem_equations
     elif system == CEC_CALCIUM_SYSTEM:
         equations = cec_calcium_equation
+    elif system == F_CEC_ALK_TO_CONC_SYSTEM:
+        equations = f_cec_alk_to_conc_equation
     elif system == TOTAL_TO_CEC_SYSTEM:
         equations = total_to_cec_equations
     else:

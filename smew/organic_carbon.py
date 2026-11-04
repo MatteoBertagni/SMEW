@@ -33,8 +33,8 @@ def _respiration(ADD, SOC_in, CO2_air_in, ratio_aut_het, soil, s, v, k_v, Zr, te
     SOC = np.zeros(len(s))
     
     #constants
-    [MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al]=smew.MM(conv_mol)
-    [s_h, s_w, s_i, b, K_s, n] = smew.soil_const(soil) 
+    MM_Mg, MM_Ca, MM_Na, MM_K, MM_Si, MM_C, MM_Anions, MM_Al = smew.MM(conv_mol)
+    s_h, s_w, s_i, s_fc, b, K_s, n = smew.soil_const(soil)
     r = 0.7 # [-]: Fraction of carbon that goes into respiration
     CO2_atm = smew.CO2_atm(conv_mol) # [mol-conv/l]
     D_0 = smew.D_0() #free-air diffusion [m2/d]

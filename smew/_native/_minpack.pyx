@@ -6,8 +6,8 @@ import warnings
 from libc.float cimport DBL_EPSILON
 from libc.math cimport isfinite
 from smew._native._equations cimport (
-    water_alk_residual, biogeochem_residual,
-    cec_calcium_residual, total_to_cec_residual,
+    water_alk_residual, biogeochem_residual, cec_calcium_residual,
+    f_cec_alk_to_conc_residual, total_to_cec_residual,
 )
 
 from smew import _utils, equations
@@ -16,6 +16,7 @@ from smew import _utils, equations
 cdef int WATER_ALK_SYSTEM = _utils.WATER_ALK_SYSTEM
 cdef int BIOGEOCHEM_SYSTEM = _utils.BIOGEOCHEM_SYSTEM
 cdef int CEC_CALCIUM_SYSTEM = _utils.CEC_CALCIUM_SYSTEM
+cdef int F_CEC_ALK_TO_CONC_SYSTEM = _utils.F_CEC_ALK_TO_CONC_SYSTEM
 cdef int TOTAL_TO_CEC_SYSTEM = _utils.TOTAL_TO_CEC_SYSTEM
 
 # Copy shared dimensions into C integers for use without the GIL.
@@ -57,6 +58,9 @@ cdef int _callback(void *userdata, int n, const double *state,
         out[0] = cec_calcium_residual(
             state[0], p[0], p[1], p[2], p[3], p[4], p[5], p[6],
             p[7], p[8], p[9], p[10], p[11])
+    elif problem.system == F_CEC_ALK_TO_CONC_SYSTEM:
+        out[0] = f_cec_alk_to_conc_residual(
+            state[0], p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7])
     elif problem.system == TOTAL_TO_CEC_SYSTEM:
         total_to_cec_residual(
             state, p[0], p[1], p[2], p[3], p[4], p[5],
@@ -79,6 +83,8 @@ cdef bint _system_layout(int system, int *n, int *parameters) noexcept nogil:
         n[0], parameters[0] = BIOGEOCHEM_N_UNKNOWNS, 25
     elif system == CEC_CALCIUM_SYSTEM:
         n[0], parameters[0] = 1, 12
+    elif system == F_CEC_ALK_TO_CONC_SYSTEM:
+        n[0], parameters[0] = 1, 8
     elif system == TOTAL_TO_CEC_SYSTEM:
         n[0], parameters[0] = TOTAL_TO_CEC_N_UNKNOWNS, 20
     else:
