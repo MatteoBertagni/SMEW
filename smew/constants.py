@@ -157,22 +157,27 @@ def soil_hydraulic_const(soil):
 # soil hydraulic constants and moisture thresholds
 
 @njit(nogil=True, error_model="numpy")
-def soil_const(soil, psi_h_mpa=-10.0, psi_w_mpa=-3.0, psi_i_mpa=-0.03):
+def soil_const(
+        soil: str,
+        psi_h_mpa: float=-10.0,
+        psi_w_mpa: float=-3.0,
+        psi_i_mpa: float=-0.03,
+        fc_conductivity_ratio: float = 0.02,
+) -> tuple[float, float, float, float, float, float, float]:
     """
-Parameters
-----------
-soil : str
-    Soil texture class.
-psi_h_mpa, psi_w_mpa, psi_i_mpa : float
-    Water potentials [MPa] used to compute s_h, s_w, and s_i.
-    Defaults are -10, -3, and -0.03 MPa, following Laio et al. (2001).
+    Compute soil moisture thresholds from water potentials and a relative conductivity threshold for field capacity,
+    and return soil hydraulic parameters for the selected texture.
 
-Returns
--------
-s_h, s_w, s_i : float
-    Hygroscopic, wilting, and incipient stress points [-].
-    
-"""
+    :param soil: Soil texture class.
+    :param psi_h_mpa: Water potentials [MPa] used to compute s_h. Defaults to -10 MPa, following Laio et al. (2001).
+    :param psi_w_mpa: Water potentials [MPa] used to compute s_w. Defaults to -3 MPa, following Laio et al. (2001).
+    :param psi_i_mpa: Water potentials [MPa] used to compute s_i. Defaults to -0.03 MPa, following Laio et al. (2001).
+    :param fc_conductivity_ratio: Ratio of hydraulic conductivity to K_s used to define field capacity [-]. Must be
+        in (0, 1]. Defaults to 0.02.
+    :return: Relative saturation at the hygroscopic point (s_h), wilting point (s_w), incipient stress point (s_i),
+        and field capacity (s_fc) [-]; Campbell water retention exponent (b) [-]; saturated hydraulic conductivity (K_s)
+        [m/day]; and soil porosity (n) [-].
+    """
     psi_s_log_cm, b, K_s, n = soil_hydraulic_const(soil)
 
     mpa_to_cm = 10197.16213 #from MPa to cm H2O
@@ -186,8 +191,10 @@ s_h, s_w, s_i : float
     s_h = min(1.0, (psi_s_log_cm / psi_h_cm) ** (1.0 / b))
     s_w = min(1.0, (psi_s_log_cm / psi_w_cm) ** (1.0 / b))
     s_i = min(1.0, (psi_s_log_cm / psi_i_cm) ** (1.0 / b))
+    # Arbitrary threshold: L = fc_conductivity_ratio * Ks
+    s_fc = fc_conductivity_ratio ** (1.0 / (3.0 + 2.0*b))
 
-    return s_h, s_w, s_i, b, K_s, n
+    return s_h, s_w, s_i, s_fc, b, K_s, n
 
 #------------------------------------------------------------------------------
 
