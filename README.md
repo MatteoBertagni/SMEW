@@ -67,8 +67,9 @@ import smew
 ```
 
 After changing modes, **restart the kernel and run all cells**.
-Compiled chemistry calculations require the native extensions included in
-release wheels.
+If the native extensions are missing or cannot load, SMEW logs an error with the
+original error and automatically uses Python/SciPy `fsolve` for chemistry.
+Other numerical helpers can still use Numba.
 
 When comparing Python and compiled modes, use the same rainfall input array.
 Setting the same random seed in both modes does not guarantee identical rainfall.

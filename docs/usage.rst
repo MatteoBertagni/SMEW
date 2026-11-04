@@ -42,9 +42,12 @@ top of your script:
    import smew
 
 Restart the notebook kernel and run all cells after changing the setting;
-for a script, start a new run. Without this setting, SMEW uses compiled mode.
-Python mode also works with an installation without C extensions; compiled
-mode requires them. See :doc:`installation` for installation options.
+for a script, start a new run. Without this setting, SMEW tries compiled mode.
+If the native extensions are missing or cannot load, SMEW logs an error
+with the original error and automatically uses Python/SciPy ``fsolve`` for
+chemistry calculations. Other numerical helpers can still use Numba.
+
+See :doc:`installation` for installation options.
 
 The first compiled calculation in each Python session includes preparation
 time, so run it once before measuring execution speed.

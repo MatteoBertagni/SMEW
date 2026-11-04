@@ -128,9 +128,11 @@ From the SMEW folder, run:
    spin install-python
 
 Spin sets ``SMEW_BUILD_NATIVE=0`` only for the installation process.
-This skips the C extensions; it does not select Python
-mode. Keep ``NUMBA_DISABLE_JIT`` set to ``"1"`` in your notebook or script as
-shown above. Numba remains installed, but is disabled by this setting.
+This skips the C extensions. If they are unavailable at import, SMEW logs an error
+and automatically uses Python/SciPy ``fsolve`` for chemistry calculations;
+other numerical helpers can still use Numba. To run all calculations in
+Python for debugging, keep ``NUMBA_DISABLE_JIT`` set to ``"1"`` as shown above.
+With that setting, SMEW does not try to load the native extensions.
 
 .. note::
 

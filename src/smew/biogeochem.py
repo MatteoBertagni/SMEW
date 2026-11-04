@@ -7,10 +7,9 @@ Created on Mon Dec 16 14:34:44 2019
 import warnings
 
 import numpy as np
-from numba import njit
 import smew
 from smew.ic import _f_CEC_Alk_to_conc
-from smew._utils import _solve_system, _solver_work_size
+from smew._utils import _solve_system, _solver_work_size, _solver_njit
 from smew.equations import BIOGEOCHEM_N_UNKNOWNS
 from smew.errors import (
     ErrorCode, _float_text, _series_diagnostic, _solver_error, raise_for_error,
@@ -26,7 +25,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
                        rho_rock_in=None,
                        mixalf_in=1.0,
                       ):
-    """Normalize inputs and run the model; NUMBA_DISABLE_JIT selects Python mode."""
+    """Normalize inputs and run the model, using SciPy if native solves are unavailable."""
     f_CEC_in = np.asarray(f_CEC_in, dtype=np.float64)
     if f_CEC_in.shape != (6,):
         raise ValueError(
@@ -96,7 +95,7 @@ def biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, 
     return result
 
 
-@njit(nogil=True, error_model="numpy")
+@_solver_njit
 def _biogeochem_balance(n, s, L, T, I, v, k_v, RAI, root_d, Zr, r_het, r_aut, D, temp_soil, pH_in, conc_in, f_CEC_in, K_CEC, CEC_tot, Si_in, CaCO3_in, MgCO3_in, M_rock_in, t_app, mineral, rock_f_in, d_in, psd_perc_in, SSA_in, diss_f, dt, conv_Al, conv_mol, keyword_add,
                        keyword_ssa, # options: 'constant', 'linear', 'nonlinear'
                        pore_d_in,

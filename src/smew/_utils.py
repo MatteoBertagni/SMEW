@@ -2,11 +2,12 @@
 """Small helpers shared by SMEW modules."""
 
 
+import logging
 import warnings
 
 import numpy as np
 from scipy.optimize import fsolve
-from numba import njit
+from numba import config, njit
 from numba.extending import overload
 from smew.equations import (
     water_alk_equations, biogeochem_equations, cec_calcium_equation,
@@ -69,6 +70,30 @@ def _warn_solver_status(status):
 
 @overload(_solve_system)
 def _compiled_solve_system(system, state, parameters, residual, work, xtol):
-    # Loaded during JIT compilation; disabled JIT keeps the SciPy implementation.
-    from smew._native._numba import _solve_with_cminpack
     return _solve_with_cminpack
+
+
+# Load the native solver after defining the equation identifiers it imports.
+_solve_with_cminpack = None
+if not config.DISABLE_JIT:
+    try:
+        from smew._native._numba import _solve_with_cminpack
+    except (ImportError, OSError, AttributeError, ValueError) as error:
+        # Missing extensions, loader/symbol failures, and Cython ABI mismatches.
+        logging.getLogger(__name__).error(
+            "SMEW native solver could not be loaded (%s: %s). "
+            "Falling back to Python/SciPy fsolve; chemistry calculations may be slower. "
+            "Rebuild or reinstall the native extensions and restart Python to restore compiled solves.",
+            type(error).__name__, error,
+        )
+
+
+def _solver_njit(function):
+    """Compile solver callers only when the native solver can be loaded.
+
+    Other SMEW helpers keep their normal Numba setting; do not change Numba's
+    process-wide configuration when only SMEW's extensions are unavailable.
+    """
+    if _solve_with_cminpack is None:
+        return function
+    return njit(nogil=True, error_model="numpy")(function)

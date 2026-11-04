@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 from numba import njit
 import smew
-from smew._utils import _solve_system, _solver_work_size
+from smew._utils import _solve_system, _solver_work_size, _solver_njit
 from smew._utils import CEC_CALCIUM_SYSTEM, F_CEC_ALK_TO_CONC_SYSTEM, TOTAL_TO_CEC_SYSTEM
 from smew.errors import (
     ErrorCode, _float_text, _solver_error, raise_for_error,
@@ -29,7 +29,7 @@ def conc_to_f_CEC(conc_in,pH_in,soil,conv_mol,conv_Al):
     return result
 
 
-@njit(nogil=True, error_model="numpy")
+@_solver_njit
 def _conc_to_f_CEC(conc_in, pH_in, soil, conv_mol, conv_Al):
     """Return (results or None, error_code, error_message); conc_in has 5 values, soil is supported."""
     #constants 
@@ -120,7 +120,7 @@ def f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk_in, conv_mol,conv_Al):
     return result
 
 
-@njit(nogil=True, error_model="numpy")
+@_solver_njit
 def _f_CEC_Alk_to_conc(f_CEC_in, K_CEC, pH_in, Alk_in, conv_mol,conv_Al):
     """Return (result or None, error_code, error_message, solver_status)."""
 
@@ -202,7 +202,7 @@ def total_to_f_CEC_and_conc(
     return result
 
 
-@njit(nogil=True, error_model="numpy")
+@_solver_njit
 def _total_to_f_CEC_and_conc(
     total_in,
     pH_in,

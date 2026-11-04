@@ -49,6 +49,8 @@ def collect_outputs(*, helpers_only=False):
         class BlockNative(importlib.abc.MetaPathFinder):
             def find_spec(self, fullname, path=None, target=None):
                 if fullname.startswith("smew._native"):
+                    if helpers_only and not disabled:
+                        raise ModuleNotFoundError(f"Native solver deliberately unavailable: {fullname}")
                     raise AssertionError(f"Unexpected native import: {fullname}")
         sys.meta_path.insert(0, BlockNative())
 
