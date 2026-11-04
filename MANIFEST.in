@@ -8,7 +8,7 @@ include tests/README.md
 include docs/conf.py
 include notebooks/Example.ipynb
 recursive-include docs *.rst *.ipynb *.css
-include images/SMEW_logo.png
+include docs/_static/SMEW_logo.png
 prune docs/_build
 prune docs/_generated
 prune docs/diagrams

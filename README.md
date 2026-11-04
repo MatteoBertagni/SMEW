@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/MatteoBertagni/SMEW/main/images/SMEW_logo.png" class="dark-light" alt="SMEW logo" width="150">
+  <img src="https://raw.githubusercontent.com/MatteoBertagni/SMEW/main/docs/_static/SMEW_logo.png" class="dark-light" alt="SMEW logo" width="150">
 </p>
 
 # Soil Model for Enhanced Weathering (SMEW)

@@ -53,7 +53,7 @@ nb_execution_in_temp = True
 
 html_theme = "pydata_sphinx_theme"
 html_title = f"SMEW {release} documentation"
-html_logo = "../images/SMEW_logo.png"
+html_logo = "_static/SMEW_logo.png"
 html_theme_options = {
     "logo": {"alt_text": "SMEW documentation home"},
     "github_url": "https://github.com/MatteoBertagni/SMEW",
@@ -90,10 +90,11 @@ def _readme_links(app, doctree):
             link.extend(node.children)
             node.replace_self(link)
     # The README's centered HTML logo is copied locally by html_logo above.
+    logo_url = "https://raw.githubusercontent.com/MatteoBertagni/SMEW/main/docs/_static/SMEW_logo.png"
     for node in doctree.findall(nodes.raw):
-        if 'src="images/SMEW_logo.png"' in node.astext():
+        if f'src="{logo_url}"' in node.astext():
             node[0] = nodes.Text(node.astext().replace(
-                'src="images/SMEW_logo.png"', 'src="_static/SMEW_logo.png"'
+                f'src="{logo_url}"', 'src="_static/SMEW_logo.png"'
             ))
 
 
