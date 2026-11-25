@@ -46,7 +46,7 @@ pip stops and reports an error:
 Editable development installation
 ---------------------------------
 
-Clone the repository and run these commands from its root:
+Clone the repository and enter its root directory:
 
 .. code-block:: bash
 
@@ -56,12 +56,34 @@ Clone the repository and run these commands from its root:
    # Open the downloaded project folder.
    cd SMEW
 
-   # Follow the commands from above to create and activate your
-   # virtual environment
+Activate your virtual environment, then **choose one** editable install option.
 
-   # Install SMEW so that edits to its Python files take effect,
-   # along with tools for testing and building the documentation.
+**With C extensions and tools for testing and building the docs**, run this command:
+
+.. code-block:: bash
+
    pip install -e ".[dev,docs]"
+
+**With C extensions and the base dependencies**, run both Spin setup commands:
+
+.. code-block:: bash
+
+   pip install spin
+   spin install-native
+
+**Without a C compiler**, run both commands below:
+
+.. code-block:: bash
+
+   pip install spin
+   spin install-python
+
+After either Spin install, you can add the development and documentation tools
+without rebuilding SMEW. Run this in the same virtual environment:
+
+.. code-block:: bash
+
+   pip install "smew[dev,docs]"
 
 The ``dev`` extra installs the testing, packaging and marimo tools; ``docs``
 installs Sphinx and the Jupyter notebook execution dependencies. Both include
@@ -118,16 +140,7 @@ this setting. Also restart after editing SMEW's Python files so that your
 changes are loaded. For a script, start a new run. See :doc:`usage` for more
 about choosing the solver mode.
 
-To edit the model itself, download the source code and activate your environment
-as described above. You can install this local copy without a C compiler.
-From the SMEW folder, run:
-
-.. code-block:: bash
-
-   # Install your local copy so that you can edit its Python files.
-   spin install-python
-
-Spin sets ``SMEW_BUILD_NATIVE=0`` only for the installation process.
+``spin install-python`` sets ``SMEW_BUILD_NATIVE=0`` only for the installation process.
 This skips the C extensions. If they are unavailable at import, SMEW logs an error
 and automatically uses Python/SciPy ``fsolve`` for chemistry calculations;
 other numerical helpers can still use Numba. To run all calculations in

@@ -34,16 +34,14 @@ pip install smew
 
 This installs SMEW from PyPI, including precompiled code when a compatible package is available for your platform.
 
-If installation asks for a C compiler, see the 
-[installation guide](https://matteobertagni.github.io/SMEW/installation.html) for setup instructions and 
-compiler-free alternatives.
-
 Once installed, download the example notebook located in [notebooks/Example.ipynb](notebooks/Example.ipynb).
 Open it with Jupyter and run all cells!
 
 To run the model–experiment comparisons, download or clone the full repository so the notebooks and experimental data 
 stay together.
 If you move the files, update the data path near the top of each notebook.
+
+Other installation methods are documented in the [installation section](https://matteobertagni.github.io/SMEW/installation.html)
 
 
 ## Choose how the model runs
