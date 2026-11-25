@@ -1,9 +1,6 @@
 # --- Jupyter ---
 .ipynb_checkpoints/
 
-# Example soil-structure data
-Example_SS_Data/
-
 # Local notebooks in the repository root
 /*.ipynb
 
